@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
 import { randomUUID } from 'node:crypto';
-import { memoryDB } from '../data/memoryStore.js';
+import { createCoreRouter } from '../core/router.ts';
 import Application from '../models/Application.js';
 import AuditLog from '../models/AuditLog.js';
 import { getIdentity, SecurityError, SESSION_COOKIE } from '../security/identity.ts';
@@ -10,7 +10,7 @@ import { authenticate, requirePermission, assertPermission, assertScope, inScope
 /** Injectable router: tests use isolated synthetic stores and never connect/seed Mongo.
  * @param {{identity?: () => import('../security/identity').Identity, store?: {applications: any[], notifications: any[], auditLogs: any[]}, applicationModel?: any, auditModel?: any, connected?: () => boolean}} [options]
  */
-export function createApiRouter({ identity = getIdentity, store = memoryDB, applicationModel = Application, auditModel = AuditLog, connected = () => mongoose.connection.readyState === 1 } = {}) {
+function createLegacyTestRouter({ identity = getIdentity, store, applicationModel = Application, auditModel = AuditLog, connected = () => mongoose.connection.readyState === 1 } = {}) {
   const router = Router();
   const wrap = fn => async (req, res, next) => { try { await fn(req, res, next); } catch (error) { deny(res, error); } };
   const missing = res => res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Record not found' } });
@@ -110,5 +110,13 @@ export function createApiRouter({ identity = getIdentity, store = memoryDB, appl
   router.use('/applications/:id/decisions', requirePermission('decision.record'));
   router.use((_req, res) => missing(res));
   return router;
+}
+/** @param {{store?: {applications: any[], notifications: any[], auditLogs: any[]}, identity?: () => import('../security/identity').Identity, applicationModel?: any, auditModel?: any, connected?: () => boolean, storage?: import('../core/storage').CaseStorage, scrutiny?: import('../../shared/ports').ScrutinyPrerequisitePort, evidence?: import('../core/cases').EvidencePrerequisite}} [options] */
+export function createApiRouter(options = {}) {
+  if (options.store) {
+    if (process.env.NODE_ENV !== 'test') throw new Error('Synthetic legacy stores are test-only');
+    return createLegacyTestRouter(options);
+  }
+  return createCoreRouter(options);
 }
 export default createApiRouter();

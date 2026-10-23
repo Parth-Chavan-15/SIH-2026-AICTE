@@ -26,7 +26,6 @@ const io = new Server(httpServer, {
 });
 
 const PORT = process.env.PORT || 3000;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/aicte_workflow';
 
 // Security & Middleware
 app.disable('x-powered-by');
@@ -49,45 +48,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// Database connection state helper
-let isMongoConnected = false;
-async function connectDB() {
-  try {
-    if (mongoose.connection.readyState >= 1) return;
-    await mongoose.connect(MONGODB_URI);
-    isMongoConnected = true;
-    console.log('✅ Connected to MongoDB successfully');
-
-    // Auto-seed if database is empty
-    const Application = (await import('./src/backend/models/Application.js')).default;
-    const count = await Application.countDocuments();
-    if (count === 0) {
-      const { SEED_APPLICATIONS } = await import('./src/backend/data/seedAtlas.js');
-      await Application.insertMany(SEED_APPLICATIONS);
-      console.log(`✅ Seeded ${SEED_APPLICATIONS.length} applications into MongoDB`);
-    }
-  } catch (err: any) {
-    console.warn('MongoDB unavailable; legacy demonstration storage remains non-durable.');
-    isMongoConnected = false;
-  }
+// No implicit database target, auto-seed, collection creation or index migration.
+// Configure only an approved database; readiness stays 503 until prerequisites exist.
+if (process.env.MONGODB_URI) {
+  mongoose.connect(process.env.MONGODB_URI, { autoCreate: false, autoIndex: false, bufferCommands: false, serverSelectionTimeoutMS: 3000 })
+    .catch(() => console.warn('Authoritative storage unavailable'));
 }
-connectDB();
-
-// Health Check
-app.get('/api/v1/health', (req, res) => {
-  res.json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    mongodb: isMongoConnected ? 'connected' : 'disconnected (demo mode)',
-    uptime: process.uptime(),
-  });
-});
-
-// --- API ROUTES IMPLEMENTATION (v1) ---
-
-// In-memory fallback database store for hackathon standalone resilience if MongoDB is not running locally
-import { seedMemoryStore, memoryDB } from './src/backend/data/memoryStore.js';
-seedMemoryStore();
 
 // Attach io instance to request
 app.use((req: any, res, next) => {

@@ -38,6 +38,8 @@ const TimelineSubSchema = new mongoose.Schema({
 
 const ApplicationSchema = new mongoose.Schema(
   {
+    // Canonical PR0 DTO for this same aggregate/collection. Legacy fields remain a projection.
+    caseData: { type: mongoose.Schema.Types.Mixed },
     applicationNumber: { type: String, required: true, unique: true, index: true },
     institutionName: { type: String, required: true },
     institutionCode: { type: String, required: true, index: true },
@@ -63,7 +65,8 @@ const ApplicationSchema = new mongoose.Schema(
     timeline: [TimelineSubSchema],
     evcId: { type: String },
   },
-  { timestamps: true }
+  { timestamps: true, autoIndex: false, autoCreate: false, bufferCommands: false }
 );
+ApplicationSchema.index({ 'caseData.id': 1 }, { unique: true, sparse: true, name: 'case_id_unique' });
 
 export default mongoose.models.Application || mongoose.model('Application', ApplicationSchema);
