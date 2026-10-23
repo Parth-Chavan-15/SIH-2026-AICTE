@@ -2,12 +2,13 @@ import { createHash, randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { Application, CommandContext, CommandResult, EventEnvelope, IntakeCommand, TransitionCommand } from '../../shared/contracts';
 import { CONTRACT_VERSION } from '../../shared/contracts';
-import { applicationSchema, intakeSchema, policyRevisionSchema, transitionSchema } from '../../shared/schemas';
+import { applicationSchema, intakeSchema, policyRevisionSchema, transitionSchema, commandContextSchema } from '../../shared/schemas';
 import type { ScrutinyPrerequisitePort, TransactionContext } from '../../shared/ports';
 import { assertPermission, assertScope } from '../security/authorization';
 import { CoreError, unavailable, type CaseStorage, type Unit } from './storage';
 import { evaluatePolicy, type VerifiedFacts } from '../policy/evaluator';
 import { approvedRule } from '../policy/registry';
+import { prerequisiteIds, readerContext } from './integrationGuards';
 
 export const CATEGORIES = ['extension_of_approval', 'new_institution', 'increase_intake', 'closure', 'conversion_coeducation', 'change_site'] as const;
 const validatedIntake = intakeSchema.extend({ category: z.enum(CATEGORIES), session: z.string().regex(/^20\d{2}-\d{2}$/).refine(s => Number(s.slice(5)) === (Number(s.slice(0, 4)) + 1) % 100), facts: z.strictObject({ program: z.enum(['engineering', 'management', 'pharmacy', 'architecture', 'applied_arts']), proposedIntake: z.number().int().positive().max(100_000), nbaAccreditation: z.boolean().optional() }) });
@@ -35,7 +36,7 @@ export function createCaseService(storage: CaseStorage, dependencies: { scrutiny
     if (required && !ids.length) throw new CoreError('PRECONDITION_FAILED', 'Evidence references required');
     if (ids.length) {
       if (!dependencies.evidence) throw new CoreError('PRECONDITION_FAILED', 'Evidence version service unavailable');
-      await dependencies.evidence.assertReferences(tx, ids);
+      await dependencies.evidence.assertReferences(readerContext(tx), [...ids]);
     }
   }
   async function replay(unit: Unit, key: string, fingerprint: string) {
@@ -58,6 +59,7 @@ export function createCaseService(storage: CaseStorage, dependencies: { scrutiny
   return {
     storage,
     async create(context: CommandContext, body: unknown): Promise<CommandResult> {
+      context = parse(commandContextSchema, context);
       assertPermission(context.actor, 'case.create');
       const command: IntakeCommand = parse(validatedIntake, body);
       const key = hash([context.actor.id, command.institutionId, 'intake', command.idempotencyKey]);
@@ -76,7 +78,7 @@ export function createCaseService(storage: CaseStorage, dependencies: { scrutiny
         const time = new Date().toISOString();
         const application: Application = { id: randomUUID(), reference: `DEMO-${randomUUID()}`, institutionId: institution.id, regionId: institution.regionId, category: command.category, session: command.session, facts: command.facts, state: 'policy_review_required', version: 1, route: { result: 'review_required', category: command.category, session: command.session, evaluatedFacts: command.facts, stages: [], reasons: ['Policy review required'], reviewReasons: ['Reviewed source mapping required'], sources: [] }, createdAt: time, updatedAt: time, stageEnteredAt: time };
         const registry = unit.policies ? await unit.policies(command.session, command.category) : [];
-        const verified = dependencies.policyFacts ? await dependencies.policyFacts.load(unit.context(context, application)) : undefined;
+        const verified = dependencies.policyFacts ? await dependencies.policyFacts.load(readerContext(unit.context(context, application))) : undefined;
         application.route = evaluatePolicy({ ...application, asOf: time, sessionMode: verified?.sessionMode }, registry, verified?.facts);
         if (application.route.result === 'selected') {
           application.policyRevisionId = application.route.policyRevisionId;
@@ -88,6 +90,7 @@ export function createCaseService(storage: CaseStorage, dependencies: { scrutiny
       });
     },
     async transition(context: CommandContext, id: string, body: unknown): Promise<CommandResult> {
+      context = parse(commandContextSchema, context);
       assertPermission(context.actor, 'case.transition');
       const command: TransitionCommand = parse(transitionSchema, body);
       const allowedRoles = command.action === 'complete_evc' ? ['evc', 'regional_officer', 'bureau_officer'] : ['reviewer', 'regional_officer', 'bureau_officer'];
@@ -134,11 +137,9 @@ export function createCaseService(storage: CaseStorage, dependencies: { scrutiny
         await evidence(tx, command.evidenceVersionIds, true);
         if (prerequisite) {
           if (!dependencies.scrutiny) throw new CoreError('PRECONDITION_FAILED', 'M2 prerequisite service unavailable');
-          const result = await dependencies.scrutiny[prerequisite](tx);
-          if (!result.allowed || !result.prerequisiteEventIds.length) throw new CoreError('PRECONDITION_FAILED', 'Required signed prerequisite not complete');
+          prerequisiteIds(await dependencies.scrutiny[prerequisite](readerContext(tx)));
           if (target === 'evc_pending') {
-            const eligibility = await dependencies.scrutiny.assertEVCEligible(tx);
-            if (!eligibility.allowed || !eligibility.prerequisiteEventIds.length) throw new CoreError('PRECONDITION_FAILED', 'EVC eligibility not established');
+            prerequisiteIds(await dependencies.scrutiny.assertEVCEligible(readerContext(tx)));
           }
         }
         const time = new Date().toISOString();

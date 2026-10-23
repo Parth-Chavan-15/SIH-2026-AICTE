@@ -7,6 +7,7 @@ import { assertPermission, assertScope } from '../security/authorization';
 import { approvedRule } from '../policy/registry';
 import { CoreError, unavailable, type CaseStorage } from './storage';
 import type { TransactionContext } from '../../shared/ports';
+import { prerequisiteIds, readerContext } from './integrationGuards';
 export interface DecisionEvidenceReader {
   /** Persisted, scoped, independently verified, current evidence; same transaction. */
   assertVerified(tx: TransactionContext, ids: string[]): Promise<void>;
@@ -14,12 +15,6 @@ export interface DecisionEvidenceReader {
 const canonical = (v: unknown): string => Array.isArray(v) ? `[${v.map(canonical).join(',')}]` : v && typeof v === 'object' ? `{${Object.keys(v).sort().map(k => `${JSON.stringify(k)}:${canonical((v as Record<string, unknown>)[k])}`).join(',')}}` : JSON.stringify(v);
 const hash = (v: unknown) => createHash('sha256').update(canonical(v)).digest('hex');
 const commandSchema = decisionCommandSchema.refine(c => !!c.reason?.trim(), 'A human decision reason is required').refine(c => new Set(c.evidenceVersionIds).size === c.evidenceVersionIds.length, 'Duplicate evidence IDs');
-const attestationSchema = z.strictObject({allowed:z.literal(true), prerequisiteEventIds:z.array(idSchema).min(1).refine(ids=>new Set(ids).size===ids.length)});
-function prerequisiteIds(value: unknown): string[] { const parsed=attestationSchema.safeParse(value); if (!parsed.success) throw new CoreError('PRECONDITION_FAILED', 'Valid signed prerequisite references required'); return parsed.data.prerequisiteEventIds; }
-function readerContext(tx: TransactionContext): TransactionContext {
-  const deny=async()=>{throw new CoreError('PRECONDITION_FAILED','Prerequisite readers cannot write');};
-  return {...tx, context:structuredClone(tx.context),actor:structuredClone(tx.actor),application:structuredClone(tx.application), repositories:{cases:{save:deny},decisions:{insert:deny},obligations:{insert:deny},scrutiny:{insert:deny},evc:{save:deny},audit:{append:deny},outbox:{append:deny}},emit:deny};
-}
 export function createDecisionService(storage: CaseStorage, deps: { scrutiny?: ScrutinyPrerequisitePort; decisionEvidence?: DecisionEvidenceReader; obligations?: DecisionObligationParticipant } = {}) {
   return { async decide(context: CommandContext, id: string, body: unknown): Promise<Decision> {
     const verifiedContext=commandContextSchema.safeParse(context);

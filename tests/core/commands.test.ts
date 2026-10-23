@@ -107,12 +107,12 @@ describe('MOCK ONLY Stage 3 service/transaction semantics (no Mongo proof)', () 
       store.flags.fail = ''; await createCaseService(store, { evidence: goodEvidence }).transition(context, selected.id, command); expect(store.inspect().outbox).toHaveLength(1);
     }
   });
-  it('rolls back required participant failure and expires transaction handles', async () => {
+  it('denies evidence-reader writes during and after a failed command', async () => {
     const store = fakeStorage([selected]); let handle: TransactionContext | undefined;
     const service = createCaseService(store, { evidence: { async assertReferences(tx) { handle = tx; await tx.repositories.obligations.insert({} as never); } } });
-    await expect(service.transition(context, selected.id, command)).rejects.toThrow('participant unavailable');
+    await expect(service.transition(context, selected.id, command)).rejects.toThrow('Prerequisite readers cannot write');
     expect(store.inspect().cases[0].version).toBe(1); expect(store.inspect().outbox).toEqual([]);
-    await expect(handle!.emit({} as never)).rejects.toThrow('context expired');
+    await expect(handle!.emit({} as never)).rejects.toThrow('Prerequisite readers cannot write');
   });
   it('rejects missing evidence, mismatched policy source and negative signed prerequisites', async () => {
     const store = fakeStorage([selected]); const before = store.inspect();
