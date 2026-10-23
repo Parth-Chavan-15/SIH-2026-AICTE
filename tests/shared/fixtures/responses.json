@@ -1,0 +1,65 @@
+{
+  "warning": "SYNTHETIC SHAPE FIXTURES ONLY; independent examples, not a legally valid sequential workflow. No reviewed production rules.",
+  "success": {
+    "success": true,
+    "data": {
+      "id": "SYN-CASE-1",
+      "reference": "SYN-REF-1",
+      "institutionId": "SYN-INST-W",
+      "regionId": "SYN-REG-W",
+      "category": "increase_intake",
+      "session": "2026-27",
+      "facts": {
+        "intakeX": 320,
+        "nbaAccreditation": true
+      },
+      "state": "policy_review_required",
+      "route": {
+        "session": "2026-27",
+        "category": "increase_intake",
+        "evaluatedFacts": {
+          "intakeX": 320,
+          "nbaAccreditation": true
+        },
+        "result": "review_required",
+        "stages": [],
+        "reasons": [
+          "Illustrative fixture has no approved rule mapping"
+        ],
+        "sources": [
+          {
+            "documentId": "SYN-G02",
+            "title": "SYNTHETIC source mapping - review required",
+            "location": "Research section 4.2 / G02 PDF p.42",
+            "sourceRevision": "SYNTHETIC-2026-27",
+            "reviewState": "interpretation_pending"
+          }
+        ],
+        "reviewReasons": [
+          "Programme eligibility and source mapping need review"
+        ]
+      },
+      "version": 1,
+      "stageEnteredAt": "2026-10-23T09:00:00.000Z",
+      "createdAt": "2026-10-23T09:00:00.000Z",
+      "updatedAt": "2026-10-23T09:00:00.000Z"
+    },
+    "eventId": "SYN-SUBMIT"
+  },
+  "reviewRequired": {
+    "success": false,
+    "error": {
+      "code": "POLICY_REVIEW_REQUIRED",
+      "message": "Reviewed source mapping is unavailable",
+      "failedRule": "UNRESOLVED_MAPPING"
+    }
+  },
+  "stale": {
+    "success": false,
+    "error": {
+      "code": "VERSION_CONFLICT",
+      "message": "Stale version",
+      "currentVersion": 2
+    }
+  }
+}

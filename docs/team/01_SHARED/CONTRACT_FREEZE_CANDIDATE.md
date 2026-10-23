@@ -1,5 +1,24 @@
 # Shared contracts candidate v0.1.0 — review before any merge
 
+## PR0 implementation proposal (still 0.1.0-proposed)
+
+Proposed canonical imports now live in `src/shared/{contracts,schemas,ports,endpointMap,compatibility}.ts`.
+The starter below remains reference material; its older signatures are not interchangeable
+with the proposal. Read [PR0_CONTRACT_HANDOFF.md](PR0_CONTRACT_HANDOFF.md) for exact
+consumer interfaces, event payload changes, endpoint methods, synthetic fixtures,
+validation evidence and unresolved decisions. No runtime files consume PR0 yet.
+
+Use the single legacy stage mapping; flag unknown/context-dependent states rather
+than silently converting approval labels. Preserve the current application model,
+UI and backend until separately approved integration. Session-bound repository
+operations are required: a transaction ID alone cannot guarantee atomicity.
+
+M2/M3 must review scope intersection/global grants, named-action guards, prerequisite
+ports, decision conditions/source payloads, idempotency and transaction semantics,
+policy ambiguity handling and upload metadata. All existing ADR approvals remain
+pending. Do not declare the contract frozen or bump to 0.1.0 until those reviews and
+the agreed PR0 process are complete.
+
 This is a **fully supplied proposed output of Member 1**, so Members 2/3 do not wait for Member 1 to invent DTOs. Source files live in `07_CONTRACT_STARTER/src/`. Copy into the repository only through reviewed PR0 after confirming repo imports/types and accepting ADRs.
 
 ## Global conventions

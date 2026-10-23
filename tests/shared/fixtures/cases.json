@@ -1,0 +1,107 @@
+{
+  "warning": "SYNTHETIC SHAPE FIXTURES ONLY; independent examples, not a legally valid sequential workflow. No reviewed production rules.",
+  "contractVersion": "0.1.0-proposed",
+  "actor": {
+    "id": "SYN-ACTOR",
+    "roles": [
+      "reviewer"
+    ],
+    "permissions": [
+      "case.read",
+      "scrutiny.sign"
+    ],
+    "scope": "scoped",
+    "institutionIds": [
+      "SYN-INST-W"
+    ],
+    "regionIds": [
+      "SYN-REG-W"
+    ]
+  },
+  "applications": [
+    {
+      "id": "SYN-CASE-1",
+      "reference": "SYN-REF-1",
+      "institutionId": "SYN-INST-W",
+      "regionId": "SYN-REG-W",
+      "category": "increase_intake",
+      "session": "2026-27",
+      "facts": {
+        "intakeX": 320,
+        "nbaAccreditation": true
+      },
+      "state": "policy_review_required",
+      "route": {
+        "session": "2026-27",
+        "category": "increase_intake",
+        "evaluatedFacts": {
+          "intakeX": 320,
+          "nbaAccreditation": true
+        },
+        "result": "review_required",
+        "stages": [],
+        "reasons": [
+          "Illustrative fixture has no approved rule mapping"
+        ],
+        "sources": [
+          {
+            "documentId": "SYN-G02",
+            "title": "SYNTHETIC source mapping - review required",
+            "location": "Research section 4.2 / G02 PDF p.42",
+            "sourceRevision": "SYNTHETIC-2026-27",
+            "reviewState": "interpretation_pending"
+          }
+        ],
+        "reviewReasons": [
+          "Programme eligibility and source mapping need review"
+        ]
+      },
+      "version": 1,
+      "stageEnteredAt": "2026-10-23T09:00:00.000Z",
+      "createdAt": "2026-10-23T09:00:00.000Z",
+      "updatedAt": "2026-10-23T09:00:00.000Z"
+    },
+    {
+      "id": "SYN-CASE-2",
+      "reference": "SYN-REF-2",
+      "institutionId": "SYN-INST-W",
+      "regionId": "SYN-REG-W",
+      "category": "increase_intake",
+      "session": "2026-27",
+      "facts": {
+        "intakeX": 360,
+        "nbaAccreditation": true
+      },
+      "state": "policy_review_required",
+      "route": {
+        "session": "2026-27",
+        "category": "increase_intake",
+        "evaluatedFacts": {
+          "intakeX": 360,
+          "nbaAccreditation": true
+        },
+        "result": "review_required",
+        "stages": [],
+        "reasons": [
+          "Illustrative fixture has no approved rule mapping"
+        ],
+        "sources": [
+          {
+            "documentId": "SYN-G02",
+            "title": "SYNTHETIC source mapping - review required",
+            "location": "Research section 4.2 / G02 PDF p.42",
+            "sourceRevision": "SYNTHETIC-2026-27",
+            "reviewState": "interpretation_pending"
+          }
+        ],
+        "reviewReasons": [
+          "X=360 unresolved"
+        ]
+      },
+      "version": 1,
+      "stageEnteredAt": "2026-10-23T09:00:00.000Z",
+      "createdAt": "2026-10-23T09:00:00.000Z",
+      "updatedAt": "2026-10-23T09:00:00.000Z"
+    }
+  ]
+}

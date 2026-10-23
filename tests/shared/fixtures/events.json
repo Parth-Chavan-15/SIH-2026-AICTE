@@ -1,0 +1,179 @@
+{
+  "warning": "SYNTHETIC SHAPE FIXTURES ONLY; independent examples, not a legally valid sequential workflow. No reviewed production rules.",
+  "contractVersion": "0.1.0-proposed",
+  "events": [
+    {
+      "contractVersion": "0.1.0-proposed",
+      "id": "SYN-DECISION-EVENT",
+      "type": "DecisionRecorded",
+      "occurredAt": "2026-10-23T09:00:00.000Z",
+      "actorId": "SYN-ACTOR",
+      "requestId": "SYN-REQUEST",
+      "applicationId": "SYN-CASE-1",
+      "caseVersion": 2,
+      "payload": {
+        "caseId": "SYN-CASE-1",
+        "decision": {
+          "id": "SYN-DECISION",
+          "applicationId": "SYN-CASE-1",
+          "actorId": "SYN-ACTOR",
+          "outcome": "conditional",
+          "policyRevisionId": "SYN-POLICY",
+          "source": {
+            "documentId": "SYN-G02",
+            "title": "SYNTHETIC source mapping - review required",
+            "location": "Research section 4.2 / G02 PDF p.42",
+            "sourceRevision": "SYNTHETIC-2026-27",
+            "reviewState": "interpretation_pending"
+          },
+          "decidedAt": "2026-10-23T09:00:00.000Z",
+          "eventId": "SYN-DECISION-EVENT",
+          "evidenceVersionIds": [
+            "SYN-DOC-V1"
+          ],
+          "conditions": [
+            {
+              "conditionKey": "SYN-EVIDENCE",
+              "policyRevisionId": "SYN-POLICY",
+              "source": {
+                "documentId": "SYN-G02",
+                "title": "SYNTHETIC source mapping - review required",
+                "location": "Research section 4.2 / G02 PDF p.42",
+                "sourceRevision": "SYNTHETIC-2026-27",
+                "reviewState": "interpretation_pending"
+              },
+              "obligationType": "synthetic_evidence",
+              "triggerEventId": "SYN-DECISION-EVENT",
+              "timerKind": "internal_demo_sla",
+              "dueAt": "2026-10-24T09:00:00.000Z",
+              "dueReason": "Fictional test clock; not an official deadline"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "contractVersion": "0.1.0-proposed",
+      "id": "SYN-SUBMIT",
+      "type": "CaseSubmitted",
+      "occurredAt": "2026-10-23T09:00:00.000Z",
+      "actorId": "SYN-ACTOR",
+      "requestId": "SYN-REQUEST",
+      "applicationId": "SYN-CASE-1",
+      "caseVersion": 1,
+      "payload": {
+        "caseId": "SYN-CASE-1"
+      }
+    },
+    {
+      "contractVersion": "0.1.0-proposed",
+      "id": "SYN-OBLIGATION-EVENT",
+      "type": "ObligationCreated",
+      "occurredAt": "2026-10-23T09:00:00.000Z",
+      "actorId": "SYN-ACTOR",
+      "requestId": "SYN-REQUEST",
+      "applicationId": "SYN-CASE-1",
+      "caseVersion": 2,
+      "payload": {
+        "caseId": "SYN-CASE-1",
+        "obligationId": "SYN-OBLIGATION",
+        "decisionEventId": "SYN-DECISION-EVENT",
+        "conditionKey": "SYN-EVIDENCE",
+        "policyRevisionId": "SYN-POLICY"
+      },
+      "causationId": "SYN-DECISION-EVENT"
+    }
+  ],
+  "obligations": [
+    {
+      "id": "SYN-OBLIGATION",
+      "applicationId": "SYN-CASE-1",
+      "decisionEventId": "SYN-DECISION-EVENT",
+      "conditionKey": "SYN-EVIDENCE",
+      "institutionId": "SYN-INST-W",
+      "policyRevisionId": "SYN-POLICY",
+      "triggerEventId": "SYN-DECISION-EVENT",
+      "source": {
+        "documentId": "SYN-G02",
+        "title": "SYNTHETIC source mapping - review required",
+        "location": "Research section 4.2 / G02 PDF p.42",
+        "sourceRevision": "SYNTHETIC-2026-27",
+        "reviewState": "interpretation_pending"
+      },
+      "timerKind": "internal_demo_sla",
+      "dueAt": "2026-10-24T09:00:00.000Z",
+      "dueReason": "Fictional test clock; not an official deadline",
+      "version": 1,
+      "status": "pending"
+    }
+  ],
+  "audit": {
+    "id": "SYN-AUDIT",
+    "applicationId": "SYN-CASE-1",
+    "actorId": "SYN-ACTOR",
+    "requestId": "SYN-REQUEST",
+    "action": "SYNTHETIC_DECISION_RECORDED",
+    "occurredAt": "2026-10-23T09:00:00.000Z",
+    "caseVersion": 2,
+    "policyRevisionId": "SYN-POLICY",
+    "evidenceVersionIds": [
+      "SYN-DOC-V1"
+    ],
+    "causationId": "SYN-DECISION-EVENT"
+  },
+  "outbox": {
+    "eventId": "SYN-DECISION-EVENT",
+    "event": {
+      "contractVersion": "0.1.0-proposed",
+      "id": "SYN-DECISION-EVENT",
+      "type": "DecisionRecorded",
+      "occurredAt": "2026-10-23T09:00:00.000Z",
+      "actorId": "SYN-ACTOR",
+      "requestId": "SYN-REQUEST",
+      "applicationId": "SYN-CASE-1",
+      "caseVersion": 2,
+      "payload": {
+        "caseId": "SYN-CASE-1",
+        "decision": {
+          "id": "SYN-DECISION",
+          "applicationId": "SYN-CASE-1",
+          "actorId": "SYN-ACTOR",
+          "outcome": "conditional",
+          "policyRevisionId": "SYN-POLICY",
+          "source": {
+            "documentId": "SYN-G02",
+            "title": "SYNTHETIC source mapping - review required",
+            "location": "Research section 4.2 / G02 PDF p.42",
+            "sourceRevision": "SYNTHETIC-2026-27",
+            "reviewState": "interpretation_pending"
+          },
+          "decidedAt": "2026-10-23T09:00:00.000Z",
+          "eventId": "SYN-DECISION-EVENT",
+          "evidenceVersionIds": [
+            "SYN-DOC-V1"
+          ],
+          "conditions": [
+            {
+              "conditionKey": "SYN-EVIDENCE",
+              "policyRevisionId": "SYN-POLICY",
+              "source": {
+                "documentId": "SYN-G02",
+                "title": "SYNTHETIC source mapping - review required",
+                "location": "Research section 4.2 / G02 PDF p.42",
+                "sourceRevision": "SYNTHETIC-2026-27",
+                "reviewState": "interpretation_pending"
+              },
+              "obligationType": "synthetic_evidence",
+              "triggerEventId": "SYN-DECISION-EVENT",
+              "timerKind": "internal_demo_sla",
+              "dueAt": "2026-10-24T09:00:00.000Z",
+              "dueReason": "Fictional test clock; not an official deadline"
+            }
+          ]
+        }
+      }
+    },
+    "attempts": 0,
+    "status": "pending"
+  }
+}
