@@ -1,0 +1,11 @@
+{
+  "success": true,
+  "data": {
+    "id": "SYN-NONACC-02",
+    "reference": "DEMO-2026-0002",
+    "state": "scrutiny_pending",
+    "version": 1,
+    "session": "2026-27"
+  },
+  "eventId": "DEMO-EVT-1"
+}
