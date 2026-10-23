@@ -1,0 +1,29 @@
+test_id,name,owner,priority,acceptance_condition,status_at_audit
+T01,Scrutiny-only route,1,MVP,No EVC for reviewed scrutiny-only case,NOT END-TO-END VERIFIED
+T02,Qualifying EVC route,2,MVP,Signed prerequisite + reviewed route => one EVC,NOT END-TO-END VERIFIED
+T03,Illegal stage skip,1,P0,Direct jump/unknown action denied; case unchanged,NOT END-TO-END VERIFIED
+T04,Ordinary admin decision denied,1,P0,Admin/no delegated authority cannot decide,NOT END-TO-END VERIFIED
+T05,Signed deficiency snapshot,2,MVP,"Snapshot signed with D1,D2 deficient C3 accepted",NOT END-TO-END VERIFIED
+T06,D1/D2 correction permitted,2,MVP,Only signed deficient IDs mutable,NOT END-TO-END VERIFIED
+T07,C3 forbidden correction,2,MVP,Out-of-scope C3 fails API+audits denial,NOT END-TO-END VERIFIED
+T08,Repeated correction rounds,2,MVP,Earlier versions/snapshots immutable,NOT END-TO-END VERIFIED
+T09,No inapplicable EVC,2,MVP,Scrutiny-only creates no task,NOT END-TO-END VERIFIED
+T10,Decision creates sourced obligation,3,MVP,"Authorized decision creates once, linked source",NOT END-TO-END VERIFIED
+T11,NBA-conditioned route,1,MVP,"Two verified fixtures; reason, revision displayed",NOT END-TO-END VERIFIED
+T12,Exact X=360 boundary,1,MVP,Policy review required; never guess equality,NOT END-TO-END VERIFIED
+T13,Division units not auto-converted,1,MVP,No n divisions -> seat count inference,NOT END-TO-END VERIFIED
+T14,Session/calendar distinction,1,MVP,Session cutoffs separate from internal SLA,NOT END-TO-END VERIFIED
+T15,Appeal deadline origin,1,Deferred guard,Origin publication of EC decision if applicable; no invented timeline,NOT END-TO-END VERIFIED
+T16,Concurrent version conflict,1,P0,Second stale actor fails; exactly one event,NOT END-TO-END VERIFIED
+T17,Stale reminder canceled,3,MVP,Evidence/new due date makes old generation ineligible,NOT END-TO-END VERIFIED
+T18,Payment assertion vs settlement,3,MVP guard,Reference upload not proven payment,NOT END-TO-END VERIFIED
+T19,No automatic penalty,1,P0 guard,Penalty requires authorized human process,NOT END-TO-END VERIFIED
+T20,Conditional SHC,1,Deferred guard,"SHC only wherever applicable, not universal",NOT END-TO-END VERIFIED
+T21,Explainable conformance scanner,2,Optional,Seed event violation flag after core stable,NOT END-TO-END VERIFIED
+T22,Duplicate notification retry,3,MVP,3 retry cycles => one logical notification,NOT END-TO-END VERIFIED
+T23,Document renewal supersession,3,MVP,New version with dates cancels stale expiry job,NOT END-TO-END VERIFIED
+T24,Dual-time document record,3,Deferred,Effective date vs first-known date later,NOT END-TO-END VERIFIED
+T25,Linked-case dependencies,1,Deferred,Dependent case blocked if implemented,NOT END-TO-END VERIFIED
+T26,Policy revision pinning,1,MVP,Existing case stays pinned after new revision,NOT END-TO-END VERIFIED
+T27,Evidence confidentiality,3,P0,Cross-scope download denied,NOT END-TO-END VERIFIED
+T28,Dashboard count accuracy,3,MVP,"Commit-driven, actor-scoped counts",NOT END-TO-END VERIFIED

@@ -1,0 +1,8 @@
+{
+  "success": false,
+  "error": {
+    "code": "POLICY_REVIEW_REQUIRED",
+    "message": "Exact intake boundary X=360 lacks a reviewed applicable rule; manual policy interpretation required.",
+    "failedRule": "INTAKE_X_360_UNRESOLVED"
+  }
+}
