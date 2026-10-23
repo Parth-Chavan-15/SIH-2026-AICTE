@@ -1,0 +1,32 @@
+import { it, expect } from 'vitest';
+import express from 'express';
+import request from 'supertest';
+import { createCoreRouter } from '../../src/backend/core/router';
+import { harness, origin } from '../security/helpers';
+import { fakeStorage, context, selected } from '../core/support';
+import { input, facts, fixture } from './support';
+import type { CaseStorage } from '../../src/backend/core/storage';
+
+it('persists a MOCK source-linked explanation behind real HTTP guards; does not invent a resolution endpoint', async () => {
+  const base = fakeStorage([{ ...selected, id: 'SYN-FOREIGN', regionId: 'Northern' }, { ...selected, id: 'SYN-OTHER-INSTITUTION', institutionId: 'SYN-INST-OTHER' }]);
+  const storage: CaseStorage = { ...base, transaction: work => base.transaction(unit => work({ ...unit, policies: async () => [fixture()] })) };
+  const auth = await harness(context.actor), app = express(); app.use(express.json());
+  app.use('/api/v1', createCoreRouter({ storage, identity: () => auth.identity, policyFacts: { async load() { return { facts: facts(), sessionMode: 'regular' }; } } }));
+  const login = await request(app).post('/api/v1/auth/login').set('Origin', origin).send({ email: auth.account.email, password: auth.password });
+  const cookie = login.headers['set-cookie'][0].split(';')[0];
+  const created = await request(app).post('/api/v1/applications').set('Cookie', cookie).set('Origin', origin).send({ institutionId: 'SYN-INST-W', category: input.category, session: input.session, facts: input.facts, evidenceVersionIds: [], idempotencyKey: 'SYN-HTTP-POLICY' });
+  expect(created.status).toBe(201); const id = created.body.data.application.id;
+  const explanation = await request(app).get(`/api/v1/applications/${id}/explanation`).set('Cookie', cookie);
+  expect(explanation.body.data.policyRevisionId).toBe(fixture().id); expect(explanation.body.data.reasons).toHaveLength(4);
+  expect((await request(app).get('/api/v1/applications/SYN-FOREIGN/explanation').set('Cookie', cookie)).status).toBe(404);
+  expect((await request(app).get('/api/v1/applications/SYN-OTHER-INSTITUTION/explanation').set('Cookie', cookie)).status).toBe(404);
+  for (const path of ['/policies', '/policies/SYN/approve', '/policies/SYN/activate']) expect((await request(app).post(`/api/v1${path}`).set('Cookie', cookie).set('Origin', origin).send({ status: 'approved' })).status).toBe(404);
+  expect((await request(app).get(`/api/v1/applications/${id}/explanation`)).status).toBe(401);
+  expect((await request(app).post(`/api/v1/applications/${id}/resolve-route`).set('Cookie', cookie).set('Origin', origin).send({})).status).toBe(404);
+  expect((await request(app).post(`/api/v1/applications/${id}/transition`).set('Cookie', cookie).set('Origin', origin).send({ action: 'resolve_route', expectedVersion: 1, evidenceVersionIds: [], idempotencyKey: 'SYN-RESOLVE' })).status).toBe(422);
+  expect(base.inspect().audit).toHaveLength(1);
+  const before = base.inspect();
+  storage.transaction = work => base.transaction(unit => work({ ...unit, policies: async () => { throw Error('MOCK private policy read error'); } }));
+  const failed = await request(app).post('/api/v1/applications').set('Cookie', cookie).set('Origin', origin).send({ institutionId: 'SYN-INST-W', category: input.category, session: input.session, facts: input.facts, evidenceVersionIds: [], idempotencyKey: 'SYN-HTTP-POLICY-FAIL' });
+  expect(failed.status).toBe(503); expect(JSON.stringify(failed.body)).not.toContain('private policy'); expect(base.inspect()).toEqual(before);
+});

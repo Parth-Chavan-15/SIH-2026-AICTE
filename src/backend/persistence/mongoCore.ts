@@ -8,6 +8,8 @@ import { applicationSchema, auditSchema, outboxSchema } from '../../shared/schem
 import type { TransactionRepositories } from '../../shared/ports';
 import { inScope } from '../security/authorization';
 import { SecurityError } from '../security/identity';
+import { approvedRule } from '../policy/registry';
+import { policyRevisionSchema } from '../../shared/schemas';
 
 const filter = (actor: Actor) => actor.scope === 'global' ? {} : { 'caseData.institutionId': { $in: actor.institutionIds }, 'caseData.regionId': { $in: actor.regionIds } };
 // Mutable compatibility fields only: updates must preserve registry/location metadata.
@@ -17,6 +19,7 @@ export const REQUIRED_INDEXES = [
   ['applications', 'caseData.id', true], ['applications', 'applicationNumber', false],
   ['institutions', 'id', false], ['institutions', 'permanentId', false],
   ['core_audit', 'id', false], ['core_outbox', 'eventId', false], ['core_receipts', 'key', false],
+  ['policy_revisions', 'id', false],
 ] as const;
 type Models = { application: any; audit: any; outbox: any; receipt: any };
 export function createMongoStorage(options: { connection?: Connection; models?: Models; participants?: (session: ClientSession) => Partial<TransactionRepositories> } = {}): CaseStorage {
@@ -63,7 +66,12 @@ export function createMongoStorage(options: { connection?: Connection; models?: 
             const check = () => { if (!active) throw new CoreError('PRECONDITION_FAILED', 'Transaction context expired'); };
             const unit: Unit = {
               async institution(id) { check(); return await connection.db!.collection('institutions').findOne({ id }, { session, projection: { _id: 0, id: 1, permanentId: 1, name: 1, regionId: 1, status: 1 } }) as unknown as Institution | null; },
-              async policy(id) { check(); const row = await connection.db!.collection('policy_revisions').findOne({ id }, { session, projection: { _id: 0 } }); return row as unknown as PolicyRevision | null; },
+              async policy(id) {
+                check(); const row = await connection.db!.collection('policy_revisions').findOne({ id }, { session, projection: { _id: 0 } });
+                const parsed = policyRevisionSchema.safeParse(row);
+                return parsed.success && approvedRule(parsed.data, new Date().toISOString()) ? parsed.data as PolicyRevision : null;
+              },
+              async policies(academicSession, category) { check(); return await connection.db!.collection('policy_revisions').find({ session: academicSession, category }, { session, projection: { _id: 0 } }).toArray() as unknown as PolicyRevision[]; },
               async get(actor, id) { check(); return read(actor, id, session); },
               async receipt(key) { check(); const row = await models.receipt.findOne({ key }).session(session).lean().exec(); return row?.data ?? null; },
               async remember(receipt) {

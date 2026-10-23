@@ -10,6 +10,7 @@ export interface Receipt { key: string; fingerprint: string; result: CommandResu
 export interface Unit {
   institution(id: string): Promise<Institution | null>;
   policy(id: string): Promise<PolicyRevision | null>;
+  policies?(session: string, category: string): Promise<PolicyRevision[]>;
   get(actor: Actor, id: string): Promise<Application | null>;
   receipt(key: string): Promise<Receipt | null>;
   remember(receipt: Receipt): Promise<void>;

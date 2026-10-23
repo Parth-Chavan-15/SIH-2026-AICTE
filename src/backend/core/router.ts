@@ -4,11 +4,11 @@ import { authenticate, requirePermission, deny, safeQueryFilter } from '../secur
 import { getIdentity, type Identity } from '../security/identity';
 import { ERROR_STATUS } from '../../shared/contracts';
 import { CoreError, type CaseStorage } from './storage';
-import { createCaseService, type EvidencePrerequisite } from './cases';
+import { createCaseService, type EvidencePrerequisite, type PolicyFactsReader } from './cases';
 import { createMongoStorage } from '../persistence/mongoCore';
 import type { ScrutinyPrerequisitePort } from '../../shared/ports';
 
-export function createCoreRouter(options: { storage?: CaseStorage; identity?: () => Identity; scrutiny?: ScrutinyPrerequisitePort; evidence?: EvidencePrerequisite } = {}) {
+export function createCoreRouter(options: { storage?: CaseStorage; identity?: () => Identity; scrutiny?: ScrutinyPrerequisitePort; evidence?: EvidencePrerequisite; policyFacts?: PolicyFactsReader } = {}) {
   const router = Router();
   const service = createCaseService(options.storage ?? createMongoStorage(), options);
   const identity = options.identity ?? getIdentity;

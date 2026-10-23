@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest';
 import type { Connection } from 'mongoose';
 import { createMongoStorage, REQUIRED_INDEXES } from '../../src/backend/persistence/mongoCore';
 import { context, selected } from './support';
+import { fixture as policyFixture } from '../policy/support';
 import type { TransactionContext } from '../../src/shared/ports';
 function mongoDouble() {
   const writes: { kind: string; session: unknown; payload: any }[] = [];
-  const flags = { connected: true, replica: true, indexes: true, fail: '', modified: 1, startFailure: false, cleanupFailure: false, receiptCollisions: 0, ambiguousCommit: false };
+  const flags = { connected: true, replica: true, indexes: true, fail: '', modified: 1, startFailure: false, cleanupFailure: false, receiptCollisions: 0, ambiguousCommit: false, policyIndex: 'valid' };
   const reads: unknown[] = [];
   const queries: { kind: string; filter: any }[] = [];
-  const rows: { one: unknown; many: unknown[] } = { one: { caseData: selected }, many: [] };
+  const rows: { one: unknown; many: unknown[]; policy: unknown } = { one: { caseData: selected }, many: [], policy: null };
   let state = { writes: [] as typeof writes };
   let nextSession = 0;
   const query = (result: unknown) => ({ session(value: unknown) { reads.push(value); return this; }, lean() { return this; }, sort() { return this; }, async exec() { return result; } });
@@ -19,7 +20,7 @@ function mongoDouble() {
   });
   const connection = {
     get readyState() { return flags.connected ? 1 : 0; },
-    db: { admin: () => ({ command: async () => flags.replica ? { setName: 'SYN-rs', logicalSessionTimeoutMinutes: 30 } : {} }), collection: (name: string) => ({ listIndexes: () => ({ toArray: async () => flags.indexes ? REQUIRED_INDEXES.filter(([collection]) => collection === name).map(([,key,sparse]) => ({ key: { [key]: 1 }, unique: true, sparse })) : [] }), findOne: async (_filter: unknown, options: any) => { reads.push(options.session); return null; } }) },
+    db: { admin: () => ({ command: async () => flags.replica ? { setName: 'SYN-rs', logicalSessionTimeoutMinutes: 30 } : {} }), collection: (name: string) => ({ listIndexes: () => ({ toArray: async () => flags.indexes ? REQUIRED_INDEXES.filter(([collection]) => collection === name).map(([,key,sparse]) => ({ key: { [key]: 1 }, unique: true, sparse, ...(name === 'policy_revisions' && flags.policyIndex === 'partial' ? { partialFilterExpression: { status: 'approved' } } : {}), ...(name === 'policy_revisions' && flags.policyIndex === 'collation' ? { collation: { locale: 'en' } } : {}) })).filter(() => name !== 'policy_revisions' || flags.policyIndex !== 'missing') : [] }), find: (filter: unknown, options: any) => { queries.push({ kind: name, filter }); reads.push(options.session); return { toArray: async () => { if (flags.fail === 'policy') throw Error('MOCK private policy storage failure'); return []; } }; }, findOne: async (_filter: unknown, options: any) => { reads.push(options.session); return name === 'policy_revisions' ? rows.policy : null; } }) },
     async startSession() {
       if (flags.startFailure) throw Error('private session details');
       const session = { id: ++nextSession, ended: false, async withTransaction<T>(work: () => Promise<T>, options: unknown) { expect(options).toMatchObject({ writeConcern: { w: 'majority' } }); const before = { writes: [...state.writes] }; let result: T; try { result = await work(); } catch (e) { state = before; throw e; } if (flags.ambiguousCommit) throw Object.assign(Error('MOCK lost commit acknowledgement'), { errorLabels: ['UnknownTransactionCommitResult'] }); return result; }, async endSession() { session.ended = true; if (flags.cleanupFailure) throw Error('private cleanup details'); } };
@@ -30,6 +31,26 @@ function mongoDouble() {
   return { storage, flags, reads, queries, rows, inspect: () => state.writes };
 }
 describe('MOCK ONLY Mongo session adapter operations, not real Mongo atomicity', () => {
+  it('requires the policy ID index without partial filters or language collation', async () => {
+    for (const mode of ['missing', 'partial', 'collation']) {
+      const h = mongoDouble(); h.flags.policyIndex = mode;
+      await expect(h.storage.ready()).rejects.toMatchObject({ code: 'STORAGE_UNAVAILABLE' });
+    }
+  });
+  it('denies malformed/unapproved pinned policy records and accepts only a verified-shaped record', async () => {
+    const h = mongoDouble();
+    for (const row of [{ id: 'SYN-PARTIAL' }, { ...policyFixture(), status: 'draft' }, { ...policyFixture(), conditions: {} }]) {
+      h.rows.policy = row;
+      expect(await h.storage.transaction(unit => unit.policy('SYN-POLICY'))).toBeNull();
+    }
+    h.rows.policy = policyFixture();
+    expect(await h.storage.transaction(unit => unit.policy(policyFixture().id))).toEqual(policyFixture());
+  });
+  it('aborts rather than accepting a route when a native policy-list read fails', async () => {
+    const h = mongoDouble(); h.flags.fail = 'policy';
+    await expect(h.storage.transaction(async unit => { await unit.insert(selected); await unit.policies!('2026-27', 'increase_intake'); })).rejects.toMatchObject({ code: 'STORAGE_UNAVAILABLE' });
+    expect(h.inspect()).toEqual([]);
+  });
   it('rejects disconnected, standalone and missing-index deployments', async () => {
     for (const key of ['connected', 'replica', 'indexes'] as const) { const h = mongoDouble(); h.flags[key] = false; await expect(h.storage.ready()).rejects.toMatchObject({ code: 'STORAGE_UNAVAILABLE' }); }
   });
@@ -37,14 +58,14 @@ describe('MOCK ONLY Mongo session adapter operations, not real Mongo atomicity',
     const h = mongoDouble(); let handle: TransactionContext | undefined;
     await h.storage.transaction(async unit => {
       handle = unit.context(context, selected);
-      await unit.institution(selected.institutionId); await unit.policy(selected.policyRevisionId!); await unit.get(context.actor, selected.id); await unit.receipt('SYN-KEY');
+      await unit.institution(selected.institutionId); await unit.policy(selected.policyRevisionId!); await unit.get(context.actor, selected.id); await unit.receipt('SYN-KEY'); await unit.policies!('2026-27', 'increase_intake');
       await unit.save({ ...selected, version: 2 }, 1);
       await unit.audit({ id: 'SYN-AUDIT', applicationId: selected.id, actorId: context.actor.id, requestId: context.requestId, action: 'start_scrutiny', occurredAt: context.receivedAt, caseVersion: 2, evidenceVersionIds: [] });
       await unit.outbox({ eventId: 'SYN-EVENT', attempts: 0, status: 'pending', event: { contractVersion: '0.1.0-proposed', id: 'SYN-EVENT', type: 'CaseSubmitted', actorId: context.actor.id, requestId: context.requestId, occurredAt: context.receivedAt, applicationId: selected.id, caseVersion: 1, payload: { caseId: selected.id } } });
       await unit.remember({ key: 'SYN-KEY', fingerprint: 'SYN-FINGERPRINT', result: { application: selected, eventId: 'SYN-EVENT' } });
     });
     expect(new Set(h.inspect().map(w => w.session)).size).toBe(1);
-    expect(h.reads).toHaveLength(4); expect(h.reads.every(s => s === h.inspect()[0].session)).toBe(true);
+    expect(h.reads).toHaveLength(5); expect(h.reads.every(s => s === h.inspect()[0].session)).toBe(true);
     expect(h.inspect().map(w => w.kind)).toEqual(['cas', 'audit', 'outbox', 'receipt']);
     expect((h.inspect()[0].session as { ended: boolean }).ended).toBe(true);
     await expect(handle!.repositories.decisions.insert({} as never)).rejects.toThrow('expired');

@@ -6,6 +6,8 @@ import { applicationSchema, intakeSchema, policyRevisionSchema, transitionSchema
 import type { ScrutinyPrerequisitePort, TransactionContext } from '../../shared/ports';
 import { assertPermission, assertScope } from '../security/authorization';
 import { CoreError, unavailable, type CaseStorage, type Unit } from './storage';
+import { evaluatePolicy, type VerifiedFacts } from '../policy/evaluator';
+import { approvedRule } from '../policy/registry';
 
 export const CATEGORIES = ['extension_of_approval', 'new_institution', 'increase_intake', 'closure', 'conversion_coeducation', 'change_site'] as const;
 const validatedIntake = intakeSchema.extend({ category: z.enum(CATEGORIES), session: z.string().regex(/^20\d{2}-\d{2}$/).refine(s => Number(s.slice(5)) === (Number(s.slice(0, 4)) + 1) % 100), facts: z.strictObject({ program: z.enum(['engineering', 'management', 'pharmacy', 'architecture', 'applied_arts']), proposedIntake: z.number().int().positive().max(100_000), nbaAccreditation: z.boolean().optional() }) });
@@ -24,7 +26,11 @@ export interface EvidencePrerequisite {
   /** M3 adapter must validate persisted, scoped version IDs using this transaction. */
   assertReferences(tx: TransactionContext, ids: string[]): Promise<void>;
 }
-export function createCaseService(storage: CaseStorage, dependencies: { scrutiny?: ScrutinyPrerequisitePort; evidence?: EvidencePrerequisite } = {}) {
+export interface PolicyFactsReader {
+  /** Server-owned, scoped evidence reads using this transaction. No caller assertions. */
+  load(tx: TransactionContext): Promise<{ facts: VerifiedFacts; sessionMode: 'regular' | 'january' | 'odl' }>;
+}
+export function createCaseService(storage: CaseStorage, dependencies: { scrutiny?: ScrutinyPrerequisitePort; evidence?: EvidencePrerequisite; policyFacts?: PolicyFactsReader } = {}) {
   async function evidence(tx: TransactionContext, ids: string[], required: boolean) {
     if (required && !ids.length) throw new CoreError('PRECONDITION_FAILED', 'Evidence references required');
     if (ids.length) {
@@ -68,9 +74,16 @@ export function createCaseService(storage: CaseStorage, dependencies: { scrutiny
           return previous;
         }
         const time = new Date().toISOString();
-        const application: Application = { id: randomUUID(), reference: `DEMO-${randomUUID()}`, institutionId: institution.id, regionId: institution.regionId, category: command.category, session: command.session, facts: command.facts, state: 'policy_review_required', version: 1, route: { result: 'review_required', category: command.category, session: command.session, evaluatedFacts: command.facts, stages: [], reasons: ['Policy evaluator not yet integrated'], reviewReasons: ['Reviewed source mapping required'], sources: [] }, createdAt: time, updatedAt: time, stageEnteredAt: time };
+        const application: Application = { id: randomUUID(), reference: `DEMO-${randomUUID()}`, institutionId: institution.id, regionId: institution.regionId, category: command.category, session: command.session, facts: command.facts, state: 'policy_review_required', version: 1, route: { result: 'review_required', category: command.category, session: command.session, evaluatedFacts: command.facts, stages: [], reasons: ['Policy review required'], reviewReasons: ['Reviewed source mapping required'], sources: [] }, createdAt: time, updatedAt: time, stageEnteredAt: time };
+        const registry = unit.policies ? await unit.policies(command.session, command.category) : [];
+        const verified = dependencies.policyFacts ? await dependencies.policyFacts.load(unit.context(context, application)) : undefined;
+        application.route = evaluatePolicy({ ...application, asOf: time, sessionMode: verified?.sessionMode }, registry, verified?.facts);
+        if (application.route.result === 'selected') {
+          application.policyRevisionId = application.route.policyRevisionId;
+          application.state = 'submitted';
+        }
         await evidence(unit.context(context, application), command.evidenceVersionIds, false);
-        const event: EventEnvelope<'CaseSubmitted'> = { contractVersion: CONTRACT_VERSION, id: randomUUID(), type: 'CaseSubmitted', actorId: context.actor.id, requestId: context.requestId, applicationId: application.id, caseVersion: 1, occurredAt: time, payload: { caseId: application.id } };
+        const event: EventEnvelope<'CaseSubmitted'> = { contractVersion: CONTRACT_VERSION, id: randomUUID(), type: 'CaseSubmitted', actorId: context.actor.id, requestId: context.requestId, applicationId: application.id, caseVersion: 1, occurredAt: time, payload: { caseId: application.id, ...(application.policyRevisionId ? { policyRevisionId: application.policyRevisionId } : {}) } };
         return commit(unit, context, application, undefined, event, key, fingerprint, command.evidenceVersionIds);
       });
     },
@@ -98,6 +111,13 @@ export function createCaseService(storage: CaseStorage, dependencies: { scrutiny
         const checked = policyRevisionSchema.safeParse(policy);
         if (!checked.success || checked.data.id !== app.policyRevisionId || app.route.policyRevisionId !== app.policyRevisionId || app.route.session !== app.session || app.route.category !== app.category || checked.data.status !== 'approved' || checked.data.source.reviewState !== 'reviewed' || checked.data.session !== app.session || checked.data.category !== app.category) throw new CoreError('POLICY_REVIEW_REQUIRED', 'Pinned policy unavailable or not approved for this case');
         const pinned = checked.data;
+        if (pinned.conditions.format === 'm1-routing-v1') {
+          const rule = approvedRule(pinned, new Date().toISOString());
+          const source = app.route.sources[0];
+          const sourceKeys = ['documentId', 'title', 'location', 'sourceRevision', 'reviewState', 'url'] as const;
+          if (!rule || JSON.stringify(rule.stages) !== JSON.stringify(app.route.stages) ||
+              app.route.sources.length !== 1 || !source || sourceKeys.some(key => source[key] !== pinned.source[key])) throw new CoreError('POLICY_REVIEW_REQUIRED', 'Pinned route does not match verified immutable revision');
+        }
         if (Date.parse(app.createdAt) < Date.parse(pinned.effectiveFrom) || (pinned.effectiveTo && Date.parse(app.createdAt) >= Date.parse(pinned.effectiveTo)) || !app.route.sources.some(source => source.documentId === pinned.source.documentId && source.sourceRevision === pinned.source.sourceRevision && source.location === pinned.source.location)) throw new CoreError('POLICY_REVIEW_REQUIRED', 'Pinned policy source or effective window does not match');
         const tx = unit.context(context, app);
         let target: Application['state'];
