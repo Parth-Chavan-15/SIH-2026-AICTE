@@ -116,7 +116,7 @@ export const PendencyView: React.FC<PendencyViewProps> = ({ onSelectApplication 
                 <span className="text-xs font-bold uppercase tracking-wider text-rose-300">
                   Critical Processing Bottlenecks Detected
                 </span>
-                <span className="bg-rose-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                <span className="bg-rose-600 text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded-md">
                   AUTO-FLAGGED
                 </span>
               </div>
@@ -211,11 +211,11 @@ export const PendencyView: React.FC<PendencyViewProps> = ({ onSelectApplication 
               <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
                   <span className="font-bold text-sm text-slate-900">{stageName}</span>
-                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                  <span className="px-2 py-0.5 rounded-md text-xs font-mono font-semibold bg-blue-100 text-blue-800">
                     {apps.length} Cases
                   </span>
                   {overdueInStage > 0 && (
-                    <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 flex items-center gap-1">
+                    <span className="px-2 py-0.5 rounded-md text-xs font-mono font-bold bg-rose-100 text-rose-800 flex items-center gap-1">
                       <AlertOctagon className="w-3 h-3 text-rose-600" />
                       {overdueInStage} Overdue
                     </span>

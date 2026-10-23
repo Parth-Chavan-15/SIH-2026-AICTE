@@ -243,9 +243,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         if (isMobile) onToggle();
                       }}
                       title={!isOpen ? item.label : undefined}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all group ${
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-xs font-medium transition-all group ${
                         isActive
-                          ? 'bg-blue-600 text-white font-semibold shadow-sm'
+                          ? 'bg-blue-700/90 text-white font-semibold shadow-xs border-l-3 border-amber-400'
                           : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
                       }`}
                     >
@@ -259,7 +259,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       )}
                       {isOpen && item.badge !== undefined && item.badge > 0 && (
                         <span
-                          className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                          className={`px-1.5 py-0.2 rounded-sm text-[10px] font-mono font-bold ${
                             item.badgeColor || 'bg-slate-700 text-slate-200'
                           }`}
                         >

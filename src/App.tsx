@@ -102,17 +102,17 @@ const MainLayout: React.FC = () => {
         />
 
         {/* Content Area */}
-        <main className="flex-1 overflow-y-auto bg-slate-100/90 flex flex-col">
+        <main className="flex-1 overflow-y-auto bg-[#F4F6FA] flex flex-col">
           {/* Breadcrumbs and Page Bar */}
-          <div className="bg-white border-b border-slate-200 px-4 sm:px-8 py-3 flex items-center justify-between">
+          <div className="bg-white border-b border-slate-200 px-4 sm:px-8 py-2.5 flex items-center justify-between shadow-2xs">
             <div className="flex items-center gap-1.5 text-xs text-slate-500">
-              <span className="font-medium text-slate-400">Portal</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-              <span className="font-semibold text-slate-800">{tabLabels[currentTab]}</span>
+              <span className="font-semibold text-slate-400">Portal</span>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+              <span className="font-bold text-slate-900">{tabLabels[currentTab]}</span>
             </div>
 
             <div className="hidden sm:flex items-center gap-2 text-xs">
-              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span className="inline-block w-2 h-2 rounded-xs bg-emerald-500"></span>
               <span className="text-slate-600">
                 Operating as: <strong className="text-slate-900">{user.roleTitle}</strong>
               </span>

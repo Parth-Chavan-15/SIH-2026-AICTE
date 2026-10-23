@@ -1,8 +1,10 @@
 import React, { useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { NavTab } from '../../components/layout/Sidebar';
-import { SLABadge, StageBadge, PriorityBadge } from '../../components/common/StatusBadge';
+import { SLABadge, StageBadge } from '../../components/common/StatusBadge';
 import { formatDateIndian } from '../../utils/slaCalculator';
+import { GovernanceGlobe3D } from '../../components/3d/GovernanceGlobe3D';
+import { motion } from 'motion/react';
 import {
   FileText,
   Clock,
@@ -18,6 +20,10 @@ import {
   PlusCircle,
   Activity,
   FileCheck2,
+  Shield,
+  Layers,
+  MapPin,
+  HelpCircle,
 } from 'lucide-react';
 import {
   BarChart,
@@ -39,14 +45,15 @@ interface DashboardViewProps {
   onSelectApplication: (appId: string) => void;
 }
 
-const COLORS = ['#2563EB', '#3B82F6', '#60A5FA', '#F59E0B', '#10B981', '#8B5CF6', '#EF4444'];
+// Government-themed palette: Deep Navy, Bharat Royal Blue, Cyan, Saffron/Amber, Forest Green, Coral Red (No purple gradients)
+const COLORS = ['#1D4ED8', '#2563EB', '#0284C7', '#0D9488', '#059669', '#D97706', '#DC2626'];
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
   onNavigateTab,
   onOpenNewAppModal,
   onSelectApplication,
 }) => {
-  const { role, user, applications, evcInspections, complianceItems, expiringDocs, auditLog } = useApp();
+  const { role, user, applications, evcInspections, complianceItems, auditLog } = useApp();
 
   // Metrics computation
   const totalApps = applications.length;
@@ -85,171 +92,188 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     return Object.values(map);
   }, [applications]);
 
-  // Chart data: Processing Age
-  const ageDistribution = useMemo(() => {
-    let b1 = 0, b2 = 0, b3 = 0, b4 = 0;
-    applications.forEach((a) => {
-      if (a.totalElapsedDays <= 7) b1++;
-      else if (a.totalElapsedDays <= 14) b2++;
-      else if (a.totalElapsedDays <= 30) b3++;
-      else b4++;
-    });
-    return [
-      { name: '0 - 7 Days', count: b1 },
-      { name: '8 - 14 Days', count: b2 },
-      { name: '15 - 30 Days', count: b3 },
-      { name: '30+ Days (Critical)', count: b4 },
-    ];
-  }, [applications]);
-
   // Overdue cases list
   const criticalOverdueCases = applications.filter((a) => a.slaStatus === 'overdue');
 
   return (
     <div className="space-y-6">
-      {/* Role Context Welcome Banner */}
-      <div className="bg-gradient-to-r from-[#0A2540] to-[#1E3A8A] rounded-2xl p-6 text-white shadow-lg border border-blue-900/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-200 border border-blue-400/30 mb-2">
-            <span>{user.roleTitle}</span> &bull; <span>{user.organization}</span>
+      {/* 🏛️ Official AICTE Command Banner with Integrated 3D Regional Bureau Network */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#061828] via-[#0A2540] to-[#0E355C] text-white shadow-xl border border-slate-700/80"
+      >
+        {/* Subtle grid blueprint watermark */}
+        <div
+          className="absolute inset-0 opacity-10 pointer-events-none"
+          style={{
+            backgroundImage:
+              'linear-gradient(#38bdf8 1px, transparent 1px), linear-gradient(90deg, #38bdf8 1px, transparent 1px)',
+            backgroundSize: '32px 32px',
+          }}
+        />
+
+        <div className="relative z-10 p-6 sm:p-7 flex flex-col lg:flex-row items-center justify-between gap-6">
+          {/* Left: Administrative Metadata & Actions */}
+          <div className="flex-1 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-950/90 text-blue-200 border border-blue-700/60 mb-3 shadow-xs">
+              <span className="w-1.5 h-1.5 rounded-xs bg-emerald-400"></span>
+              <span>{user.roleTitle}</span>
+              <span className="text-slate-500">•</span>
+              <span className="text-slate-300">{user.organization}</span>
+            </div>
+
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-white leading-tight">
+              AICTE National Approval Command Center
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed font-normal">
+              Statutory processing under the <strong className="text-white">Approval Process Handbook (APH 2024–27)</strong>.
+              Real-time scrutiny workflow routing, committee inspection scheduling, and SLA timeline enforcement across 8 Regional Bureaus.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3 mt-5">
+              {role === 'institution' && (
+                <button
+                  onClick={onOpenNewAppModal}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md transition-all active:scale-95"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Submit New Application</span>
+                </button>
+              )}
+
+              {(role === 'regional_officer' || role === 'bureau_officer' || role === 'admin') && (
+                <button
+                  onClick={() => onNavigateTab('pendency')}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-rose-700 hover:bg-rose-600 text-white font-semibold text-xs border border-rose-500/50 shadow-md transition-all active:scale-95"
+                >
+                  <AlertOctagon className="w-4 h-4" />
+                  <span>Review Overdue SLA Cases ({overdueApps})</span>
+                </button>
+              )}
+
+              <button
+                onClick={() => onNavigateTab('applications')}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-200 font-medium text-xs border border-slate-600/70 shadow-xs transition-all active:scale-95"
+              >
+                <span>View All Applications</span>
+                <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+              </button>
+            </div>
           </div>
-          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">
-            Integrated AICTE Approval Command Center
-          </h2>
-          <p className="text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
-            Real-time monitoring of institutional applications, regulatory scrutiny SLAs, committee inspections, and mandatory compliance filings.
-          </p>
+
+          {/* Right: 3D Interactive National Governance Grid Globe */}
+          <div className="w-full lg:w-72 xl:w-80 h-48 sm:h-56 shrink-0 flex flex-col items-center justify-center bg-[#04101D]/70 rounded-lg border border-slate-700/60 p-2 shadow-inner">
+            <div className="w-full h-full relative">
+              <GovernanceGlobe3D className="w-full h-full" />
+            </div>
+          </div>
         </div>
+      </motion.div>
 
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-          {role === 'institution' && (
-            <button
-              onClick={onOpenNewAppModal}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md transition-all transform active:scale-95"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>Submit New Application</span>
-            </button>
-          )}
-
-          {(role === 'regional_officer' || role === 'bureau_officer' || role === 'admin') && (
-            <button
-              onClick={() => onNavigateTab('pendency')}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs shadow-md transition-all"
-            >
-              <AlertOctagon className="w-4 h-4" />
-              <span>Review Overdue Cases ({overdueApps})</span>
-            </button>
-          )}
-
-          <button
-            onClick={() => onNavigateTab('applications')}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium text-xs border border-white/20 transition-all"
-          >
-            <span>View All Applications</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Top 6 KPI Metric Cards (Clickable to filter/open) */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-        {/* Total Applications */}
-        <button
+      {/* 📊 Top 6 Primary Administrative KPI Metrics (Staggered Animation, No Pill Shapes) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+        {/* Metric 1: Total Volume */}
+        <motion.button
+          whileHover={{ y: -2, transition: { duration: 0.15 } }}
           onClick={() => onNavigateTab('applications')}
-          className="text-left bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-blue-400 hover:shadow-md transition-all group"
+          className="text-left bg-white p-4 rounded-lg border border-slate-200 shadow-2xs hover:border-blue-500 hover:shadow-sm transition-all group"
         >
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold uppercase tracking-wider">Total Volume</span>
-            <FileText className="w-4 h-4 text-blue-600 group-hover:scale-110 transition-transform" />
+          <div className="flex items-center justify-between text-slate-500 mb-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Total Volume</span>
+            <FileText className="w-4 h-4 text-blue-700 group-hover:scale-110 transition-transform" />
           </div>
-          <p className="text-2xl font-black text-slate-900">{totalApps}</p>
-          <p className="text-[11px] text-slate-500 mt-1">Across 8 Regional Bureaus</p>
-        </button>
+          <p className="text-2xl font-extrabold text-slate-900 font-mono">{totalApps}</p>
+          <p className="text-[11px] text-slate-500 mt-1 font-medium">8 Regional Bureaus</p>
+        </motion.button>
 
-        {/* Pending In-Pipeline */}
-        <button
+        {/* Metric 2: Pending Stages */}
+        <motion.button
+          whileHover={{ y: -2, transition: { duration: 0.15 } }}
           onClick={() => onNavigateTab('workflow')}
-          className="text-left bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-indigo-400 hover:shadow-md transition-all group"
+          className="text-left bg-white p-4 rounded-lg border border-slate-200 shadow-2xs hover:border-blue-500 hover:shadow-sm transition-all group"
         >
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold uppercase tracking-wider">Pending Stages</span>
-            <Clock className="w-4 h-4 text-indigo-600 group-hover:scale-110 transition-transform" />
+          <div className="flex items-center justify-between text-slate-500 mb-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Active Stages</span>
+            <Clock className="w-4 h-4 text-blue-700 group-hover:scale-110 transition-transform" />
           </div>
-          <p className="text-2xl font-black text-indigo-700">{pendingApps}</p>
-          <p className="text-[11px] text-slate-500 mt-1">Under active processing</p>
-        </button>
+          <p className="text-2xl font-extrabold text-blue-900 font-mono">{pendingApps}</p>
+          <p className="text-[11px] text-slate-500 mt-1 font-medium">Under scrutiny / review</p>
+        </motion.button>
 
-        {/* Overdue SLA Cases */}
-        <button
+        {/* Metric 3: Overdue SLA Cases */}
+        <motion.button
+          whileHover={{ y: -2, transition: { duration: 0.15 } }}
           onClick={() => onNavigateTab('pendency')}
-          className={`text-left p-4 rounded-xl border shadow-xs transition-all group ${
+          className={`text-left p-4 rounded-lg border shadow-2xs transition-all group ${
             overdueApps > 0
-              ? 'bg-rose-50/50 border-rose-200 hover:border-rose-400 hover:shadow-md'
-              : 'bg-white border-slate-200'
+              ? 'bg-rose-50/60 border-rose-300 hover:border-rose-500 hover:shadow-sm'
+              : 'bg-white border-slate-200 hover:border-blue-400'
           }`}
         >
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-rose-700">
-              SLA Overdue
-            </span>
+          <div className="flex items-center justify-between text-slate-500 mb-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-rose-800">SLA Overdue</span>
             <AlertOctagon className="w-4 h-4 text-rose-600 group-hover:scale-110 transition-transform" />
           </div>
-          <p className="text-2xl font-black text-rose-700">{overdueApps}</p>
-          <p className="text-[11px] text-rose-600 font-medium mt-1">Action & Escalation required</p>
-        </button>
+          <p className="text-2xl font-extrabold text-rose-700 font-mono">{overdueApps}</p>
+          <p className="text-[11px] text-rose-700 font-medium mt-1">Escalation triggered</p>
+        </motion.button>
 
-        {/* Approvals Issued */}
-        <button
+        {/* Metric 4: Approved EoA */}
+        <motion.button
+          whileHover={{ y: -2, transition: { duration: 0.15 } }}
           onClick={() => onNavigateTab('applications')}
-          className="text-left bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-emerald-400 hover:shadow-md transition-all group"
+          className="text-left bg-white p-4 rounded-lg border border-slate-200 shadow-2xs hover:border-emerald-500 hover:shadow-sm transition-all group"
         >
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold uppercase tracking-wider">Approved EoA</span>
+          <div className="flex items-center justify-between text-slate-500 mb-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Approved EoA</span>
             <CheckCircle className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
           </div>
-          <p className="text-2xl font-black text-emerald-700">{completedApps}</p>
-          <p className="text-[11px] text-slate-500 mt-1">Digitally signed orders</p>
-        </button>
+          <p className="text-2xl font-extrabold text-emerald-800 font-mono">{completedApps}</p>
+          <p className="text-[11px] text-slate-500 mt-1 font-medium">Orders digitally issued</p>
+        </motion.button>
 
-        {/* EVC Visits Pending */}
-        <button
+        {/* Metric 5: EVC Visits Pending (Cyan/Navy, No Purple) */}
+        <motion.button
+          whileHover={{ y: -2, transition: { duration: 0.15 } }}
           onClick={() => onNavigateTab('evc')}
-          className="text-left bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-purple-400 hover:shadow-md transition-all group"
+          className="text-left bg-white p-4 rounded-lg border border-slate-200 shadow-2xs hover:border-cyan-500 hover:shadow-sm transition-all group"
         >
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold uppercase tracking-wider">EVC Visits</span>
-            <Calendar className="w-4 h-4 text-purple-600 group-hover:scale-110 transition-transform" />
+          <div className="flex items-center justify-between text-slate-500 mb-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">EVC Visits</span>
+            <Calendar className="w-4 h-4 text-cyan-700 group-hover:scale-110 transition-transform" />
           </div>
-          <p className="text-2xl font-black text-purple-700">{pendingEVCs}</p>
-          <p className="text-[11px] text-slate-500 mt-1">Scheduled inspections</p>
-        </button>
+          <p className="text-2xl font-extrabold text-cyan-900 font-mono">{pendingEVCs}</p>
+          <p className="text-[11px] text-slate-500 mt-1 font-medium">Inspection queue</p>
+        </motion.button>
 
-        {/* Compliance Deadlines */}
-        <button
+        {/* Metric 6: Compliance Filings */}
+        <motion.button
+          whileHover={{ y: -2, transition: { duration: 0.15 } }}
           onClick={() => onNavigateTab('compliance')}
-          className="text-left bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-amber-400 hover:shadow-md transition-all group"
+          className="text-left bg-white p-4 rounded-lg border border-slate-200 shadow-2xs hover:border-amber-500 hover:shadow-sm transition-all group"
         >
-          <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-semibold uppercase tracking-wider">Compliance</span>
+          <div className="flex items-center justify-between text-slate-500 mb-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Compliance</span>
             <ShieldAlert className="w-4 h-4 text-amber-600 group-hover:scale-110 transition-transform" />
           </div>
-          <p className="text-2xl font-black text-amber-700">{approachingCompliance}</p>
-          <p className="text-[11px] text-slate-500 mt-1">Undertakings tracked</p>
-        </button>
+          <p className="text-2xl font-extrabold text-amber-800 font-mono">{approachingCompliance}</p>
+          <p className="text-[11px] text-slate-500 mt-1 font-medium">Undertakings tracked</p>
+        </motion.button>
       </div>
 
-      {/* Analytics Charts Grid */}
+      {/* 📈 Workload & Stage Distribution Analytics Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Region-wise Workload */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between mb-4">
+        {/* Region Workload Bar Chart */}
+        <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-2xs">
+          <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Regional Bureau Workload & SLA Health</h3>
-              <p className="text-xs text-slate-500">Total applications vs cases currently breaching SLA</p>
+              <h3 className="text-sm font-bold text-slate-900 tracking-tight">Regional Bureau Workload & SLA Adherence</h3>
+              <p className="text-xs text-slate-500">Distribution across 8 Regional AICTE jurisdictions</p>
             </div>
-            <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-100">
-              Live Feed
+            <span className="text-[11px] font-semibold text-blue-800 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200">
+              Live Monitoring
             </span>
           </div>
 
@@ -257,30 +281,34 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={regionWorkload} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                <XAxis dataKey="region" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                <XAxis dataKey="region" tick={{ fontSize: 11, fill: '#475569' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#475569' }} allowDecimals={false} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#0F172A',
+                    backgroundColor: '#0A2540',
                     color: '#FFF',
-                    borderRadius: '8px',
-                    fontSize: '12px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    border: '1px solid #1E3A8A',
                   }}
                 />
-                <Bar dataKey="total" name="Total Applications" fill="#2563EB" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="overdue" name="Overdue Cases" fill="#EF4444" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="total" name="Total Applications" fill="#1D4ED8" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="overdue" name="Overdue SLA Cases" fill="#DC2626" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Stage-wise Distribution Pie / Donut */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between mb-4">
+        {/* Stage-wise Donut Distribution */}
+        <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-2xs">
+          <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Application Pipeline Stage Distribution</h3>
-              <p className="text-xs text-slate-500">Volume breakdown by current active regulatory workflow stage</p>
+              <h3 className="text-sm font-bold text-slate-900 tracking-tight">Approval Stage-wise Application Pipeline</h3>
+              <p className="text-xs text-slate-500">Active status distribution in regulatory workflow</p>
             </div>
+            <span className="text-[11px] font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
+              APH Cycle 2027-28
+            </span>
           </div>
 
           <div className="h-64 flex items-center justify-center">
@@ -292,46 +320,47 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   nameKey="name"
                   cx="50%"
                   cy="50%"
-                  outerRadius={80}
-                  innerRadius={45}
+                  outerRadius={82}
+                  innerRadius={46}
                   paddingAngle={3}
                 >
-                  {stageDistribution.map((entry, index) => (
+                  {stageDistribution.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#0F172A',
+                    backgroundColor: '#0A2540',
                     color: '#FFF',
-                    borderRadius: '8px',
+                    borderRadius: '6px',
                     fontSize: '11px',
+                    border: '1px solid #1E3A8A',
                   }}
                 />
-                <Legend wrapperStyle={{ fontSize: '11px', marginTop: '10px' }} />
+                <Legend wrapperStyle={{ fontSize: '11px', marginTop: '8px' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
       </div>
 
-      {/* Critical Overdue Applications & Recent Activity Grid */}
+      {/* ⚠️ Critical Overdue Applications & Live Activity Stream Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2 Cols: Critical Overdue Cases Table */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-          <div className="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
+        <div className="lg:col-span-2 bg-white rounded-lg border border-slate-200 shadow-2xs overflow-hidden">
+          <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/90">
             <div className="flex items-center gap-2">
-              <AlertOctagon className="w-5 h-5 text-rose-600" />
+              <AlertOctagon className="w-4 h-4 text-rose-600" />
               <div>
-                <h3 className="text-sm font-bold text-slate-900">Critical Overdue Cases Requiring Attention</h3>
-                <p className="text-xs text-slate-500">Cases exceeding regulatory SLA threshold</p>
+                <h3 className="text-sm font-bold text-slate-900 tracking-tight">Overdue Cases Requiring Statutory Attention</h3>
+                <p className="text-[11px] text-slate-500">Applications currently breaching handbook SLA limits</p>
               </div>
             </div>
             <button
               onClick={() => onNavigateTab('pendency')}
-              className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              className="text-xs font-semibold text-blue-700 hover:text-blue-900 flex items-center gap-1 transition-colors"
             >
-              <span>View All Pendency</span>
+              <span>View Pendency Register</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -339,52 +368,52 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="overflow-x-auto">
             {criticalOverdueCases.length === 0 ? (
               <div className="p-8 text-center">
-                <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
+                <CheckCircle className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
                 <p className="text-sm font-semibold text-slate-800">Zero Overdue Cases</p>
-                <p className="text-xs text-slate-500">All applications are operating within regulatory SLA timelines.</p>
+                <p className="text-xs text-slate-500">All applications are currently operating within prescribed timelines.</p>
               </div>
             ) : (
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-slate-100/75 text-slate-600 font-semibold border-b border-slate-200">
-                    <th className="py-2.5 px-4">Application ID</th>
-                    <th className="py-2.5 px-4">Institution</th>
-                    <th className="py-2.5 px-4">Current Stage</th>
-                    <th className="py-2.5 px-4">Overdue Days</th>
-                    <th className="py-2.5 px-4">Responsible</th>
-                    <th className="py-2.5 px-4 text-right">Action</th>
+                  <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                    <th className="py-2.5 px-3">Application ID</th>
+                    <th className="py-2.5 px-3">Institution Name</th>
+                    <th className="py-2.5 px-3">Current Stage</th>
+                    <th className="py-2.5 px-3">SLA Status</th>
+                    <th className="py-2.5 px-3">Responsible Officer</th>
+                    <th className="py-2.5 px-3 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {criticalOverdueCases.map((app) => (
                     <tr
                       key={app.id}
-                      className="hover:bg-rose-50/40 transition-colors cursor-pointer"
+                      className="hover:bg-rose-50/50 transition-colors cursor-pointer"
                       onClick={() => onSelectApplication(app.id)}
                     >
-                      <td className="py-3 px-4 font-mono font-bold text-slate-900">
+                      <td className="py-3 px-3 font-mono font-bold text-slate-900">
                         {app.applicationNumber}
                       </td>
-                      <td className="py-3 px-4 font-medium text-slate-800 max-w-[200px] truncate">
+                      <td className="py-3 px-3 font-medium text-slate-800 max-w-[200px] truncate">
                         {app.institutionName}
-                        <span className="block text-[10px] text-slate-400">{app.region} Region</span>
+                        <span className="block text-[10px] text-slate-500 font-normal">{app.region} Region</span>
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-3">
                         <StageBadge stage={app.currentStage} />
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-3">
                         <SLABadge status={app.slaStatus} overdueDays={app.overdueDays} />
                       </td>
-                      <td className="py-3 px-4 text-slate-600">
+                      <td className="py-3 px-3 text-slate-600">
                         {app.assignedOfficer}
                       </td>
-                      <td className="py-3 px-4 text-right">
+                      <td className="py-3 px-3 text-right">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             onSelectApplication(app.id);
                           }}
-                          className="px-2.5 py-1 rounded bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white font-medium text-xs transition-colors"
+                          className="px-2.5 py-1 rounded-md bg-blue-50 text-blue-800 border border-blue-200 hover:bg-blue-700 hover:text-white font-semibold text-xs transition-colors"
                         >
                           Process
                         </button>
@@ -397,31 +426,31 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
 
-        {/* Right 1 Col: Recent Audit / Activity Stream */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col">
-          <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
+        {/* Right 1 Col: Live Audit / Governance Stream */}
+        <div className="bg-white rounded-lg border border-slate-200 shadow-2xs flex flex-col">
+          <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/90">
             <div className="flex items-center gap-2">
-              <Activity className="w-4 h-4 text-blue-600" />
-              <h3 className="text-sm font-bold text-slate-900">Live Governance Stream</h3>
+              <Activity className="w-4 h-4 text-blue-700" />
+              <h3 className="text-sm font-bold text-slate-900 tracking-tight">Audit Log Stream</h3>
             </div>
             <button
               onClick={() => onNavigateTab('audit')}
-              className="text-[11px] text-blue-600 hover:underline font-medium"
+              className="text-xs text-blue-700 hover:underline font-semibold"
             >
               Full Trail
             </button>
           </div>
 
-          <div className="p-4 flex-1 space-y-3.5 overflow-y-auto max-h-[360px]">
+          <div className="p-4 flex-1 space-y-3 overflow-y-auto max-h-[360px]">
             {auditLog.slice(0, 6).map((log) => (
-              <div key={log.id} className="text-xs border-b border-slate-100 pb-3 last:border-0 last:pb-0">
-                <div className="flex items-center justify-between text-slate-400 text-[10px] mb-1">
-                  <span className="font-semibold text-slate-700">{log.actorName}</span>
-                  <span>{formatDateIndian(log.timestamp)}</span>
+              <div key={log.id} className="text-xs border-b border-slate-100 pb-2.5 last:border-0 last:pb-0">
+                <div className="flex items-center justify-between text-slate-500 text-[10px] mb-1">
+                  <span className="font-bold text-slate-800">{log.actorName}</span>
+                  <span className="font-mono text-slate-400">{formatDateIndian(log.timestamp)}</span>
                 </div>
                 <p className="font-medium text-slate-800 line-clamp-1">{log.reason || log.action}</p>
                 <div className="flex items-center justify-between mt-1 text-[10px]">
-                  <span className="font-mono text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded">
+                  <span className="font-mono text-blue-800 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 font-medium">
                     {log.applicationNumber}
                   </span>
                   <span className="font-mono text-slate-400 text-[9px] truncate max-w-[100px]">

@@ -65,11 +65,14 @@ export const Navbar: React.FC<NavbarProps> = ({
   ];
 
   return (
-    <header className="sticky top-0 z-40 bg-[#0A2540] text-white border-b border-slate-700/60 shadow-md">
+    <header className="sticky top-0 z-40 bg-[#07192C] text-white border-b border-slate-700/80 shadow-md">
+      {/* National Tricolor Top Accent Strip */}
+      <div className="tricolor-strip" />
+
       {/* Top Government Disclaimer & SIH bar */}
-      <div className="bg-[#061828] px-4 py-1 border-b border-slate-800 text-[11px] flex flex-wrap items-center justify-between text-slate-300">
+      <div className="bg-[#04101D] px-4 py-1.5 border-b border-slate-800 text-[11px] flex flex-wrap items-center justify-between text-slate-300">
         <div className="flex items-center gap-2">
-          <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span className="inline-block w-2 h-2 rounded-xs bg-emerald-400 animate-pulse"></span>
           <span>Government of India &bull; All India Council for Technical Education (AICTE)</span>
           <span className="hidden sm:inline text-slate-500">|</span>
           <span className="hidden sm:inline bg-blue-900/60 text-blue-200 px-2 py-0.5 rounded text-[10px] font-medium border border-blue-700/50">
@@ -213,7 +216,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Bell className="w-5 h-5" />
             {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-[#0A2540]">
+              <span className="absolute top-1.5 right-1.5 flex h-4 min-w-4 px-1 items-center justify-center rounded-sm bg-rose-600 text-[10px] font-bold text-white shadow-sm ring-1 ring-[#0A2540]">
                 {unreadCount}
               </span>
             )}
@@ -221,7 +224,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* User Profile Mini */}
           <div className="hidden lg:flex items-center gap-2.5 pl-2 border-l border-slate-700/60">
-            <div className="w-8 h-8 rounded-full bg-slate-700 border border-slate-500/50 flex items-center justify-center text-xs font-bold text-slate-200">
+            <div className="w-8 h-8 rounded-md bg-slate-800 border border-slate-600/60 flex items-center justify-center text-xs font-bold text-amber-300">
               {user.avatarInitials}
             </div>
             <div className="text-left text-xs">

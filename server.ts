@@ -56,6 +56,15 @@ async function connectDB() {
     await mongoose.connect(MONGODB_URI);
     isMongoConnected = true;
     console.log('✅ Connected to MongoDB successfully');
+
+    // Auto-seed if database is empty
+    const Application = (await import('./src/backend/models/Application.js')).default;
+    const count = await Application.countDocuments();
+    if (count === 0) {
+      const { SEED_APPLICATIONS } = await import('./src/backend/data/seedAtlas.js');
+      await Application.insertMany(SEED_APPLICATIONS);
+      console.log(`✅ Seeded ${SEED_APPLICATIONS.length} applications into MongoDB`);
+    }
   } catch (err: any) {
     console.warn('⚠️ MongoDB connection warning (falling back to memory/demo mode if offline):', err?.message);
     isMongoConnected = false;

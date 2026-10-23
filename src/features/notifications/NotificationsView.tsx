@@ -272,10 +272,10 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
 
                       <td className="py-3.5 px-4">
                         <span
-                          className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                          className={`inline-block px-2.5 py-0.5 rounded-md text-[11px] font-mono font-bold border ${
                             esc.status === 'Resolved'
-                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                              : 'bg-rose-50 text-rose-800 border-rose-200'
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                              : 'bg-rose-50 text-rose-800 border-rose-300'
                           }`}
                         >
                           {esc.status}

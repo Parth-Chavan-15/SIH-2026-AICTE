@@ -420,7 +420,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                         <div className="flex items-center gap-2">
                           <p className="font-bold text-slate-900">{doc.name}</p>
                           <span
-                            className={`px-2 py-0.2 rounded-full text-[10px] font-semibold border ${
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border ${
                               doc.status === 'Verified'
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                 : doc.status === 'Rejected'
@@ -593,7 +593,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
                   <div className="flex items-center justify-between">
                     <h4 className="font-bold text-slate-900 text-sm">Expert Visit Committee (EVC) Dossier</h4>
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                    <span className="px-2.5 py-0.5 rounded-md text-xs font-semibold bg-cyan-50 text-cyan-800 border border-cyan-300 font-mono">
                       {evcRecord.status}
                     </span>
                   </div>
