@@ -62,7 +62,7 @@ async function connectDB() {
     const count = await Application.countDocuments();
     if (count === 0) {
       const { SEED_APPLICATIONS } = await import('./src/backend/data/seedAtlas.js');
-      await Application.insertMany(SEED_APPLICATIONS);
+      await Application.insertMany(SEED_APPLICATIONS as any);
       console.log(`✅ Seeded ${SEED_APPLICATIONS.length} applications into MongoDB`);
     }
   } catch (err: any) {
