@@ -8,8 +8,11 @@ export default defineConfig(() => {
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        '@': path.resolve(import.meta.dirname, '.'),
       },
+    },
+    optimizeDeps: {
+      include: ['recharts', 'react-is', 'three', '@react-three/fiber'],
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.

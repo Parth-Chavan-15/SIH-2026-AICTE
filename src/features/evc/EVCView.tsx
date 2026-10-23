@@ -167,12 +167,12 @@ export const EVCView: React.FC<EVCViewProps> = ({ onSelectApplication }) => {
                     {evc.applicationNumber}
                   </span>
                   <span
-                    className={`px-2 py-0.5 rounded-full text-[11px] font-bold border ${
+                    className={`px-2 py-0.5 rounded-md text-[11px] font-mono font-bold border ${
                       evc.status === 'Completed'
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
                         : evc.status === 'Delayed / Rescheduled'
-                        ? 'bg-rose-50 text-rose-800 border-rose-200'
-                        : 'bg-purple-50 text-purple-800 border-purple-200'
+                        ? 'bg-rose-50 text-rose-800 border-rose-300'
+                        : 'bg-cyan-50 text-cyan-800 border-cyan-300'
                     }`}
                   >
                     {evc.status}

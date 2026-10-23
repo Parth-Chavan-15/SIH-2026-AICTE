@@ -23,6 +23,10 @@ import {
   AlertCircle,
   ExternalLink,
   Lock,
+  Sparkles,
+  HelpCircle,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 interface ApplicationDetailModalProps {
@@ -46,6 +50,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
     transitionStage,
     addObservation,
     verifyDocument,
+    addToast,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<
@@ -62,6 +67,12 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
   const [newObsComment, setNewObsComment] = useState('');
   const [newObsType, setNewObsType] = useState<'Observation' | 'Deficiency' | 'Clarification Request' | 'Recommendation'>('Observation');
   const [newObsMandatory, setNewObsMandatory] = useState(false);
+  const [showWhyRouteDrawer, setShowWhyRouteDrawer] = useState(false);
+
+  // Document correction modal state (GOV.UK style rectification)
+  const [correctingDoc, setCorrectingDoc] = useState<DocumentItem | null>(null);
+  const [rectificationComment, setRectificationComment] = useState('');
+  const [rectificationError, setRectificationError] = useState<string | null>(null);
 
   const application = applications.find((a) => a.id === applicationId);
   if (!application) return null;
@@ -103,6 +114,27 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
     if (!newObsComment.trim()) return;
     await addObservation(application.id, newObsType, newObsComment, newObsMandatory);
     setNewObsComment('');
+  };
+
+  const handleConfirmRectification = async () => {
+    if (!correctingDoc) return;
+    if (!rectificationComment.trim()) {
+      setRectificationError('Enter an explanation of how the deficiency was rectified');
+      return;
+    }
+    try {
+      await verifyDocument(application.id, correctingDoc.id, 'Pending' as any, `Deficiency rectified: ${rectificationComment}`);
+      addToast({
+        type: 'success',
+        title: 'Rectified Document Filed',
+        message: `${correctingDoc.name} resubmitted for Re-Scrutiny under APH Sec 3.2`,
+      });
+      setCorrectingDoc(null);
+      setRectificationComment('');
+      setRectificationError(null);
+    } catch (e: any) {
+      setRectificationError(e.message || 'Rectification submission failed');
+    }
   };
 
   const tabs = [
@@ -177,15 +209,95 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
             </div>
           </div>
 
-          {/* Quick Action Trigger (if eligible transitions exist) */}
-          {eligibleStages.length > 0 && (
-            <div className="flex items-center gap-2">
+          {/* Quick Action Trigger & Why This Route Button */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowWhyRouteDrawer(!showWhyRouteDrawer)}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors shadow-2xs"
+              title="Inspect policy handbook rules and facts that routed this application"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Why this route?</span>
+              {showWhyRouteDrawer ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
+            {eligibleStages.length > 0 && (
               <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded border border-blue-200">
                 Action Eligible ({eligibleStages.length})
               </span>
-            </div>
-          )}
+            )}
+          </div>
         </div>
+
+        {/* Why this Route? Explanatory Policy Drawer (Civic-Tech PS 26262 Showcase) */}
+        {showWhyRouteDrawer && (
+          <div className="bg-gradient-to-r from-indigo-50/95 via-blue-50/95 to-slate-50 border-b border-indigo-200/80 p-4 sm:p-5 text-xs text-slate-800 animate-in slide-in-from-top-2 duration-200">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-sm shrink-0">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h4 className="font-bold text-indigo-950 text-sm">
+                      Policy Rule Explanation &mdash; Route: {application.routeType}
+                    </h4>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 border border-indigo-200">
+                      AICTE APH 2026-27 &bull; Chapter II, Sec 3.4
+                    </span>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-200">
+                      Simulated Rule Evaluation
+                    </span>
+                  </div>
+                  <p className="text-slate-600 text-xs max-w-3xl leading-relaxed">
+                    The workflow engine evaluated this application against statutory Approval Process Handbook (APH) rules to assign the optimal procedural route, preventing unnecessary inspection pendency.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowWhyRouteDrawer(false)}
+                className="text-slate-400 hover:text-slate-600 p-1"
+                aria-label="Close rule panel"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4 pt-3 border-t border-indigo-200/60">
+              <div className="bg-white/90 p-3 rounded-lg border border-indigo-100">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 block mb-1">
+                  1. Statutory Trigger
+                </span>
+                <p className="font-semibold text-slate-900">{application.applicationType}</p>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Existing institution requesting standard session continuation ({application.academicYear}). Qualifying for streamlined processing.
+                </p>
+              </div>
+
+              <div className="bg-white/90 p-3 rounded-lg border border-indigo-100">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 block mb-1">
+                  2. Evaluated Facts & Capacity
+                </span>
+                <p className="font-semibold text-slate-900">{application.program} &bull; {application.proposedIntake} Intake</p>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Intake within sanctioned institutional threshold (&lt;50% surge limit). Past deficiency clearance index: 100%.
+                </p>
+              </div>
+
+              <div className="bg-white/90 p-3 rounded-lg border border-indigo-100">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 block mb-1">
+                  3. Route Assignment Verdict
+                </span>
+                <p className="font-semibold text-emerald-800 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Fast-Track Scrutiny Only
+                </p>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Physical EVC inspection waived under APH Clause 3.4(b) unless documentary deficiency is flagged during scrutiny.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tab Navigation */}
         <div className="border-b border-slate-200 bg-white px-5 flex items-center gap-1 overflow-x-auto scrollbar-none">
@@ -406,6 +518,19 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                 </div>
               </div>
 
+              {/* Correction Scope & Lock Policy Banner */}
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-start gap-2.5 text-xs">
+                <Lock className="w-4 h-4 text-slate-600 shrink-0 mt-0.5" />
+                <div className="text-[11px] text-slate-600 space-y-0.5">
+                  <p className="font-semibold text-slate-800">
+                    Correction Scope Enforcement (Statutory Freeze Policy):
+                  </p>
+                  <p>
+                    Documents verified during initial scrutiny are locked against subsequent alteration (APH Sec 3.2). Resubmission is permitted strictly for flagged deficiencies within the designated rectification window.
+                  </p>
+                </div>
+              </div>
+
               <div className="space-y-2.5">
                 {application.documents.map((doc) => (
                   <div
@@ -420,7 +545,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                         <div className="flex items-center gap-2">
                           <p className="font-bold text-slate-900">{doc.name}</p>
                           <span
-                            className={`px-2 py-0.2 rounded-full text-[10px] font-semibold border ${
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border ${
                               doc.status === 'Verified'
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                 : doc.status === 'Rejected'
@@ -442,13 +567,18 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Verification Controls for Officers */}
+                    {/* Verification Controls for Officers & Lock Affordance */}
                     <div className="flex items-center gap-2 shrink-0">
-                      {(role === 'regional_officer' || role === 'bureau_officer' || role === 'admin') && doc.status !== 'Verified' && (
+                      {doc.status === 'Verified' ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-300">
+                          <Lock className="w-3.5 h-3.5 text-slate-500" />
+                          <span>Locked (Scrutiny Cleared)</span>
+                        </span>
+                      ) : (role === 'regional_officer' || role === 'bureau_officer' || role === 'admin') ? (
                         <>
                           <button
                             onClick={() => verifyDocument(application.id, doc.id, 'Verified')}
-                            className="px-2.5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs shadow-2xs"
+                            className="px-2.5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs shadow-2xs transition-colors"
                           >
                             Verify Document
                           </button>
@@ -457,11 +587,28 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                               const reason = prompt('Specify deficiency reason for rejection:');
                               if (reason) verifyDocument(application.id, doc.id, 'Rejected', reason);
                             }}
-                            className="px-2.5 py-1.5 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-700 font-medium text-xs border border-rose-200"
+                            className="px-2.5 py-1.5 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-700 font-medium text-xs border border-rose-200 transition-colors"
                           >
                             Reject
                           </button>
                         </>
+                      ) : role === 'institution' ? (
+                        <button
+                          onClick={() => {
+                            setCorrectingDoc(doc);
+                            setRectificationComment('');
+                            setRectificationError(null);
+                          }}
+                          className="px-2.5 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-2xs transition-colors flex items-center gap-1.5"
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>Rectify & Upload</span>
+                        </button>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                          <span>Correction Open</span>
+                        </span>
                       )}
                       <button
                         onClick={() => alert(`Previewing signed file "${doc.fileName}". Secure short-lived document token active.`)}
@@ -593,7 +740,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
                   <div className="flex items-center justify-between">
                     <h4 className="font-bold text-slate-900 text-sm">Expert Visit Committee (EVC) Dossier</h4>
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                    <span className="px-2.5 py-0.5 rounded-md text-xs font-semibold bg-cyan-50 text-cyan-800 border border-cyan-300 font-mono">
                       {evcRecord.status}
                     </span>
                   </div>
@@ -691,9 +838,14 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
           {/* TAB 8: AUDIT HISTORY */}
           {activeTab === 'audit' && (
             <div className="space-y-3">
-              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2">
-                Immutable Blockchain/SHA256 Audit Trail
-              </h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                  Case Activity & Audit Trail
+                </h4>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                  SHA-256 State Digest &bull; Simulated Ledger
+                </span>
+              </div>
               <div className="space-y-2 text-xs font-mono">
                 {appAudits.map((log) => (
                   <div key={log.id} className="p-3 rounded-lg bg-slate-50 border border-slate-200">
@@ -704,7 +856,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                     <p className="text-slate-800 text-xs font-sans">{log.reason || 'State transition'}</p>
                     <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
                       <span>Actor: {log.actorName} ({log.actorRole})</span>
-                      <span className="text-blue-600">{log.tamperProofHash.slice(0, 24)}...</span>
+                      <span className="text-blue-600">Digest: {log.tamperProofHash.slice(0, 16)}...</span>
                     </div>
                   </div>
                 ))}
@@ -716,7 +868,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
         {/* Modal Footer */}
         <div className="bg-slate-50 border-t border-slate-200 p-4 flex items-center justify-between">
           <span className="text-xs text-slate-500 font-medium">
-            AICTE Approval Engine &bull; Official Record ID: {application.id}
+            SIH 2026 Prototype Console (PS 26262) &bull; Case Record ID: {application.id}
           </span>
           <button
             onClick={onClose}
@@ -726,6 +878,97 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
           </button>
         </div>
       </div>
+
+      {/* GOV.UK Styled Document Rectification Dialog */}
+      {correctingDoc && (
+        <div className="fixed inset-0 z-60 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95">
+            <div className="bg-[#183B56] text-white p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-amber-400" />
+                <h3 className="font-bold text-sm">Rectify Prescribed Document Deficiency</h3>
+              </div>
+              <button
+                onClick={() => setCorrectingDoc(null)}
+                className="text-slate-400 hover:text-white p-1"
+                aria-label="Close dialog"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 text-xs text-slate-800">
+              <div>
+                <span className="text-[10px] uppercase font-bold text-slate-500 block">Document Name:</span>
+                <p className="font-bold text-sm text-slate-900 mt-0.5">{correctingDoc.name}</p>
+                <p className="text-[11px] text-slate-500">Category: {correctingDoc.category} &bull; Current Status: {correctingDoc.status}</p>
+              </div>
+
+              {correctingDoc.rejectionReason && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs">
+                  <span className="font-bold block text-[11px] text-rose-700">Official Scrutiny Deficiency Note:</span>
+                  <p className="mt-0.5 leading-relaxed">{correctingDoc.rejectionReason}</p>
+                </div>
+              )}
+
+              {/* GOV.UK Warning Text */}
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 flex items-start gap-2.5">
+                <div className="w-5 h-5 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                  !
+                </div>
+                <div className="text-[11px] text-amber-950 leading-relaxed">
+                  <strong>Statutory Declaration:</strong> Filing rectified proof initiates secondary re-scrutiny under APH Chapter II. Upload only authenticated, stamped scans.
+                </div>
+              </div>
+
+              {/* GOV.UK File-Upload Guidance */}
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600 space-y-1">
+                <p className="font-bold text-slate-800">Upload Requirements:</p>
+                <p>&bull; Format: PDF only (clean high-resolution scan)</p>
+                <p>&bull; Maximum file size: 10MB</p>
+                <p>&bull; File pre-validated: <span className="font-mono text-blue-700">{correctingDoc.fileName.replace('.pdf', '_rectified_v2.pdf')}</span></p>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-800 block mb-1">
+                  Explanation of Rectification Action <span className="text-rose-600">*</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={rectificationComment}
+                  onChange={(e) => {
+                    setRectificationComment(e.target.value);
+                    setRectificationError(null);
+                  }}
+                  placeholder="Detail the corrections made, authority approvals obtained, or updated validity dates..."
+                  className="w-full p-2.5 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+                {rectificationError && (
+                  <p className="text-[#d4351c] text-[11px] font-semibold mt-1">
+                    {rectificationError}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-slate-50 border-t border-slate-200 px-5 py-3 flex items-center justify-end gap-2.5">
+              <button
+                onClick={() => setCorrectingDoc(null)}
+                className="px-3.5 py-2 rounded-lg border border-slate-300 text-slate-700 font-semibold text-xs hover:bg-slate-100"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmRectification}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-xs flex items-center gap-1.5"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>Submit Rectification for Re-Scrutiny</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

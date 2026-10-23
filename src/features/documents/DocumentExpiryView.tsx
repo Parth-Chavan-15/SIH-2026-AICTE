@@ -154,14 +154,14 @@ export const DocumentExpiryView: React.FC = () => {
 
                   <td className="py-3.5 px-4">
                     <span
-                      className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                      className={`inline-block px-2.5 py-0.5 rounded-md text-[11px] font-mono font-bold border ${
                         doc.renewalStatus === 'Renewal Verified'
-                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
                           : doc.renewalStatus === 'Expired'
-                          ? 'bg-rose-50 text-rose-800 border-rose-200'
+                          ? 'bg-rose-50 text-rose-800 border-rose-300'
                           : doc.renewalStatus === 'Expiring Soon'
-                          ? 'bg-amber-50 text-amber-800 border-amber-200'
-                          : 'bg-blue-50 text-blue-800 border-blue-200'
+                          ? 'bg-amber-50 text-amber-800 border-amber-300'
+                          : 'bg-blue-50 text-blue-800 border-blue-300'
                       }`}
                     >
                       {doc.renewalStatus}

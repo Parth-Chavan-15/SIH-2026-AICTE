@@ -72,6 +72,47 @@ class APIService {
 
   // --- Applications ---
   public async getApplications(role?: UserRole, regionFilter?: string): Promise<Application[]> {
+    try {
+      const response = await fetch('/api/v1/applications');
+      if (response.ok) {
+        const resData = await response.json();
+        if (resData.success && Array.isArray(resData.data) && resData.data.length > 0) {
+          const mapped: Application[] = resData.data.map((d: any) => ({
+            id: d._id || d.id,
+            applicationNumber: d.applicationNumber,
+            institutionName: d.institutionName,
+            institutionCode: d.institutionCode,
+            region: d.region,
+            state: d.state,
+            city: d.city,
+            applicationType: d.applicationType,
+            academicYear: d.academicYear || '2027-28',
+            program: d.program,
+            proposedIntake: d.proposedIntake,
+            routeType: d.routeType,
+            currentStage: d.currentStage,
+            currentStageStartedAt: d.currentStageStartedAt,
+            submittedAt: d.submittedAt,
+            stageDeadlineDays: d.stageDeadlineDays || 7,
+            assignedOfficer: d.assignedOfficer,
+            priority: d.priority || 'Medium',
+            slaStatus: d.slaStatus || 'within_sla',
+            elapsedDaysAtStage: 0,
+            totalElapsedDays: 0,
+            overdueDays: 0,
+            isEscalated: !!d.isEscalated,
+            documents: d.documents || [],
+            observations: d.observations || [],
+            timeline: d.timeline || [],
+          }));
+          this.applications = mapped;
+          saveToStorage('applications', mapped);
+        }
+      }
+    } catch {
+      // offline/fallback
+    }
+
     let result = [...this.applications];
     // Dynamic SLA recalculation
     result = result.map((app) => {
@@ -160,6 +201,34 @@ class APIService {
       ],
     };
 
+    // Persist directly to MongoDB via backend API
+    try {
+      const resp = await fetch('/api/v1/applications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          institutionName: created.institutionName,
+          institutionCode: created.institutionCode,
+          region: created.region,
+          state: created.state,
+          city: created.city,
+          applicationType: created.applicationType,
+          program: created.program,
+          proposedIntake: created.proposedIntake,
+          routeType: created.routeType,
+        }),
+      });
+      if (resp.ok) {
+        const json = await resp.json();
+        if (json.success && json.data) {
+          created.id = json.data._id || json.data.id || created.id;
+          created.applicationNumber = json.data.applicationNumber || created.applicationNumber;
+        }
+      }
+    } catch (e) {
+      console.warn('Backend sync warning:', e);
+    }
+
     this.applications.unshift(created);
     saveToStorage('applications', this.applications);
 
@@ -227,6 +296,20 @@ class APIService {
         mandatoryResolutionRequired: targetStage === 'Deficiency Communicated',
         resolved: false,
       });
+    }
+
+    // Persist transition directly to MongoDB via backend API
+    try {
+      await fetch(`/api/v1/applications/${applicationId}/transition`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetStage,
+          reason,
+        }),
+      });
+    } catch (e) {
+      console.warn('Backend transition sync warning:', e);
     }
 
     this.applications[appIndex] = updatedApp;

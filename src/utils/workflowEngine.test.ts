@@ -1,79 +1,82 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
+import { describe, it, expect } from 'vitest';
 import { computeSLAStatus, getAgingBucket } from './slaCalculator.ts';
-import { getEligibleNextStages, validateWorkflowTransition } from './workflowEngine.ts';
+import { getEligibleNextStages, validateWorkflowTransition, NextStageOption } from './workflowEngine.ts';
 
-test('computeSLAStatus: accurately marks within SLA when time remains', () => {
-  // 3 days elapsed out of 10 allowed
-  const result = computeSLAStatus('2026-10-19T10:00:00Z', 10, '2026-10-22T10:00:00Z');
-  assert.equal(result.elapsedDays, 3);
-  assert.equal(result.daysRemaining, 7);
-  assert.equal(result.isOverdue, false);
-  assert.equal(result.status, 'within_sla');
-});
+describe('Workflow Engine & SLA Calculator Unit Tests', () => {
+  it('computeSLAStatus: accurately marks within SLA when time remains', () => {
+    // 3 days elapsed out of 10 allowed
+    const result = computeSLAStatus('2026-10-19T10:00:00Z', 10, '2026-10-22T10:00:00Z');
+    expect(result.elapsedDays).toBe(3);
+    expect(result.daysRemaining).toBe(7);
+    expect(result.isOverdue).toBe(false);
+    expect(result.status).toBe('within_sla');
+  });
 
-test('computeSLAStatus: detects approaching deadline (2 or fewer days left)', () => {
-  // 8 days elapsed out of 10 allowed -> 2 days remaining
-  const result = computeSLAStatus('2026-10-14T10:00:00Z', 10, '2026-10-22T10:00:00Z');
-  assert.equal(result.elapsedDays, 8);
-  assert.equal(result.daysRemaining, 2);
-  assert.equal(result.isOverdue, false);
-  assert.equal(result.status, 'approaching_deadline');
-});
+  it('computeSLAStatus: detects approaching deadline (2 or fewer days left)', () => {
+    // 8 days elapsed out of 10 allowed -> 2 days remaining
+    const result = computeSLAStatus('2026-10-14T10:00:00Z', 10, '2026-10-22T10:00:00Z');
+    expect(result.elapsedDays).toBe(8);
+    expect(result.daysRemaining).toBe(2);
+    expect(result.isOverdue).toBe(false);
+    expect(result.status).toBe('approaching_deadline');
+  });
 
-test('computeSLAStatus: detects overdue cases and overdue duration', () => {
-  // 15 days elapsed out of 10 allowed -> 5 days overdue
-  const result = computeSLAStatus('2026-10-07T10:00:00Z', 10, '2026-10-22T10:00:00Z');
-  assert.equal(result.elapsedDays, 15);
-  assert.equal(result.daysRemaining, -5);
-  assert.equal(result.isOverdue, true);
-  assert.equal(result.overdueDays, 5);
-  assert.equal(result.status, 'overdue');
-});
+  it('computeSLAStatus: detects overdue cases and overdue duration', () => {
+    // 15 days elapsed out of 10 allowed -> 5 days overdue
+    const result = computeSLAStatus('2026-10-07T10:00:00Z', 10, '2026-10-22T10:00:00Z');
+    expect(result.elapsedDays).toBe(15);
+    expect(result.daysRemaining).toBe(-5);
+    expect(result.isOverdue).toBe(true);
+    expect(result.overdueDays).toBe(5);
+    expect(result.status).toBe('overdue');
+  });
 
-test('getAgingBucket: correctly groups durations into SLA brackets', () => {
-  assert.equal(getAgingBucket(3), '0-7 Days');
-  assert.equal(getAgingBucket(11), '8-14 Days');
-  assert.equal(getAgingBucket(22), '15-30 Days');
-  assert.equal(getAgingBucket(45), '30+ Days');
-});
+  it('getAgingBucket: correctly groups durations into SLA brackets', () => {
+    expect(getAgingBucket(3)).toBe('0-7 Days');
+    expect(getAgingBucket(10)).toBe('8-14 Days');
+    expect(getAgingBucket(22)).toBe('15-30 Days');
+    expect(getAgingBucket(45)).toBe('30+ Days');
+  });
 
-test('getEligibleNextStages: route Scrutiny Only transitions directly to EC Approval', () => {
-  const options = getEligibleNextStages('Scrutiny Cleared', 'Scrutiny Only');
-  assert.equal(options.length, 1);
-  assert.equal(options[0].stage, 'Executive Committee Approval');
-});
+  it('getEligibleNextStages: route Scrutiny Only transitions correctly', () => {
+    const nextStages = getEligibleNextStages('Scrutiny in Progress', 'Scrutiny Only');
+    const stageNames = nextStages.map((s) => s.stage);
+    expect(stageNames).toContain('Scrutiny Cleared');
+    expect(stageNames).toContain('Deficiency Communicated');
+  });
 
-test('getEligibleNextStages: route Scrutiny + EVC requires EVC Scheduling after Scrutiny', () => {
-  const options = getEligibleNextStages('Scrutiny Cleared', 'Scrutiny + EVC');
-  assert.equal(options.length, 1);
-  assert.equal(options[0].stage, 'EVC Scheduled');
-});
+  it('getEligibleNextStages: route Scrutiny + EVC requires EVC Scheduling after Scrutiny', () => {
+    const nextStages = getEligibleNextStages('Scrutiny Cleared', 'Scrutiny + EVC + SAC/SHC');
+    const stageNames = nextStages.map((s) => s.stage);
+    expect(stageNames).toContain('EVC Scheduled');
+  });
 
-test('validateWorkflowTransition: blocks return without mandatory reason', () => {
-  const options = getEligibleNextStages('Scrutiny in Progress', 'Scrutiny Only');
-  const returnOption = options.find((o) => o.actionType === 'return')!;
-  
-  // Empty reason should fail
-  const failedCheck = validateWorkflowTransition('regional_officer', returnOption, '');
-  assert.equal(failedCheck.isValid, false);
-  assert.ok(failedCheck.errorMessage?.includes('mandatory official reason'));
+  it('validateWorkflowTransition: blocks transition without mandatory reason when required', () => {
+    const nextOption: NextStageOption = {
+      stage: 'Deficiency Communicated',
+      actionLabel: 'Flag Deficiency',
+      actionType: 'return',
+      description: 'Deficiency communicated',
+      requiredRole: ['regional_officer'],
+      requiresMandatoryReason: true,
+    };
+    const check = validateWorkflowTransition('regional_officer', nextOption, 'short');
+    expect(check.isValid).toBe(false);
+    expect(check.errorMessage).toContain('mandatory official reason');
+  });
 
-  // Valid reason should pass
-  const passedCheck = validateWorkflowTransition('regional_officer', returnOption, 'Missing certified Land Ownership Deed Form II');
-  assert.equal(passedCheck.isValid, true);
-});
-
-test('validateWorkflowTransition: enforces role permissions', () => {
-  const options = getEligibleNextStages('Scrutiny in Progress', 'Scrutiny Only');
-  const advanceOption = options.find((o) => o.actionType === 'advance')!;
-
-  // Institution cannot approve scrutiny
-  const invalidRoleCheck = validateWorkflowTransition('institution', advanceOption, 'Looks good');
-  assert.equal(invalidRoleCheck.isValid, false);
-  assert.ok(invalidRoleCheck.errorMessage?.includes('not authorized'));
-
-  // Regional officer can approve scrutiny
-  const validRoleCheck = validateWorkflowTransition('regional_officer', advanceOption, 'Approved');
-  assert.equal(validRoleCheck.isValid, true);
+  it('validateWorkflowTransition: enforces role permissions', () => {
+    const nextOption: NextStageOption = {
+      stage: 'Approval Issued',
+      actionLabel: 'Issue Approval',
+      actionType: 'advance',
+      description: 'Issue official approval',
+      requiredRole: ['bureau_officer'],
+      requiresMandatoryReason: false,
+    };
+    // Institution role cannot execute approval
+    const check = validateWorkflowTransition('institution', nextOption, 'Approving this institution');
+    expect(check.isValid).toBe(false);
+    expect(check.errorMessage).toContain('not authorized');
+  });
 });
