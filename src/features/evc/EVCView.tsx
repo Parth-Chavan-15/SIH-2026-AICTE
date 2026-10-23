@@ -15,7 +15,10 @@ import {
   X,
   FileText,
   Search,
+  Shield,
+  Sparkles,
 } from 'lucide-react';
+import { useEVC } from '../applications/hooks/useEVC';
 
 interface EVCViewProps {
   onSelectApplication: (appId: string) => void;
@@ -23,6 +26,7 @@ interface EVCViewProps {
 
 export const EVCView: React.FC<EVCViewProps> = ({ onSelectApplication }) => {
   const { role, user, evcInspections, scheduleEVC, submitEVCReport, applications } = useApp();
+  const { tasks: m2Tasks, isSynthetic: isEvcSynthetic } = useEVC();
 
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [searchQuery, setSearchQuery] = useState('');
@@ -125,6 +129,72 @@ export const EVCView: React.FC<EVCViewProps> = ({ onSelectApplication }) => {
               <span>Schedule Inspection</span>
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Member 2 USP B07: Conditional EVC Invariant Engine Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 text-white rounded-2xl p-5 border border-indigo-800/60 shadow-lg space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-indigo-800/40 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 bg-indigo-600/30 rounded-xl border border-indigo-500/30 text-indigo-300">
+              <Shield className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-sm text-white tracking-tight">
+                  Conditional EVC Gating Engine &bull; USP B07
+                </h3>
+                <span className="font-mono text-[10px] bg-indigo-500/30 text-indigo-200 px-2 py-0.5 rounded border border-indigo-400/30 font-semibold">
+                  Gate G2 Certified
+                </span>
+              </div>
+              <p className="text-xs text-indigo-200 mt-0.5">
+                Statutory rule enforcement: EVC is triggered only when route requires it and prior scrutiny is complete. Duplicate generation strictly blocked.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className={`text-[10px] font-mono px-2.5 py-1 rounded-full font-semibold ${
+              isEvcSynthetic ? 'bg-amber-500/20 text-amber-200 border border-amber-400/30' : 'bg-emerald-500/20 text-emerald-200 border border-emerald-400/30'
+            }`}>
+              {isEvcSynthetic ? 'SYNTHETIC Adapter' : 'Live /api/v1/evc'}
+            </span>
+            <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-200 border border-blue-400/30 font-semibold">
+              Active Invariant Tasks: {m2Tasks.length}
+            </span>
+          </div>
+        </div>
+
+        {/* Comparative Route Rules Demonstration */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div className="bg-white/5 border border-white/10 rounded-xl p-3 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-emerald-300 flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Case SYN-ACC-01 (NBA Accredited)
+              </span>
+              <span className="text-[10px] font-mono bg-emerald-500/20 text-emerald-200 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                EVC Ineligible
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-300 leading-relaxed">
+              Route follows direct scrutiny path per APH Table 1. Physical EVC inspection is locked out by server pure-rule logic, avoiding unnecessary inspector pendency.
+            </p>
+          </div>
+
+          <div className="bg-white/5 border border-white/10 rounded-xl p-3 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-cyan-300 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" /> Case SYN-NONACC-02 (Non-Accredited)
+              </span>
+              <span className="text-[10px] font-mono bg-cyan-500/20 text-cyan-200 px-1.5 py-0.5 rounded border border-cyan-500/30">
+                Single Task Invariant
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-300 leading-relaxed">
+              Route requires EVC physical inspection. Exactly one task is generated upon signed scrutiny prerequisites; report submission advances to decision queue without auto-approval.
+            </p>
+          </div>
         </div>
       </div>
 
