@@ -85,8 +85,8 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [role, setRoleState] = useState<UserRole>('regional_officer');
-  const [user, setUser] = useState<UserProfile>(api.getUserProfile('regional_officer'));
+  const [role] = useState<UserRole>(api.getUserProfile().role);
+  const [user] = useState<UserProfile>(api.getUserProfile());
   const [applications, setApplications] = useState<Application[]>([]);
   const [evcInspections, setEvcInspections] = useState<EVCInspection[]>([]);
   const [complianceItems, setComplianceItems] = useState<ComplianceUndertaking[]>([]);
@@ -112,12 +112,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const setRole = (newRole: UserRole) => {
-    setRoleState(newRole);
-    setUser(api.getUserProfile(newRole));
     addToast({
       type: 'info',
-      title: `Switched to ${api.getUserProfile(newRole).roleTitle}`,
-      message: `Operating as ${api.getUserProfile(newRole).name}`,
+      title: 'Server-verified account',
+      message: 'Sign out and authenticate another configured account to change identity.',
     });
   };
 
@@ -143,7 +141,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setAuditLog(audits);
       setConfigRules(rules);
     } catch (err) {
-      console.error('Error fetching data:', err);
+      setApplications([]); setAuditLog([]); setNotifications([]);
       addToast({
         type: 'error',
         title: 'Data Load Failed',
@@ -377,8 +375,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     refreshData();
     addToast({
       type: 'info',
-      title: 'Demo Data Reset',
-      message: 'All application records restored to initial demonstration state.',
+      title: 'Refreshing demonstration view',
+      message: 'Reloading permitted server data. Server records have not been reset.',
     });
   };
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
+import { SessionGate } from './features/auth/SessionGate';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar, NavTab } from './components/layout/Sidebar';
 import { ToastContainer } from './components/common/ToastContainer';
@@ -245,8 +246,8 @@ const MainLayout: React.FC = () => {
 
 export default function App() {
   return (
-    <AppProvider>
+    <SessionGate><AppProvider>
       <MainLayout />
-    </AppProvider>
+    </AppProvider></SessionGate>
   );
 }

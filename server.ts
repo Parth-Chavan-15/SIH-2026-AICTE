@@ -19,7 +19,7 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || '*',
+    origin: process.env.CLIENT_URL || 'http://localhost:3000',
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     credentials: true,
   },
@@ -29,8 +29,9 @@ const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/aicte_workflow';
 
 // Security & Middleware
-app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors({ origin: '*', credentials: true }));
+app.disable('x-powered-by');
+app.use(helmet({ contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false }));
+app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:3000', credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -44,7 +45,7 @@ app.use('/api/', limiter);
 
 // Request Logger
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
   next();
 });
 
@@ -66,7 +67,7 @@ async function connectDB() {
       console.log(`✅ Seeded ${SEED_APPLICATIONS.length} applications into MongoDB`);
     }
   } catch (err: any) {
-    console.warn('⚠️ MongoDB connection warning (falling back to memory/demo mode if offline):', err?.message);
+    console.warn('MongoDB unavailable; legacy demonstration storage remains non-durable.');
     isMongoConnected = false;
   }
 }
@@ -97,14 +98,12 @@ app.use((req: any, res, next) => {
 import apiRouter from './src/backend/routes/index.js';
 app.use('/api/v1', apiRouter);
 
+// Realtime is closed until authenticated, scoped subscriptions have a reviewed adapter.
+io.use((_socket, next) => next(new Error('Realtime subscriptions unavailable')));
 // Socket.IO connection handler
 io.on('connection', (socket) => {
   console.log('🔌 Socket connected:', socket.id);
 
-  socket.on('join_room', (room) => {
-    socket.join(room);
-    console.log(`Socket ${socket.id} joined room: ${room}`);
-  });
 
   socket.on('disconnect', () => {
     console.log('🔌 Socket disconnected:', socket.id);
@@ -128,14 +127,11 @@ if (process.env.NODE_ENV !== 'production') {
 
 // Global Error Handler
 app.use((err: any, req: any, res: any, next: any) => {
-  console.error('❌ Server Error:', err);
-  res.status(err.statusCode || 500).json({
-    success: false,
-    message: err.message || 'Internal Server Error',
-    error: process.env.NODE_ENV === 'development' ? err.stack : undefined,
-  });
+  const status = err.type === 'entity.too.large' ? 413 : err.status === 400 ? 422 : 503;
+  const code = status === 413 ? 'FILE_TOO_LARGE' : status === 422 ? 'VALIDATION_FAILED' : 'STORAGE_UNAVAILABLE';
+  res.status(status).json({ success: false, error: { code, message: 'Request could not be processed' } });
 });
 
-httpServer.listen(Number(PORT), '0.0.0.0', () => {
+httpServer.listen(Number(PORT), '127.0.0.1', () => {
   console.log(`🚀 AICTE Backend & Dev Server running on port ${PORT}`);
 });
