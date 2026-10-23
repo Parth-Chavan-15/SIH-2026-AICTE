@@ -1,10 +1,10 @@
 import mongoose, { type ClientSession, type Connection } from 'mongoose';
 import { randomUUID } from 'node:crypto';
 import ApplicationModel from '../models/Application.js';
-import { CoreAudit, CoreOutbox, CoreReceipt } from './records';
+import { CoreAudit, CoreOutbox, CoreReceipt, CoreDecision } from './records';
 import { CoreError, unavailable, type CaseStorage, type Unit } from '../core/storage';
 import type { Actor, Application, AuditEvent, Institution, PolicyRevision } from '../../shared/contracts';
-import { applicationSchema, auditSchema, outboxSchema } from '../../shared/schemas';
+import { applicationSchema, auditSchema, outboxSchema, decisionSchema } from '../../shared/schemas';
 import type { TransactionRepositories } from '../../shared/ports';
 import { inScope } from '../security/authorization';
 import { SecurityError } from '../security/identity';
@@ -19,12 +19,12 @@ export const REQUIRED_INDEXES = [
   ['applications', 'caseData.id', true], ['applications', 'applicationNumber', false],
   ['institutions', 'id', false], ['institutions', 'permanentId', false],
   ['core_audit', 'id', false], ['core_outbox', 'eventId', false], ['core_receipts', 'key', false],
-  ['policy_revisions', 'id', false],
+  ['policy_revisions', 'id', false], ['core_decisions', 'id', false],
 ] as const;
-type Models = { application: any; audit: any; outbox: any; receipt: any };
+type Models = { application: any; audit: any; outbox: any; receipt: any; decision?: any };
 export function createMongoStorage(options: { connection?: Connection; models?: Models; participants?: (session: ClientSession) => Partial<TransactionRepositories> } = {}): CaseStorage {
   const connection = options.connection ?? mongoose.connection;
-  const models: Models = options.models ?? { application: ApplicationModel, audit: CoreAudit, outbox: CoreOutbox, receipt: CoreReceipt };
+  const models: Models = options.models ?? { application: ApplicationModel, audit: CoreAudit, outbox: CoreOutbox, receipt: CoreReceipt, decision: CoreDecision };
   const ready = async () => {
     try {
       if (!options.models && connection !== mongoose.connection) throw unavailable();
@@ -104,7 +104,7 @@ export function createMongoStorage(options: { connection?: Connection; models?: 
                   ...participants,
                   cases: { save: app => { sameCase(app.id); if (app.institutionId !== application.institutionId || app.regionId !== application.regionId || !inScope(context.actor, app)) throw new CoreError('SCOPE_VIOLATION', 'Invalid participant case'); return unit.save(app, application.version); } },
                   audit: { append: async e => { sameCase(e.applicationId); sameActor(e); await unit.audit(e); } }, outbox: { append: appendEvent },
-                  decisions: { insert: async d => { sameCase(d.applicationId); if (!participants.decisions) return fail(); await participants.decisions.insert(d); } },
+                  decisions: { insert: async d => { sameCase(d.applicationId); if (d.actorId !== context.actor.id) throw new CoreError('SCOPE_VIOLATION', 'Invalid decision actor'); const parsed = decisionSchema.parse(d); if (participants.decisions) await participants.decisions.insert(parsed); else if (models.decision) await models.decision.create([{ id: parsed.id, data: parsed }], { session }); else return fail(); } },
                   obligations: { insert: async o => { sameCase(o.applicationId); if (o.institutionId !== application.institutionId) throw new CoreError('SCOPE_VIOLATION', 'Invalid obligation institution'); if (!participants.obligations) return fail(); await participants.obligations.insert(o); } },
                   scrutiny: { insert: async s => { sameCase(s.applicationId); if (!participants.scrutiny) return fail(); await participants.scrutiny.insert(s); } },
                   evc: { save: async e => { sameCase(e.applicationId); if (!participants.evc) return fail(); await participants.evc.save(e); } },

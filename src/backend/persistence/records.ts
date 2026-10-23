@@ -8,3 +8,5 @@ function record(name: string, collection: string, key: string) {
 export const CoreAudit = record('CoreAudit', 'core_audit', 'id');
 export const CoreOutbox = record('CoreOutbox', 'core_outbox', 'eventId');
 export const CoreReceipt = record('CoreReceipt', 'core_receipts', 'key');
+
+export const CoreDecision = record('CoreDecision', 'core_decisions', 'id');

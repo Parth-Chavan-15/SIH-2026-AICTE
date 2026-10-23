@@ -1,11 +1,11 @@
-import type { Actor, Application, AuditEvent, CommandResult, Institution, Outbox, PolicyRevision } from '../../shared/contracts';
+import type { Actor, Application, AuditEvent, CommandResult, Decision, Institution, Outbox, PolicyRevision } from '../../shared/contracts';
 import type { TransactionContext } from '../../shared/ports';
 import type { ApiError } from '../../shared/contracts';
 export class CoreError extends Error {
   constructor(public code: ApiError['code'], message: string, public currentVersion?: number) { super(message); }
 }
 export const unavailable = () => new CoreError('STORAGE_UNAVAILABLE', 'Authoritative storage unavailable');
-export interface Receipt { key: string; fingerprint: string; result: CommandResult; }
+export interface Receipt { key: string; fingerprint: string; result: CommandResult; decision?: Decision; }
 /** Every method on a unit uses the same real session in the Mongo adapter. */
 export interface Unit {
   institution(id: string): Promise<Institution | null>;

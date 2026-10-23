@@ -111,7 +111,7 @@ function createLegacyTestRouter({ identity = getIdentity, store, applicationMode
   router.use((_req, res) => missing(res));
   return router;
 }
-/** @param {{store?: {applications: any[], notifications: any[], auditLogs: any[]}, identity?: () => import('../security/identity').Identity, applicationModel?: any, auditModel?: any, connected?: () => boolean, storage?: import('../core/storage').CaseStorage, scrutiny?: import('../../shared/ports').ScrutinyPrerequisitePort, evidence?: import('../core/cases').EvidencePrerequisite, policyFacts?: import('../core/cases').PolicyFactsReader}} [options] */
+/** @param {{store?: {applications: any[], notifications: any[], auditLogs: any[]}, identity?: () => import('../security/identity').Identity, applicationModel?: any, auditModel?: any, connected?: () => boolean, storage?: import('../core/storage').CaseStorage, scrutiny?: import('../../shared/ports').ScrutinyPrerequisitePort, evidence?: import('../core/cases').EvidencePrerequisite, policyFacts?: import('../core/cases').PolicyFactsReader, obligations?: import('../../shared/ports').DecisionObligationParticipant, decisionEvidence?: import('../core/decisions').DecisionEvidenceReader}} [options] */
 export function createApiRouter(options = {}) {
   if (options.store) {
     if (process.env.NODE_ENV !== 'test') throw new Error('Synthetic legacy stores are test-only');

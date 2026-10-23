@@ -5,9 +5,9 @@ describe('Frontend authentication adapter; mocked fetch, no browser integration 
   it('surfaces 401 instead of returning local applications or optimistic success', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 401, json: async () => ({ success: false, error: { code: 'UNAUTHENTICATED', message: 'Authentication required' } }) }));
     const { api } = await import('../../src/services/api');
-    await expect(api.getApplications()).rejects.toThrow('Authentication required');
-    await expect(api.createApplication({}, api.getUserProfile())).rejects.toThrow('Authentication required');
-    await expect(api.transitionStage('SYN', 'Approval Issued', api.getUserProfile())).rejects.toThrow('Authentication required');
+    await expect(api.listCases()).rejects.toThrow('Authentication required');
+    await expect(api.intake({institutionId:'SYN-I',category:'increase_intake',session:'2026-27',facts:{program:'engineering',proposedIntake:1},evidenceVersionIds:[],idempotencyKey:'SYN-KEY'})).rejects.toThrow('Authentication required');
+    await expect(api.transition('SYN', {action:'start_scrutiny',expectedVersion:1,evidenceVersionIds:[],idempotencyKey:'SYN-KEY'})).rejects.toThrow('Authentication required');
   });
   it('uses verified server actor, not requested UI role, and never persists tokens', async () => {
     const actor = { id: 'SYN-INST', roles: ['institution'], permissions: ['case.read'], scope: 'scoped', institutionIds: ['SYN-I'], regionIds: ['Western'] };
@@ -21,9 +21,9 @@ describe('Frontend authentication adapter; mocked fetch, no browser integration 
     expect(fetch.mock.calls[0][1].headers).not.toHaveProperty('Authorization');
   });
   it('returns an empty scoped response without retaining previous records; unavailable domain writes fail', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ success: true, data: [] }) }));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ success: true, data: {items:[],total:0} }) }));
     const { api } = await import('../../src/services/api');
-    expect(await api.getApplications()).toEqual([]);
+    expect(await api.listCases()).toEqual({items:[],total:0});
     expect(await api.getEVCInspections()).toEqual([]);
     await expect(api.verifyDocument('SYN', 'SYN-V', 'Verified', api.getUserProfile())).rejects.toThrow('not integrated');
   });

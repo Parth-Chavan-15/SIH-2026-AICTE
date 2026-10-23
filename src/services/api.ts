@@ -1,3 +1,6 @@
+import { z } from 'zod';
+import type { IntakeCommand, TransitionCommand, DecisionCommand, Application as CanonicalApplication, CaseAction, Actor } from '../shared/contracts';
+import { applicationSchema, auditSchema, routeSchema, decisionSchema } from '../shared/schemas';
 import { getSession, requestJson } from './session';
 import {
   Application,
@@ -15,7 +18,26 @@ import {
 
 import { computeSLAStatus } from '../utils/slaCalculator';
 
+const casePage = z.strictObject({ items: z.array(applicationSchema), total: z.number().int().nonnegative().optional(), nextCursor: z.string().optional() });
+export function permittedActions(actor: Actor, app: CanonicalApplication): CaseAction[] {
+  if (!actor.permissions.includes('case.transition') || app.route.result !== 'selected') return [];
+  const officer = actor.roles.some(r => ['reviewer','regional_officer','bureau_officer'].includes(r));
+  if (app.state === 'submitted' && officer) return ['start_scrutiny'];
+  if (app.state === 'scrutiny_pending' && officer) return app.route.stages.includes('evc_pending') ? ['complete_scrutiny'] : ['complete_scrutiny','send_for_decision'];
+  if (app.state === 'evc_pending' && actor.roles.some(r => ['evc','regional_officer','bureau_officer'].includes(r))) return ['complete_evc'];
+  return [];
+}
+export const canDecide = (actor: Actor, app: CanonicalApplication) => actor.permissions.includes('decision.record') && actor.roles.includes('demo_authority') && app.state === 'decision_pending';
 class APIService {
+  public async listCases() { return casePage.parse(await requestJson('/applications')); }
+  public async case(id: string) { return applicationSchema.parse(await requestJson('/applications/'+encodeURIComponent(id))); }
+  public async history(id: string) { return z.strictObject({ items: z.array(auditSchema), total: z.number().optional(), nextCursor: z.string().optional() }).parse(await requestJson('/applications/'+encodeURIComponent(id)+'/history')); }
+  public async explanation(id: string) { return routeSchema.parse(await requestJson('/applications/'+encodeURIComponent(id)+'/explanation')); }
+  public async intake(command: IntakeCommand) { return this.caseResult(await requestJson('/applications', {method:'POST', body:JSON.stringify(command)})); }
+  public async transition(id: string, command: TransitionCommand) { return this.caseResult(await requestJson('/applications/'+encodeURIComponent(id)+'/transition', {method:'POST', body:JSON.stringify(command)})); }
+  public async decide(id: string, command: DecisionCommand) { return decisionSchema.parse(await requestJson('/applications/'+encodeURIComponent(id)+'/decisions', {method:'POST', body:JSON.stringify(command)})); }
+  private caseResult(value: unknown) { return z.strictObject({application: applicationSchema, eventId: z.string().min(1)}).parse(value); }
+
   private normalizeApplication(row: any): Application {
     const sla=computeSLAStatus(row.currentStageStartedAt,row.stageDeadlineDays);
     return {...row,id:String(row._id ?? row.id),slaStatus:sla.status,elapsedDaysAtStage:sla.elapsedDays,overdueDays:sla.overdueDays,totalElapsedDays:0} as Application;
@@ -45,18 +67,12 @@ class APIService {
   }
 
   // --- Applications ---
-  public async getApplications(role?: UserRole, regionFilter?: string): Promise<Application[]> { const rows=await requestJson<any[]>('/applications'); this.applications=rows.map(row=>this.normalizeApplication(row)); return [...this.applications]; }
+  public async getApplications(role?: UserRole, regionFilter?: string): Promise<Application[]> { throw new Error('Legacy UI is retired; use listCases with canonical DTOs.'); }
 
-  public async getApplicationById(id: string): Promise<Application | undefined> { const row=await requestJson<any>('/applications/'+encodeURIComponent(id)); return this.normalizeApplication(row); }
+  public async getApplicationById(id: string): Promise<Application | undefined> { throw new Error('Legacy UI is retired; use case with canonical DTOs.'); }
 
-  public async createApplication(newApp: Partial<Application>, actor: UserProfile): Promise<Application> { const row=await requestJson<any>('/applications',{method:'POST',body:JSON.stringify({institutionCode:newApp.institutionCode,region:newApp.region,institutionName:newApp.institutionName,state:newApp.state,city:newApp.city,applicationType:newApp.applicationType,program:newApp.program,proposedIntake:newApp.proposedIntake})}); return this.normalizeApplication(row); }
-
-  public async transitionStage(
-    applicationId: string,
-    targetStage: WorkflowStage,
-    actor: UserProfile,
-    reason?: string
-  ): Promise<Application> { const row=await requestJson<any>('/applications/'+encodeURIComponent(applicationId)+'/transition',{method:'POST',body:JSON.stringify({targetStage,reason})}); return this.normalizeApplication(row); }
+  public async createApplication(_newApp: Partial<Application>, _actor: UserProfile): Promise<Application> { throw new Error('Legacy UI is retired; use intake with canonical DTOs.'); }
+  public async transitionStage(_id: string, _stage: WorkflowStage, _actor: UserProfile, _reason?: string): Promise<Application> { throw new Error('Legacy UI is retired; use named transition commands.'); }
 
   public async addObservation(
     applicationId: string,

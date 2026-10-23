@@ -6,11 +6,13 @@ import { ERROR_STATUS } from '../../shared/contracts';
 import { CoreError, type CaseStorage } from './storage';
 import { createCaseService, type EvidencePrerequisite, type PolicyFactsReader } from './cases';
 import { createMongoStorage } from '../persistence/mongoCore';
-import type { ScrutinyPrerequisitePort } from '../../shared/ports';
+import { createDecisionService, type DecisionEvidenceReader } from './decisions';
+import type { DecisionObligationParticipant, ScrutinyPrerequisitePort } from '../../shared/ports';
 
-export function createCoreRouter(options: { storage?: CaseStorage; identity?: () => Identity; scrutiny?: ScrutinyPrerequisitePort; evidence?: EvidencePrerequisite; policyFacts?: PolicyFactsReader } = {}) {
+export function createCoreRouter(options: { storage?: CaseStorage; identity?: () => Identity; scrutiny?: ScrutinyPrerequisitePort; evidence?: EvidencePrerequisite; policyFacts?: PolicyFactsReader; obligations?: DecisionObligationParticipant; decisionEvidence?: DecisionEvidenceReader } = {}) {
   const router = Router();
   const service = createCaseService(options.storage ?? createMongoStorage(), options);
+  const decisions = createDecisionService(service.storage, options);
   const identity = options.identity ?? getIdentity;
   const wrap = (fn: (req: Request, res: Response) => Promise<unknown>) => async (req: Request, res: Response) => {
     try { await fn(req, res); } catch (error) {
@@ -49,6 +51,7 @@ export function createCoreRouter(options: { storage?: CaseStorage; identity?: ()
     // Do not return a success payload that violates the shared contract.
     throw new CoreError('STORAGE_UNAVAILABLE', 'Complete dashboard summary adapter not integrated');
   }));
+  router.post('/applications/:id/decisions', requirePermission('decision.record'), wrap(async (req, res) => { const data = await decisions.decide(req.commandContext, String(req.params.id), req.body); res.json({ success: true, data, eventId: data.eventId }); }));
   router.use('/applications/:id/decisions', requirePermission('decision.record'));
   router.use('/notifications', requirePermission('notification.read'), (_req, res) => res.status(503).json({ success: false, error: { code: 'STORAGE_UNAVAILABLE', message: 'Durable notification adapter not integrated' } }));
   router.use((_req, res) => res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Endpoint not implemented' } }));
