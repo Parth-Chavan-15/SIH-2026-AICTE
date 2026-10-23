@@ -169,35 +169,52 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Mobile backdrop */}
       {isMobile && isOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/60 z-30 backdrop-blur-xs"
+          className="fixed inset-0 z-30 modal-backdrop"
           onClick={onToggle}
           aria-hidden="true"
         />
       )}
 
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-35 flex flex-col bg-[#0A2540] text-slate-200 transition-all duration-300 ease-in-out border-r border-slate-700/60 shadow-xl ${
+        className={`fixed top-0 bottom-0 left-0 z-35 flex flex-col text-slate-200 transition-all duration-300 ease-in-out ${
           isMobile
             ? isOpen
-              ? 'w-72 translate-x-0'
-              : '-translate-x-full w-72'
+              ? 'w-[272px] translate-x-0'
+              : '-translate-x-full w-[272px]'
             : isOpen
-            ? 'w-64 translate-x-0 static'
-            : 'w-20 translate-x-0 static'
+            ? 'w-[260px] translate-x-0 static'
+            : 'w-[68px] translate-x-0 static'
         }`}
+        style={{
+          background: 'linear-gradient(180deg, #081E34 0%, #0A2540 40%, #0C2D4A 100%)',
+          borderRight: '1px solid rgba(255,255,255,0.04)',
+          boxShadow: '4px 0 24px -4px rgba(0,0,0,0.15)',
+        }}
       >
-        {/* Sidebar Header Brand for Desktop */}
-        <div className="h-16 px-4 flex items-center justify-between border-b border-slate-700/60 bg-[#061828]">
-          <div className="flex items-center gap-2 overflow-hidden">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0 font-black text-xs text-white">
+        {/* Sidebar Header Brand */}
+        <div
+          className="h-[60px] px-4 flex items-center justify-between"
+          style={{
+            background: 'linear-gradient(180deg, rgba(4,16,29,0.6), transparent)',
+            borderBottom: '1px solid rgba(255,255,255,0.04)',
+          }}
+        >
+          <div className="flex items-center gap-2.5 overflow-hidden">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 font-black text-[10px] text-white"
+              style={{
+                background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                boxShadow: '0 2px 6px rgba(37, 99, 235, 0.3), inset 0 1px 0 rgba(255,255,255,0.15)',
+              }}
+            >
               GOV
             </div>
             {isOpen && (
-              <div className="overflow-hidden">
+              <div className="overflow-hidden anim-fade-in">
                 <span className="font-bold text-sm tracking-tight text-white block truncate">
                   AICTE Portal
                 </span>
-                <span className="text-[10px] text-slate-400 block truncate">
+                <span className="text-[10px] text-slate-500 block truncate">
                   Workflow Engine v2.6
                 </span>
               </div>
@@ -206,7 +223,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {!isMobile && (
             <button
               onClick={onToggle}
-              className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded-md text-slate-500 hover:text-white hover:bg-white/5 transition-all duration-200 active:scale-95"
               aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
             >
               {isOpen ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
@@ -215,7 +232,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Navigation items scrollable list */}
-        <div className="flex-1 overflow-y-auto py-4 px-2 space-y-6 scrollbar-thin">
+        <div className="flex-1 overflow-y-auto py-4 px-2 space-y-5">
           {sections.map((secName) => {
             const sectionItems = navItems.filter((i) => i.section === secName);
             const visibleItems = sectionItems.filter(
@@ -225,9 +242,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             if (visibleItems.length === 0) return null;
 
             return (
-              <div key={secName} className="space-y-1">
+              <div key={secName} className="space-y-0.5">
                 {isOpen && (
-                  <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  <p className="px-3 text-[9px] font-bold uppercase tracking-[0.1em] text-slate-500/70 mb-2">
                     {secName}
                   </p>
                 )}
@@ -243,24 +260,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         if (isMobile) onToggle();
                       }}
                       title={!isOpen ? item.label : undefined}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-xs font-medium transition-all group ${
+                      className={`nav-item-transition w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium group ${
                         isActive
-                          ? 'bg-blue-700/90 text-white font-semibold shadow-xs border-l-3 border-amber-400'
-                          : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                          ? 'active bg-white/[0.08] text-white font-semibold'
+                          : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'
                       }`}
                     >
-                      <Icon
-                        className={`w-4 h-4 shrink-0 transition-transform ${
-                          isActive ? 'text-white' : 'text-slate-400 group-hover:text-blue-300'
-                        }`}
-                      />
+                      <div className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-all duration-200 ${
+                        isActive
+                          ? 'bg-blue-600/90 text-white'
+                          : 'bg-transparent text-slate-500 group-hover:text-blue-300 group-hover:bg-white/[0.04]'
+                      }`}
+                      style={isActive ? { boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)' } : {}}
+                      >
+                        <Icon className="w-4 h-4" />
+                      </div>
                       {isOpen && (
                         <span className="truncate flex-1 text-left">{item.label}</span>
                       )}
                       {isOpen && item.badge !== undefined && item.badge > 0 && (
                         <span
-                          className={`px-1.5 py-0.2 rounded-sm text-[10px] font-mono font-bold ${
-                            item.badgeColor || 'bg-slate-700 text-slate-200'
+                          className={`px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold min-w-[20px] text-center ${
+                            item.badgeColor || 'bg-white/10 text-slate-300'
                           }`}
                         >
                           {item.badge}
@@ -274,15 +295,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
           })}
         </div>
 
-        {/* Sidebar Footer info */}
+        {/* Sidebar Footer */}
         {isOpen && (
-          <div className="p-3 border-t border-slate-700/60 bg-[#061828]/50 text-[11px] text-slate-400">
+          <div
+            className="p-3 text-[11px] text-slate-500"
+            style={{
+              borderTop: '1px solid rgba(255,255,255,0.04)',
+              background: 'linear-gradient(180deg, transparent, rgba(4,16,29,0.4))',
+            }}
+          >
             <div className="flex items-center gap-2 mb-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-              <span className="font-medium text-slate-300">NIC Gateway Connected</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 badge-breathe"></span>
+              <span className="font-medium text-slate-400 text-[10px]">NIC Gateway Connected</span>
             </div>
-            <p className="text-[10px] text-slate-500">
-              Role: <span className="text-slate-300 capitalize">{role.replace('_', ' ')}</span>
+            <p className="text-[10px] text-slate-600">
+              Role: <span className="text-slate-400 capitalize">{role.replace('_', ' ')}</span>
             </p>
           </div>
         )}

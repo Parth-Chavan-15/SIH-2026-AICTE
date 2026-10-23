@@ -45,7 +45,7 @@ interface DashboardViewProps {
   onSelectApplication: (appId: string) => void;
 }
 
-// Government-themed palette: Deep Navy, Bharat Royal Blue, Cyan, Saffron/Amber, Forest Green, Coral Red (No purple gradients)
+// Government-themed palette
 const COLORS = ['#1D4ED8', '#2563EB', '#0284C7', '#0D9488', '#059669', '#D97706', '#DC2626'];
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -95,48 +95,92 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   // Overdue cases list
   const criticalOverdueCases = applications.filter((a) => a.slaStatus === 'overdue');
 
+  // KPI card definitions
+  const kpiCards = [
+    { label: 'Total Volume', value: totalApps, sub: '8 Regional Bureaus', icon: FileText, color: 'text-blue-700', bgHover: 'hover:border-blue-400', tab: 'applications' as NavTab },
+    { label: 'Active Stages', value: pendingApps, sub: 'Under scrutiny / review', icon: Clock, color: 'text-blue-700', bgHover: 'hover:border-blue-400', tab: 'workflow' as NavTab },
+    { label: 'SLA Overdue', value: overdueApps, sub: 'Escalation triggered', icon: AlertOctagon, color: 'text-rose-600', bgHover: 'hover:border-rose-400', tab: 'pendency' as NavTab, isDanger: overdueApps > 0 },
+    { label: 'Approved EoA', value: completedApps, sub: 'Orders digitally issued', icon: CheckCircle, color: 'text-emerald-600', bgHover: 'hover:border-emerald-400', tab: 'applications' as NavTab },
+    { label: 'EVC Visits', value: pendingEVCs, sub: 'Inspection queue', icon: Calendar, color: 'text-cyan-700', bgHover: 'hover:border-cyan-400', tab: 'evc' as NavTab },
+    { label: 'Compliance', value: approachingCompliance, sub: 'Undertakings tracked', icon: ShieldAlert, color: 'text-amber-600', bgHover: 'hover:border-amber-400', tab: 'compliance' as NavTab },
+  ];
+
   return (
     <div className="space-y-6">
-      {/* 🏛️ Official AICTE Command Banner with Integrated 3D Regional Bureau Network */}
+      {/* 🏛️ Command Banner with 3D Globe */}
       <motion.div
-        initial={{ opacity: 0, y: -10 }}
+        initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#061828] via-[#0A2540] to-[#0E355C] text-white shadow-xl border border-slate-700/80"
+        transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+        className="relative overflow-hidden rounded-xl text-white"
+        style={{
+          background: 'linear-gradient(135deg, #061828 0%, #0A2540 45%, #0E355C 100%)',
+          boxShadow: '0 4px 24px -6px rgba(6, 24, 40, 0.5), 0 0 0 1px rgba(255,255,255,0.04)',
+        }}
       >
-        {/* Subtle grid blueprint watermark */}
+        {/* Blueprint grid watermark */}
         <div
-          className="absolute inset-0 opacity-10 pointer-events-none"
+          className="absolute inset-0 opacity-[0.06] pointer-events-none"
           style={{
             backgroundImage:
               'linear-gradient(#38bdf8 1px, transparent 1px), linear-gradient(90deg, #38bdf8 1px, transparent 1px)',
-            backgroundSize: '32px 32px',
+            backgroundSize: '40px 40px',
           }}
         />
 
-        <div className="relative z-10 p-6 sm:p-7 flex flex-col lg:flex-row items-center justify-between gap-6">
-          {/* Left: Administrative Metadata & Actions */}
+        {/* Decorative gradient orbs */}
+        <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-[0.08] pointer-events-none" style={{ background: 'radial-gradient(circle, #2563eb, transparent 70%)' }} />
+        <div className="absolute -bottom-32 -left-16 w-72 h-72 rounded-full opacity-[0.05] pointer-events-none" style={{ background: 'radial-gradient(circle, #f59e0b, transparent 70%)' }} />
+
+        <div className="relative z-10 p-6 sm:p-8 flex flex-col lg:flex-row items-center justify-between gap-6">
+          {/* Left: Metadata & Actions */}
           <div className="flex-1 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-950/90 text-blue-200 border border-blue-700/60 mb-3 shadow-xs">
-              <span className="w-1.5 h-1.5 rounded-xs bg-emerald-400"></span>
-              <span>{user.roleTitle}</span>
-              <span className="text-slate-500">•</span>
-              <span className="text-slate-300">{user.organization}</span>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1, duration: 0.35 }}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold mb-4"
+              style={{
+                background: 'rgba(15, 23, 42, 0.5)',
+                border: '1px solid rgba(96, 165, 250, 0.15)',
+                backdropFilter: 'blur(8px)',
+              }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 badge-breathe"></span>
+              <span className="text-blue-200">{user.roleTitle}</span>
+              <span className="text-slate-600">•</span>
+              <span className="text-slate-400">{user.organization}</span>
+            </motion.div>
 
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-white leading-tight">
+            <motion.h2
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15, duration: 0.4 }}
+              className="text-xl sm:text-2xl lg:text-[28px] font-extrabold tracking-tight text-white leading-tight"
+            >
               AICTE National Approval Command Center
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed font-normal">
-              Statutory processing under the <strong className="text-white">Approval Process Handbook (APH 2024–27)</strong>.
-              Real-time scrutiny workflow routing, committee inspection scheduling, and SLA timeline enforcement across 8 Regional Bureaus.
-            </p>
+            </motion.h2>
 
-            <div className="flex flex-wrap items-center gap-3 mt-5">
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.25, duration: 0.4 }}
+              className="text-xs sm:text-sm text-slate-400 mt-2.5 leading-relaxed font-normal max-w-xl"
+            >
+              Statutory processing under the <strong className="text-slate-200">Approval Process Handbook (APH 2024–27)</strong>.
+              Real-time scrutiny workflow routing, committee inspection scheduling, and SLA timeline enforcement across 8 Regional Bureaus.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.35 }}
+              className="flex flex-wrap items-center gap-3 mt-6"
+            >
               {role === 'institution' && (
                 <button
                   onClick={onOpenNewAppModal}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md transition-all active:scale-95"
+                  className="btn-gov-saffron flex items-center gap-2 active:scale-[0.97]"
                 >
                   <PlusCircle className="w-4 h-4" />
                   <span>Submit New Application</span>
@@ -146,7 +190,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               {(role === 'regional_officer' || role === 'bureau_officer' || role === 'admin') && (
                 <button
                   onClick={() => onNavigateTab('pendency')}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-rose-700 hover:bg-rose-600 text-white font-semibold text-xs border border-rose-500/50 shadow-md transition-all active:scale-95"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-semibold text-xs transition-all duration-200 active:scale-[0.97]"
+                  style={{
+                    background: 'linear-gradient(135deg, #be123c, #e11d48)',
+                    border: '1px solid rgba(244, 63, 94, 0.3)',
+                    boxShadow: '0 2px 8px rgba(190, 18, 60, 0.25)',
+                  }}
                 >
                   <AlertOctagon className="w-4 h-4" />
                   <span>Review Overdue SLA Cases ({overdueApps})</span>
@@ -155,124 +204,105 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
               <button
                 onClick={() => onNavigateTab('applications')}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-200 font-medium text-xs border border-slate-600/70 shadow-xs transition-all active:scale-95"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-slate-300 hover:text-white font-medium text-xs transition-all duration-200 active:scale-[0.97]"
+                style={{
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                }}
               >
                 <span>View All Applications</span>
-                <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
+                <ArrowRight className="w-3.5 h-3.5 text-slate-500" />
               </button>
-            </div>
+            </motion.div>
           </div>
 
-          {/* Right: 3D Interactive National Governance Grid Globe */}
-          <div className="w-full lg:w-72 xl:w-80 h-48 sm:h-56 shrink-0 flex flex-col items-center justify-center bg-[#04101D]/70 rounded-lg border border-slate-700/60 p-2 shadow-inner">
+          {/* Right: 3D Globe */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            className="w-full lg:w-72 xl:w-80 h-48 sm:h-56 shrink-0 flex flex-col items-center justify-center rounded-xl p-2"
+            style={{
+              background: 'rgba(4, 16, 29, 0.6)',
+              border: '1px solid rgba(255,255,255,0.04)',
+              boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.2)',
+            }}
+          >
             <div className="w-full h-full relative">
               <GovernanceGlobe3D className="w-full h-full" />
             </div>
-          </div>
+          </motion.div>
         </div>
       </motion.div>
 
-      {/* 📊 Top 6 Primary Administrative KPI Metrics (Staggered Animation, No Pill Shapes) */}
+      {/* 📊 KPI Metrics Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-        {/* Metric 1: Total Volume */}
-        <motion.button
-          whileHover={{ y: -2, transition: { duration: 0.15 } }}
-          onClick={() => onNavigateTab('applications')}
-          className="text-left bg-white p-4 rounded-lg border border-slate-200 shadow-2xs hover:border-blue-500 hover:shadow-sm transition-all group"
-        >
-          <div className="flex items-center justify-between text-slate-500 mb-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Total Volume</span>
-            <FileText className="w-4 h-4 text-blue-700 group-hover:scale-110 transition-transform" />
-          </div>
-          <p className="text-2xl font-extrabold text-slate-900 font-mono">{totalApps}</p>
-          <p className="text-[11px] text-slate-500 mt-1 font-medium">8 Regional Bureaus</p>
-        </motion.button>
-
-        {/* Metric 2: Pending Stages */}
-        <motion.button
-          whileHover={{ y: -2, transition: { duration: 0.15 } }}
-          onClick={() => onNavigateTab('workflow')}
-          className="text-left bg-white p-4 rounded-lg border border-slate-200 shadow-2xs hover:border-blue-500 hover:shadow-sm transition-all group"
-        >
-          <div className="flex items-center justify-between text-slate-500 mb-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Active Stages</span>
-            <Clock className="w-4 h-4 text-blue-700 group-hover:scale-110 transition-transform" />
-          </div>
-          <p className="text-2xl font-extrabold text-blue-900 font-mono">{pendingApps}</p>
-          <p className="text-[11px] text-slate-500 mt-1 font-medium">Under scrutiny / review</p>
-        </motion.button>
-
-        {/* Metric 3: Overdue SLA Cases */}
-        <motion.button
-          whileHover={{ y: -2, transition: { duration: 0.15 } }}
-          onClick={() => onNavigateTab('pendency')}
-          className={`text-left p-4 rounded-lg border shadow-2xs transition-all group ${
-            overdueApps > 0
-              ? 'bg-rose-50/60 border-rose-300 hover:border-rose-500 hover:shadow-sm'
-              : 'bg-white border-slate-200 hover:border-blue-400'
-          }`}
-        >
-          <div className="flex items-center justify-between text-slate-500 mb-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-rose-800">SLA Overdue</span>
-            <AlertOctagon className="w-4 h-4 text-rose-600 group-hover:scale-110 transition-transform" />
-          </div>
-          <p className="text-2xl font-extrabold text-rose-700 font-mono">{overdueApps}</p>
-          <p className="text-[11px] text-rose-700 font-medium mt-1">Escalation triggered</p>
-        </motion.button>
-
-        {/* Metric 4: Approved EoA */}
-        <motion.button
-          whileHover={{ y: -2, transition: { duration: 0.15 } }}
-          onClick={() => onNavigateTab('applications')}
-          className="text-left bg-white p-4 rounded-lg border border-slate-200 shadow-2xs hover:border-emerald-500 hover:shadow-sm transition-all group"
-        >
-          <div className="flex items-center justify-between text-slate-500 mb-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Approved EoA</span>
-            <CheckCircle className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
-          </div>
-          <p className="text-2xl font-extrabold text-emerald-800 font-mono">{completedApps}</p>
-          <p className="text-[11px] text-slate-500 mt-1 font-medium">Orders digitally issued</p>
-        </motion.button>
-
-        {/* Metric 5: EVC Visits Pending (Cyan/Navy, No Purple) */}
-        <motion.button
-          whileHover={{ y: -2, transition: { duration: 0.15 } }}
-          onClick={() => onNavigateTab('evc')}
-          className="text-left bg-white p-4 rounded-lg border border-slate-200 shadow-2xs hover:border-cyan-500 hover:shadow-sm transition-all group"
-        >
-          <div className="flex items-center justify-between text-slate-500 mb-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">EVC Visits</span>
-            <Calendar className="w-4 h-4 text-cyan-700 group-hover:scale-110 transition-transform" />
-          </div>
-          <p className="text-2xl font-extrabold text-cyan-900 font-mono">{pendingEVCs}</p>
-          <p className="text-[11px] text-slate-500 mt-1 font-medium">Inspection queue</p>
-        </motion.button>
-
-        {/* Metric 6: Compliance Filings */}
-        <motion.button
-          whileHover={{ y: -2, transition: { duration: 0.15 } }}
-          onClick={() => onNavigateTab('compliance')}
-          className="text-left bg-white p-4 rounded-lg border border-slate-200 shadow-2xs hover:border-amber-500 hover:shadow-sm transition-all group"
-        >
-          <div className="flex items-center justify-between text-slate-500 mb-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Compliance</span>
-            <ShieldAlert className="w-4 h-4 text-amber-600 group-hover:scale-110 transition-transform" />
-          </div>
-          <p className="text-2xl font-extrabold text-amber-800 font-mono">{approachingCompliance}</p>
-          <p className="text-[11px] text-slate-500 mt-1 font-medium">Undertakings tracked</p>
-        </motion.button>
+        {kpiCards.map((kpi, index) => {
+          const Icon = kpi.icon;
+          return (
+            <motion.button
+              key={kpi.label}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 * index, duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+              whileHover={{ y: -3, transition: { duration: 0.15 } }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => onNavigateTab(kpi.tab)}
+              className={`kpi-card text-left p-4 rounded-xl border group ${
+                kpi.isDanger
+                  ? 'bg-rose-50/70 border-rose-200'
+                  : 'bg-white border-slate-200/80'
+              } ${kpi.bgHover}`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                  kpi.isDanger ? 'text-rose-700' : 'text-slate-500'
+                }`}>
+                  {kpi.label}
+                </span>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 group-hover:scale-110 ${
+                  kpi.isDanger ? 'bg-rose-100' : 'bg-slate-50'
+                }`}>
+                  <Icon className={`w-4 h-4 ${kpi.color}`} />
+                </div>
+              </div>
+              <p className={`text-[26px] font-extrabold font-mono leading-none ${
+                kpi.isDanger ? 'text-rose-700' : 'text-slate-900'
+              }`}>
+                {kpi.value}
+              </p>
+              <p className={`text-[10px] mt-1.5 font-medium ${
+                kpi.isDanger ? 'text-rose-600' : 'text-slate-500'
+              }`}>
+                {kpi.sub}
+              </p>
+            </motion.button>
+          );
+        })}
       </div>
 
-      {/* 📈 Workload & Stage Distribution Analytics Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* 📈 Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Region Workload Bar Chart */}
-        <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-2xs">
-          <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.4 }}
+          className="chart-container p-5"
+        >
+          <div className="flex items-center justify-between mb-4 pb-3" style={{ borderBottom: '1px solid #f1f5f9' }}>
             <div>
               <h3 className="text-sm font-bold text-slate-900 tracking-tight">Regional Bureau Workload & SLA Adherence</h3>
-              <p className="text-xs text-slate-500">Distribution across 8 Regional AICTE jurisdictions</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">Distribution across 8 Regional AICTE jurisdictions</p>
             </div>
-            <span className="text-[11px] font-semibold text-blue-800 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200">
+            <span
+              className="text-[10px] font-semibold px-2.5 py-1 rounded-lg"
+              style={{
+                background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
+                color: '#1e40af',
+                border: '1px solid #bfdbfe',
+              }}
+            >
               Live Monitoring
             </span>
           </div>
@@ -287,26 +317,32 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   contentStyle={{
                     backgroundColor: '#0A2540',
                     color: '#FFF',
-                    borderRadius: '6px',
+                    borderRadius: '8px',
                     fontSize: '11px',
-                    border: '1px solid #1E3A8A',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
                   }}
                 />
-                <Bar dataKey="total" name="Total Applications" fill="#1D4ED8" radius={[3, 3, 0, 0]} />
-                <Bar dataKey="overdue" name="Overdue SLA Cases" fill="#DC2626" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="total" name="Total Applications" fill="#1D4ED8" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="overdue" name="Overdue SLA Cases" fill="#DC2626" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </motion.div>
 
         {/* Stage-wise Donut Distribution */}
-        <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-2xs">
-          <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25, duration: 0.4 }}
+          className="chart-container p-5"
+        >
+          <div className="flex items-center justify-between mb-4 pb-3" style={{ borderBottom: '1px solid #f1f5f9' }}>
             <div>
               <h3 className="text-sm font-bold text-slate-900 tracking-tight">Approval Stage-wise Application Pipeline</h3>
-              <p className="text-xs text-slate-500">Active status distribution in regulatory workflow</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">Active status distribution in regulatory workflow</p>
             </div>
-            <span className="text-[11px] font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
+            <span className="text-[10px] font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
               APH Cycle 2027-28
             </span>
           </div>
@@ -323,6 +359,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   outerRadius={82}
                   innerRadius={46}
                   paddingAngle={3}
+                  stroke="none"
                 >
                   {stageDistribution.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -332,33 +369,48 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   contentStyle={{
                     backgroundColor: '#0A2540',
                     color: '#FFF',
-                    borderRadius: '6px',
+                    borderRadius: '8px',
                     fontSize: '11px',
-                    border: '1px solid #1E3A8A',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
                   }}
                 />
                 <Legend wrapperStyle={{ fontSize: '11px', marginTop: '8px' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </motion.div>
       </div>
 
-      {/* ⚠️ Critical Overdue Applications & Live Activity Stream Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Cols: Critical Overdue Cases Table */}
-        <div className="lg:col-span-2 bg-white rounded-lg border border-slate-200 shadow-2xs overflow-hidden">
-          <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/90">
-            <div className="flex items-center gap-2">
-              <AlertOctagon className="w-4 h-4 text-rose-600" />
+      {/* ⚠️ Overdue Cases & Live Audit Stream */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Left 2 Cols: Critical Overdue Cases */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.4 }}
+          className="lg:col-span-2 bg-white rounded-xl border border-slate-200/80 overflow-hidden"
+          style={{ boxShadow: 'var(--shadow-card)' }}
+        >
+          <div
+            className="p-4 flex items-center justify-between"
+            style={{
+              background: 'linear-gradient(180deg, #f8fafc, #ffffff)',
+              borderBottom: '1px solid #e2e8f0',
+            }}
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-rose-100 flex items-center justify-center">
+                <AlertOctagon className="w-3.5 h-3.5 text-rose-600" />
+              </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-900 tracking-tight">Overdue Cases Requiring Statutory Attention</h3>
-                <p className="text-[11px] text-slate-500">Applications currently breaching handbook SLA limits</p>
+                <p className="text-[10px] text-slate-500">Applications currently breaching handbook SLA limits</p>
               </div>
             </div>
             <button
               onClick={() => onNavigateTab('pendency')}
-              className="text-xs font-semibold text-blue-700 hover:text-blue-900 flex items-center gap-1 transition-colors"
+              className="text-xs font-semibold text-blue-700 hover:text-blue-900 flex items-center gap-1 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-blue-50"
             >
               <span>View Pendency Register</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -367,53 +419,55 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           <div className="overflow-x-auto">
             {criticalOverdueCases.length === 0 ? (
-              <div className="p-8 text-center">
-                <CheckCircle className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
+              <div className="p-10 text-center">
+                <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center mx-auto mb-3">
+                  <CheckCircle className="w-6 h-6 text-emerald-600" />
+                </div>
                 <p className="text-sm font-semibold text-slate-800">Zero Overdue Cases</p>
-                <p className="text-xs text-slate-500">All applications are currently operating within prescribed timelines.</p>
+                <p className="text-xs text-slate-500 mt-1">All applications are currently operating within prescribed timelines.</p>
               </div>
             ) : (
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
-                    <th className="py-2.5 px-3">Application ID</th>
-                    <th className="py-2.5 px-3">Institution Name</th>
-                    <th className="py-2.5 px-3">Current Stage</th>
-                    <th className="py-2.5 px-3">SLA Status</th>
-                    <th className="py-2.5 px-3">Responsible Officer</th>
-                    <th className="py-2.5 px-3 text-right">Action</th>
+                  <tr className="text-slate-600 font-bold" style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                    <th className="py-3 px-4 text-[10px] uppercase tracking-wider">Application ID</th>
+                    <th className="py-3 px-4 text-[10px] uppercase tracking-wider">Institution Name</th>
+                    <th className="py-3 px-4 text-[10px] uppercase tracking-wider">Current Stage</th>
+                    <th className="py-3 px-4 text-[10px] uppercase tracking-wider">SLA Status</th>
+                    <th className="py-3 px-4 text-[10px] uppercase tracking-wider">Responsible Officer</th>
+                    <th className="py-3 px-4 text-right text-[10px] uppercase tracking-wider">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {criticalOverdueCases.map((app) => (
                     <tr
                       key={app.id}
-                      className="hover:bg-rose-50/50 transition-colors cursor-pointer"
+                      className="table-row-hover cursor-pointer"
                       onClick={() => onSelectApplication(app.id)}
                     >
-                      <td className="py-3 px-3 font-mono font-bold text-slate-900">
+                      <td className="py-3 px-4 font-mono font-bold text-slate-900">
                         {app.applicationNumber}
                       </td>
-                      <td className="py-3 px-3 font-medium text-slate-800 max-w-[200px] truncate">
+                      <td className="py-3 px-4 font-medium text-slate-800 max-w-[200px] truncate">
                         {app.institutionName}
                         <span className="block text-[10px] text-slate-500 font-normal">{app.region} Region</span>
                       </td>
-                      <td className="py-3 px-3">
+                      <td className="py-3 px-4">
                         <StageBadge stage={app.currentStage} />
                       </td>
-                      <td className="py-3 px-3">
+                      <td className="py-3 px-4">
                         <SLABadge status={app.slaStatus} overdueDays={app.overdueDays} />
                       </td>
-                      <td className="py-3 px-3 text-slate-600">
+                      <td className="py-3 px-4 text-slate-600">
                         {app.assignedOfficer}
                       </td>
-                      <td className="py-3 px-3 text-right">
+                      <td className="py-3 px-4 text-right">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             onSelectApplication(app.id);
                           }}
-                          className="px-2.5 py-1 rounded-md bg-blue-50 text-blue-800 border border-blue-200 hover:bg-blue-700 hover:text-white font-semibold text-xs transition-colors"
+                          className="btn-gov-primary !py-1.5 !px-3 !text-[11px]"
                         >
                           Process
                         </button>
@@ -424,43 +478,71 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </table>
             )}
           </div>
-        </div>
+        </motion.div>
 
-        {/* Right 1 Col: Live Audit / Governance Stream */}
-        <div className="bg-white rounded-lg border border-slate-200 shadow-2xs flex flex-col">
-          <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/90">
-            <div className="flex items-center gap-2">
-              <Activity className="w-4 h-4 text-blue-700" />
+        {/* Right: Live Audit Stream */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35, duration: 0.4 }}
+          className="bg-white rounded-xl border border-slate-200/80 flex flex-col"
+          style={{ boxShadow: 'var(--shadow-card)' }}
+        >
+          <div
+            className="p-4 flex items-center justify-between"
+            style={{
+              background: 'linear-gradient(180deg, #f8fafc, #ffffff)',
+              borderBottom: '1px solid #e2e8f0',
+            }}
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
+                <Activity className="w-3.5 h-3.5 text-blue-700" />
+              </div>
               <h3 className="text-sm font-bold text-slate-900 tracking-tight">Audit Log Stream</h3>
             </div>
             <button
               onClick={() => onNavigateTab('audit')}
-              className="text-xs text-blue-700 hover:underline font-semibold"
+              className="text-xs text-blue-700 hover:text-blue-900 font-semibold transition-colors px-2 py-1 rounded-lg hover:bg-blue-50"
             >
               Full Trail
             </button>
           </div>
 
           <div className="p-4 flex-1 space-y-3 overflow-y-auto max-h-[360px]">
-            {auditLog.slice(0, 6).map((log) => (
-              <div key={log.id} className="text-xs border-b border-slate-100 pb-2.5 last:border-0 last:pb-0">
-                <div className="flex items-center justify-between text-slate-500 text-[10px] mb-1">
+            {auditLog.slice(0, 6).map((log, index) => (
+              <motion.div
+                key={log.id}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.4 + index * 0.05, duration: 0.3 }}
+                className="text-xs pb-3 last:pb-0"
+                style={{ borderBottom: index < 5 ? '1px solid #f1f5f9' : 'none' }}
+              >
+                <div className="flex items-center justify-between text-[10px] mb-1.5">
                   <span className="font-bold text-slate-800">{log.actorName}</span>
                   <span className="font-mono text-slate-400">{formatDateIndian(log.timestamp)}</span>
                 </div>
-                <p className="font-medium text-slate-800 line-clamp-1">{log.reason || log.action}</p>
-                <div className="flex items-center justify-between mt-1 text-[10px]">
-                  <span className="font-mono text-blue-800 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 font-medium">
+                <p className="font-medium text-slate-700 line-clamp-1">{log.reason || log.action}</p>
+                <div className="flex items-center justify-between mt-1.5 text-[10px]">
+                  <span
+                    className="font-mono font-medium px-2 py-0.5 rounded-md"
+                    style={{
+                      background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
+                      color: '#1e40af',
+                      border: '1px solid #bfdbfe',
+                    }}
+                  >
                     {log.applicationNumber}
                   </span>
                   <span className="font-mono text-slate-400 text-[9px] truncate max-w-[100px]">
                     {log.tamperProofHash.slice(0, 16)}...
                   </span>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
