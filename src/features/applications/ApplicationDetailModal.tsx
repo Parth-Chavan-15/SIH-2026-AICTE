@@ -28,6 +28,8 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
+import { useScrutiny } from './hooks/useScrutiny';
+import { getOrCreateSnapshotForApplication } from '../../backend/modules/scrutiny/scrutinyService';
 
 interface ApplicationDetailModalProps {
   applicationId: string;
@@ -54,8 +56,22 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'details' | 'documents' | 'timeline' | 'observations' | 'evc' | 'compliance' | 'audit'
+    'overview' | 'details' | 'documents' | 'timeline' | 'observations' | 'evc' | 'compliance' | 'audit' | 'scrutiny_lock'
   >('overview');
+
+  const {
+    snapshots: scrutinySnapshots,
+    latestSnapshot,
+    loading: scrutinyLoading,
+    error: scrutinyError,
+    isSynthetic: isScrutinySynthetic,
+    correct: submitScrutinyCorrection,
+    refetch: refetchScrutiny
+  } = useScrutiny(applicationId);
+
+  const [testCorrectionItem, setTestCorrectionItem] = useState<'D1' | 'D2' | 'C3'>('D1');
+  const [testCorrectionText, setTestCorrectionText] = useState('Submitted rectified compliance documentation.');
+  const [testCorrectionFeedback, setTestCorrectionFeedback] = useState<{ success: boolean; message: string; rule?: string } | null>(null);
 
   // Transition form state
   const [selectedTargetStage, setSelectedTargetStage] = useState<WorkflowStage | ''>('');
@@ -145,6 +161,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
     { id: 'observations', label: `Observations (${application.observations.length})` },
     { id: 'evc', label: 'EVC Details' },
     { id: 'compliance', label: `Compliance (${appCompliances.length})` },
+    { id: 'scrutiny_lock', label: 'Scrutiny & Scope Lock (USP)' },
     { id: 'audit', label: 'Audit History' },
   ];
 
@@ -860,6 +877,239 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB: SCRUTINY & SCOPED RE-SCRUTINY LOCK (M2 USP B06) */}
+          {activeTab === 'scrutiny_lock' && (
+            <div className="space-y-5 animate-in fade-in duration-150">
+              {/* Header Banner */}
+              <div className="p-4 rounded-xl bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 text-amber-400" />
+                    <h3 className="font-bold text-sm tracking-tight">
+                      Scoped Re-scrutiny Correction Lock &bull; USP B06
+                    </h3>
+                  </div>
+                  <p className="text-xs text-blue-200 mt-0.5">
+                    Server-enforced immutability: Only items flagged in signed deficiency snapshot (D1/D2) can be altered.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 text-[10px]">
+                  <span className="px-2.5 py-1 rounded-full font-mono font-semibold bg-blue-500/30 text-blue-200 border border-blue-400/30">
+                    Gate G2 &bull; Pure Enforcement
+                  </span>
+                  <span className={`px-2.5 py-1 rounded-full font-mono font-semibold ${
+                    isScrutinySynthetic ? 'bg-amber-500/30 text-amber-200 border border-amber-400/30' : 'bg-emerald-500/30 text-emerald-200 border border-emerald-400/30'
+                  }`}>
+                    {isScrutinySynthetic ? 'SYNTHETIC Adapter' : 'Live /api/v1'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Active Snapshot Card */}
+              {(() => {
+                const effectiveSnapshot = latestSnapshot || getOrCreateSnapshotForApplication(application.id, application.documents);
+                return (
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-slate-500">Active Signed Snapshot:</span>
+                        <p className="font-mono text-xs font-bold text-slate-800">{effectiveSnapshot.id}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] uppercase font-bold text-slate-500">Signed Round:</span>
+                        <p className="font-bold text-xs text-indigo-700">Round {effectiveSnapshot.round} ({effectiveSnapshot.checklistVersion})</p>
+                      </div>
+                    </div>
+
+                    {/* Checklist Items Breakdown */}
+                    <div className="space-y-2">
+                      <span className="text-[11px] font-bold text-slate-700 block">Checklist Items &amp; Immutability Bounds:</span>
+                      <div className="grid grid-cols-1 gap-2">
+                        {effectiveSnapshot.items.map((item) => {
+                          const isDeficient = effectiveSnapshot.deficiencyItemIds.includes(item.itemId);
+                          return (
+                            <div
+                              key={item.itemId}
+                              className={`p-3 rounded-lg border flex items-center justify-between transition-all ${
+                                isDeficient
+                                  ? 'bg-amber-50/70 border-amber-300 text-amber-950'
+                                  : 'bg-emerald-50/70 border-emerald-300 text-emerald-950'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5">
+                                {isDeficient ? (
+                                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                                ) : (
+                                  <Lock className="w-4 h-4 text-emerald-600 shrink-0" />
+                                )}
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono font-bold text-xs bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                                      {item.itemId}
+                                    </span>
+                                    <span className="font-semibold text-xs">{item.reason || `Item ${item.itemId}`}</span>
+                                  </div>
+                                  <span className="text-[10px] text-slate-500 block mt-0.5">
+                                    Evidence versions: {item.evidenceVersionIds.join(', ') || 'N/A'}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <span
+                                className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
+                                  isDeficient
+                                    ? 'bg-amber-200 text-amber-900 border border-amber-300'
+                                    : 'bg-emerald-200 text-emerald-900 border border-emerald-300'
+                                }`}
+                              >
+                                {isDeficient ? 'Deficiency (Modifiable)' : 'Accepted (IMMUTABLE)'}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Interactive Scope Lock Tester (Gate G2 Showcase) */}
+              <div className="bg-white border-2 border-indigo-200 rounded-xl p-4 space-y-3 shadow-xs">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-indigo-600" />
+                  <h4 className="text-xs font-bold text-indigo-950 uppercase tracking-wider">
+                    Interactive Scope Lock Test Console (Gate G2 Live Verification)
+                  </h4>
+                </div>
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  Test server-side scope enforcement. Submit corrections for deficient items (<strong>D1</strong> or <strong>D2</strong>) to verify acceptance, or attempt to modify already-accepted item (<strong>C3</strong>) to verify server rejection.
+                </p>
+
+                <div className="space-y-3 pt-1">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-800 block mb-1">
+                      Target Checklist Item:
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['D1', 'D2', 'C3'] as const).map((id) => (
+                        <button
+                          key={id}
+                          type="button"
+                          onClick={() => {
+                            setTestCorrectionItem(id);
+                            setTestCorrectionFeedback(null);
+                          }}
+                          className={`p-2 rounded-lg border text-xs font-bold transition-all text-center ${
+                            testCorrectionItem === id
+                              ? id === 'C3'
+                                ? 'bg-rose-600 text-white border-rose-700 shadow-sm'
+                                : 'bg-blue-600 text-white border-blue-700 shadow-sm'
+                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          {id} {id === 'C3' ? '(Tamper Lock Test)' : '(Deficiency)'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-800 block mb-1">
+                      Correction Justification &amp; Evidence:
+                    </label>
+                    <input
+                      type="text"
+                      value={testCorrectionText}
+                      onChange={(e) => setTestCorrectionText(e.target.value)}
+                      className="w-full p-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    />
+                  </div>
+
+                  {/* Feedback Banner */}
+                  {testCorrectionFeedback && (
+                    <div
+                      className={`p-3 rounded-xl border text-xs leading-relaxed animate-in fade-in duration-150 ${
+                        testCorrectionFeedback.success
+                          ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
+                          : 'bg-rose-50 border-rose-300 text-rose-950'
+                      }`}
+                    >
+                      <div className="flex items-start gap-2">
+                        {testCorrectionFeedback.success ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                        )}
+                        <div>
+                          <p className="font-bold">
+                            {testCorrectionFeedback.success ? 'Correction Accepted by Server' : 'Server Rejection: Scope Violation'}
+                          </p>
+                          <p className="mt-0.5">{testCorrectionFeedback.message}</p>
+                          {testCorrectionFeedback.rule && (
+                            <span className="font-mono text-[10px] mt-1 block font-semibold text-rose-700 bg-rose-100/60 px-1.5 py-0.5 rounded w-fit">
+                              Failed Rule: {testCorrectionFeedback.rule}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-[10px] text-slate-400">
+                      Enforced server-side via pure validation &amp; event outbox.
+                    </span>
+                    <button
+                      type="button"
+                      disabled={scrutinyLoading}
+                      onClick={async () => {
+                        const targetSnapshot = latestSnapshot || getOrCreateSnapshotForApplication(application.id, application.documents);
+                        setTestCorrectionFeedback(null);
+                        const result = await submitScrutinyCorrection(targetSnapshot.id, [
+                          {
+                            itemId: testCorrectionItem,
+                            response: testCorrectionText,
+                            evidenceVersionIds: [`DOC-${testCorrectionItem}-UPDATE`]
+                          }
+                        ]);
+
+                        if (result.success) {
+                          setTestCorrectionFeedback({
+                            success: true,
+                            message: `Item ${testCorrectionItem} correction validated and accepted! Case state updated.`
+                          });
+                          await refetchScrutiny();
+                        } else {
+                          const err = 'error' in result ? result.error : null;
+                          setTestCorrectionFeedback({
+                            success: false,
+                            message: err?.message || 'Correction rejected by server.',
+                            rule: err?.failedRule
+                          });
+                        }
+                      }}
+                      className={`px-4 py-2 rounded-lg text-xs font-bold text-white transition-all shadow-sm ${
+                        testCorrectionItem === 'C3'
+                          ? 'bg-rose-600 hover:bg-rose-700'
+                          : 'bg-indigo-600 hover:bg-indigo-700'
+                      }`}
+                    >
+                      {scrutinyLoading ? 'Submitting to Backend...' : `Execute ${testCorrectionItem} Correction`}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Regulatory Notice Banner */}
+              <div className="p-3 bg-amber-50/80 rounded-xl border border-amber-200 text-amber-900 text-[11px] leading-relaxed flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>
+                  <strong>Prototype Integrity Notice:</strong> Status reflects SIH 2026 PS 26262 synthetic scenario fixtures. Demonstrates server-level authority preservation without altering live institutional records.
+                </span>
               </div>
             </div>
           )}

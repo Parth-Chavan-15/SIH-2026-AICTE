@@ -80,10 +80,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            {/* AICTE Emblem */}
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-700 flex items-center justify-center font-bold text-white shrink-0 relative overflow-hidden" style={{ boxShadow: '0 2px 8px rgba(217, 119, 6, 0.3), inset 0 1px 0 rgba(255,255,255,0.25)' }}>
-              <span className="tracking-tighter text-[10px] sm:text-xs font-extrabold relative z-10">AICTE</span>
-              <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
+            {/* AICTE Official Logo */}
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white flex items-center justify-center shrink-0 relative overflow-hidden shadow-md border border-amber-500/30">
+              <img
+                src="/assets/logo_image/image_e867798b.png"
+                alt="AICTE Official Emblem"
+                className="w-full h-full object-contain p-0.5"
+              />
             </div>
             <div className="min-w-0">
               <h1 className="text-sm sm:text-base font-bold tracking-tight text-white leading-tight truncate">
