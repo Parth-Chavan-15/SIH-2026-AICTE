@@ -1,9 +1,0 @@
-{
-  "success": false,
-  "error": {
-    "code": "PRECONDITION_FAILED",
-    "message": "Only item IDs in the signed deficiency set can be corrected.",
-    "failedRule": "RESCRUTINY_SCOPE_ONLY_SIGNED_DEFICIENCIES",
-    "currentVersion": 4
-  }
-}
