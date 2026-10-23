@@ -3,7 +3,6 @@ import { useApp } from '../../context/AppContext';
 import { NavTab } from '../../components/layout/Sidebar';
 import { SLABadge, StageBadge } from '../../components/common/StatusBadge';
 import { formatDateIndian } from '../../utils/slaCalculator';
-import { GovernanceGlobe3D } from '../../components/3d/GovernanceGlobe3D';
 import { motion } from 'motion/react';
 import {
   FileText,
@@ -23,6 +22,7 @@ import {
   Shield,
   Layers,
   MapPin,
+  Sparkles,
   HelpCircle,
 } from 'lucide-react';
 import {
@@ -107,133 +107,57 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* 🏛️ Command Banner with 3D Globe */}
-      <motion.div
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-        className="relative overflow-hidden rounded-xl text-white"
+      {/* 🏛️ Clean Executive Command Banner with link to 3D Workflow Simulator */}
+      <div
+        className="relative overflow-hidden rounded-2xl p-6 sm:p-7 text-white"
         style={{
-          background: 'linear-gradient(135deg, #061828 0%, #0A2540 45%, #0E355C 100%)',
-          boxShadow: '0 4px 24px -6px rgba(6, 24, 40, 0.5), 0 0 0 1px rgba(255,255,255,0.04)',
+          background: 'linear-gradient(135deg, #071A2E 0%, #0A2540 50%, #153E65 100%)',
+          boxShadow: '0 4px 20px -4px rgba(7, 26, 46, 0.4)',
         }}
       >
-        {/* Blueprint grid watermark */}
-        <div
-          className="absolute inset-0 opacity-[0.06] pointer-events-none"
-          style={{
-            backgroundImage:
-              'linear-gradient(#38bdf8 1px, transparent 1px), linear-gradient(90deg, #38bdf8 1px, transparent 1px)',
-            backgroundSize: '40px 40px',
-          }}
-        />
-
-        {/* Decorative gradient orbs */}
-        <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-[0.08] pointer-events-none" style={{ background: 'radial-gradient(circle, #2563eb, transparent 70%)' }} />
-        <div className="absolute -bottom-32 -left-16 w-72 h-72 rounded-full opacity-[0.05] pointer-events-none" style={{ background: 'radial-gradient(circle, #f59e0b, transparent 70%)' }} />
-
-        <div className="relative z-10 p-6 sm:p-8 flex flex-col lg:flex-row items-center justify-between gap-6">
-          {/* Left: Metadata & Actions */}
-          <div className="flex-1 max-w-2xl">
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1, duration: 0.35 }}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold mb-4"
-              style={{
-                background: 'rgba(15, 23, 42, 0.5)',
-                border: '1px solid rgba(96, 165, 250, 0.15)',
-                backdropFilter: 'blur(8px)',
-              }}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 badge-breathe"></span>
-              <span className="text-blue-200">{user.roleTitle}</span>
-              <span className="text-slate-600">•</span>
-              <span className="text-slate-400">{user.organization}</span>
-            </motion.div>
-
-            <motion.h2
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15, duration: 0.4 }}
-              className="text-xl sm:text-2xl lg:text-[28px] font-extrabold tracking-tight text-white leading-tight"
-            >
-              AICTE National Approval Command Center
-            </motion.h2>
-
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.25, duration: 0.4 }}
-              className="text-xs sm:text-sm text-slate-400 mt-2.5 leading-relaxed font-normal max-w-xl"
-            >
-              Statutory processing under the <strong className="text-slate-200">Approval Process Handbook (APH 2024–27)</strong>.
-              Real-time scrutiny workflow routing, committee inspection scheduling, and SLA timeline enforcement across 8 Regional Bureaus.
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.35 }}
-              className="flex flex-wrap items-center gap-3 mt-6"
-            >
-              {role === 'institution' && (
-                <button
-                  onClick={onOpenNewAppModal}
-                  className="btn-gov-saffron flex items-center gap-2 active:scale-[0.97]"
-                >
-                  <PlusCircle className="w-4 h-4" />
-                  <span>Submit New Application</span>
-                </button>
-              )}
-
-              {(role === 'regional_officer' || role === 'bureau_officer' || role === 'admin') && (
-                <button
-                  onClick={() => onNavigateTab('pendency')}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-semibold text-xs transition-all duration-200 active:scale-[0.97]"
-                  style={{
-                    background: 'linear-gradient(135deg, #be123c, #e11d48)',
-                    border: '1px solid rgba(244, 63, 94, 0.3)',
-                    boxShadow: '0 2px 8px rgba(190, 18, 60, 0.25)',
-                  }}
-                >
-                  <AlertOctagon className="w-4 h-4" />
-                  <span>Review Overdue SLA Cases ({overdueApps})</span>
-                </button>
-              )}
-
-              <button
-                onClick={() => onNavigateTab('applications')}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-slate-300 hover:text-white font-medium text-xs transition-all duration-200 active:scale-[0.97]"
-                style={{
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                }}
-              >
-                <span>View All Applications</span>
-                <ArrowRight className="w-3.5 h-3.5 text-slate-500" />
-              </button>
-            </motion.div>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="max-w-2xl space-y-2">
+            <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+              Integrated Workflow Automation & Compliance System
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-xl">
+              Real-time scrutiny routing, committee inspection scheduling, and SLA timeline enforcement across 8 Regional Bureaus under APH 2026-27.
+            </p>
           </div>
 
-          {/* Right: 3D Globe */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-            className="w-full lg:w-72 xl:w-80 h-48 sm:h-56 shrink-0 flex flex-col items-center justify-center rounded-xl p-2"
-            style={{
-              background: 'rgba(4, 16, 29, 0.6)',
-              border: '1px solid rgba(255,255,255,0.04)',
-              boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.2)',
-            }}
-          >
-            <div className="w-full h-full relative">
-              <GovernanceGlobe3D className="w-full h-full" />
-            </div>
-          </motion.div>
+          {/* Quick Action Buttons */}
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+
+            {role === 'institution' && (
+              <button
+                onClick={onOpenNewAppModal}
+                className="btn-gov-saffron flex items-center gap-2 active:scale-[0.97]"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>Submit Application</span>
+              </button>
+            )}
+
+            {(role === 'regional_officer' || role === 'bureau_officer' || role === 'admin') && (
+              <button
+                onClick={() => onNavigateTab('pendency')}
+                className="px-3.5 py-2.5 rounded-xl text-white font-semibold text-xs bg-rose-600 hover:bg-rose-700 shadow-xs flex items-center gap-2 transition-colors active:scale-[0.97]"
+              >
+                <AlertOctagon className="w-4 h-4" />
+                <span>Review Overdue ({overdueApps})</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => onNavigateTab('applications')}
+              className="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-medium text-xs transition-colors flex items-center gap-1.5"
+            >
+              <span>All Applications</span>
+              <ArrowRight className="w-3.5 h-3.5 text-slate-300" />
+            </button>
+          </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* 📊 KPI Metrics Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">

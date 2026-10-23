@@ -2,129 +2,156 @@ import React, { useRef, useState, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-// 8 Regional Bureaus of AICTE with spherical coordinates
-const REGIONAL_NODES = [
-  { name: 'Western (Mumbai)', pos: [1.2, 0.4, 0.9], code: 'WRO' },
-  { name: 'Northern (Kanpur)', pos: [0.8, 1.2, 0.6], code: 'NRO' },
-  { name: 'Southern (Chennai)', pos: [0.9, -0.8, 1.1], code: 'SRO' },
-  { name: 'Eastern (Kolkata)', pos: [1.4, 0.6, -0.4], code: 'ERO' },
-  { name: 'Central (Bhopal)', pos: [0.6, 0.2, 1.4], code: 'CRO' },
-  { name: 'South-West (Bengaluru)', pos: [0.4, -1.1, 0.9], code: 'SWRO' },
-  { name: 'North-West (Chandigarh)', pos: [0.5, 1.5, 0.2], code: 'NWRO' },
-  { name: 'HQ (New Delhi)', pos: [0.3, 1.0, 1.1], code: 'HQ-DELHI', isHQ: true },
+// 4 Regulatory Approval Lifecycle Stages per AICTE PS 26262
+const WORKFLOW_NODES = [
+  { name: '1. Scrutiny Stage', code: 'SCRUTINY', desc: 'Document Verification & Rule Check', color: '#38BDF8', angle: 0 },
+  { name: '2. EVC Inspection', code: 'EVC', desc: 'Infrastructure & Faculty Verification', color: '#60A5FA', angle: Math.PI / 2 },
+  { name: '3. SAC / SHC Review', code: 'COMMITTEE', desc: 'Standing Appellate Committee', color: '#818CF8', angle: Math.PI },
+  { name: '4. Approval Issuance', code: 'APPROVAL', desc: 'Digital Order & Compliance Seal', color: '#34D399', angle: (3 * Math.PI) / 2 },
 ];
 
-function InteractiveGlobe() {
+function WorkflowPipeline3D() {
   const groupRef = useRef<THREE.Group>(null);
+  const coreRef = useRef<THREE.Mesh>(null);
   const ringRef1 = useRef<THREE.Mesh>(null);
   const ringRef2 = useRef<THREE.Mesh>(null);
-  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const [hoveredStage, setHoveredStage] = useState<string | null>(null);
 
-  // Smooth continuous rotation
+  // Smooth continuous rotation & floating motion
   useFrame((_, delta) => {
     if (groupRef.current) {
-      groupRef.current.rotation.y += delta * 0.22;
-      groupRef.current.rotation.x = Math.sin(Date.now() * 0.0004) * 0.12;
+      groupRef.current.rotation.y += delta * 0.28;
+      groupRef.current.rotation.x = Math.sin(Date.now() * 0.0006) * 0.15;
+    }
+    if (coreRef.current) {
+      coreRef.current.rotation.x += delta * 0.45;
+      coreRef.current.rotation.y += delta * 0.35;
     }
     if (ringRef1.current) {
-      ringRef1.current.rotation.z += delta * 0.15;
+      ringRef1.current.rotation.z += delta * 0.2;
     }
     if (ringRef2.current) {
-      ringRef2.current.rotation.x += delta * 0.18;
+      ringRef2.current.rotation.z -= delta * 0.15;
     }
   });
 
-  // Calculate connection lines between regional nodes and AICTE HQ
-  const connectionLines = useMemo(() => {
-    const hq = REGIONAL_NODES.find((n) => n.isHQ)!;
+  // Calculate orbital connection path connecting the 4 workflow stages
+  const pipelineLoop = useMemo(() => {
     const points: THREE.Vector3[] = [];
-    REGIONAL_NODES.forEach((node) => {
-      if (!node.isHQ) {
-        points.push(new THREE.Vector3(...(hq.pos as [number, number, number])));
-        points.push(new THREE.Vector3(...(node.pos as [number, number, number])));
-      }
+    const segments = 64;
+    const radius = 1.6;
+    for (let i = 0; i <= segments; i++) {
+      const theta = (i / segments) * Math.PI * 2;
+      points.push(new THREE.Vector3(Math.cos(theta) * radius, 0, Math.sin(theta) * radius));
+    }
+    return new THREE.BufferGeometry().setFromPoints(points);
+  }, []);
+
+  // Beams from central regulatory engine to each stage node
+  const beamLines = useMemo(() => {
+    const points: THREE.Vector3[] = [];
+    const radius = 1.6;
+    WORKFLOW_NODES.forEach((node) => {
+      points.push(new THREE.Vector3(0, 0, 0));
+      points.push(new THREE.Vector3(Math.cos(node.angle) * radius, 0, Math.sin(node.angle) * radius));
     });
-    const geometry = new THREE.BufferGeometry().setFromPoints(points);
-    return geometry;
+    return new THREE.BufferGeometry().setFromPoints(points);
   }, []);
 
   return (
     <group ref={groupRef}>
-      {/* Central Core Sphere - Official Sovereign Blue Glass */}
-      <mesh>
-        <sphereGeometry args={[1.4, 32, 32]} />
+      {/* Central Regulatory Core Engine - Rotating 3D Holographic Octahedron */}
+      <mesh ref={coreRef} position={[0, 0, 0]}>
+        <octahedronGeometry args={[0.7, 0]} />
         <meshStandardMaterial
-          color="#0B2545"
-          emissive="#061828"
-          roughness={0.4}
-          metalness={0.7}
+          color="#1E40AF"
+          emissive="#0284C7"
+          emissiveIntensity={0.6}
+          roughness={0.2}
+          metalness={0.8}
+          wireframe={false}
           transparent
-          opacity={0.88}
+          opacity={0.9}
         />
       </mesh>
 
-      {/* Wireframe Mesh Outer Shell */}
-      <mesh>
-        <sphereGeometry args={[1.42, 20, 20]} />
-        <meshBasicMaterial
-          color="#38BDF8"
-          wireframe
-          transparent
-          opacity={0.22}
-        />
+      {/* Core Wireframe Overlay */}
+      <mesh position={[0, 0, 0]}>
+        <octahedronGeometry args={[0.72, 1]} />
+        <meshBasicMaterial color="#38BDF8" wireframe transparent opacity={0.35} />
       </mesh>
 
-      {/* Orbital Technical Rings */}
-      <mesh ref={ringRef1} rotation={[Math.PI / 4, 0, 0]}>
-        <ringGeometry args={[1.85, 1.88, 64]} />
-        <meshBasicMaterial color="#60A5FA" side={THREE.DoubleSide} transparent opacity={0.35} />
+      {/* Inner Energy Sphere */}
+      <mesh position={[0, 0, 0]}>
+        <sphereGeometry args={[0.35, 16, 16]} />
+        <meshBasicMaterial color="#67E8F9" transparent opacity={0.7} />
       </mesh>
 
-      <mesh ref={ringRef2} rotation={[-Math.PI / 5, Math.PI / 3, 0]}>
-        <ringGeometry args={[2.05, 2.08, 64]} />
-        <meshBasicMaterial color="#38BDF8" side={THREE.DoubleSide} transparent opacity={0.25} />
+      {/* Main Workflow Stage Orbit Ring */}
+      <lineLoop geometry={pipelineLoop}>
+        <lineBasicMaterial color="#38BDF8" transparent opacity={0.5} />
+      </lineLoop>
+
+      {/* Outer Technical Stage Ring 1 */}
+      <mesh ref={ringRef1} rotation={[Math.PI / 6, 0, 0]}>
+        <ringGeometry args={[1.75, 1.78, 48]} />
+        <meshBasicMaterial color="#60A5FA" side={THREE.DoubleSide} transparent opacity={0.25} />
       </mesh>
 
-      {/* Connection Lines from HQ to Regional Bureaus */}
-      <lineSegments geometry={connectionLines}>
-        <lineBasicMaterial color="#38BDF8" transparent opacity={0.45} />
+      {/* Outer Technical Stage Ring 2 */}
+      <mesh ref={ringRef2} rotation={[-Math.PI / 4, 0, 0]}>
+        <ringGeometry args={[1.9, 1.93, 48]} />
+        <meshBasicMaterial color="#818CF8" side={THREE.DoubleSide} transparent opacity={0.18} />
+      </mesh>
+
+      {/* Data Beams connecting core to each stage */}
+      <lineSegments geometry={beamLines}>
+        <lineBasicMaterial color="#38BDF8" transparent opacity={0.3} />
       </lineSegments>
 
-      {/* 8 Regional Bureau Nodes */}
-      {REGIONAL_NODES.map((node, i) => (
-        <group key={i} position={node.pos as [number, number, number]}>
-          <mesh
-            onPointerOver={(e) => {
-              e.stopPropagation();
-              setHoveredNode(node.name);
-            }}
-            onPointerOut={() => setHoveredNode(null)}
-          >
-            <sphereGeometry args={[node.isHQ ? 0.12 : 0.08, 16, 16]} />
-            <meshStandardMaterial
-              color={node.isHQ ? '#F59E0B' : '#60A5FA'}
-              emissive={node.isHQ ? '#D97706' : '#2563EB'}
-              emissiveIntensity={hoveredNode === node.name ? 1.5 : 0.8}
-            />
-          </mesh>
+      {/* 4 Interactive Workflow Stage Satellite Nodes */}
+      {WORKFLOW_NODES.map((node, i) => {
+        const radius = 1.6;
+        const x = Math.cos(node.angle) * radius;
+        const z = Math.sin(node.angle) * radius;
+        const isHovered = hoveredStage === node.name;
 
-          {/* Node Halo Ring */}
-          <mesh rotation={[Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[0.13, 0.16, 16]} />
-            <meshBasicMaterial
-              color={node.isHQ ? '#F59E0B' : '#93C5FD'}
-              side={THREE.DoubleSide}
-              transparent
-              opacity={0.6}
-            />
-          </mesh>
-        </group>
-      ))}
+        return (
+          <group key={i} position={[x, 0, z]}>
+            {/* Outer Stage Pulse Ring */}
+            <mesh rotation={[Math.PI / 2, 0, 0]}>
+              <ringGeometry args={[0.22, 0.25, 24]} />
+              <meshBasicMaterial color={node.color} side={THREE.DoubleSide} transparent opacity={isHovered ? 0.9 : 0.4} />
+            </mesh>
+
+            {/* Stage Satellite Node Sphere */}
+            <mesh
+              onPointerOver={(e) => {
+                e.stopPropagation();
+                setHoveredStage(node.name);
+              }}
+              onPointerOut={(e) => {
+                e.stopPropagation();
+                setHoveredStage(null);
+              }}
+            >
+              <sphereGeometry args={[isHovered ? 0.22 : 0.16, 20, 20]} />
+              <meshStandardMaterial
+                color={node.color}
+                emissive={node.color}
+                emissiveIntensity={isHovered ? 1.0 : 0.5}
+                roughness={0.2}
+                metalness={0.6}
+              />
+            </mesh>
+          </group>
+        );
+      })}
     </group>
   );
 }
 
-// Fallback view in case of WebGL initialization failure
+// Fallback in case of WebGL initialization failure
 class ErrorBoundary3D extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
   constructor(props: { children: React.ReactNode }) {
     super(props);
@@ -137,10 +164,10 @@ class ErrorBoundary3D extends React.Component<{ children: React.ReactNode }, { h
     if (this.state.hasError) {
       return (
         <div className="w-full h-full flex flex-col items-center justify-center text-center p-4">
-          <div className="w-24 h-24 rounded-lg bg-blue-950/80 border border-blue-500/30 flex items-center justify-center">
-            <span className="text-blue-300 text-xs font-mono">AICTE GRID</span>
+          <div className="w-20 h-20 rounded-xl bg-blue-950/80 border border-blue-500/30 flex items-center justify-center">
+            <span className="text-blue-300 text-xs font-mono">AICTE FLOW</span>
           </div>
-          <span className="text-[11px] text-slate-400 mt-2 font-medium">8 Regional Bureaus Connected</span>
+          <span className="text-[11px] text-slate-400 mt-2 font-medium">Workflow Automation Active</span>
         </div>
       );
     }
@@ -153,22 +180,17 @@ export const GovernanceGlobe3D: React.FC<{ className?: string }> = ({ className 
     <div className={`relative ${className} select-none`}>
       <ErrorBoundary3D>
         <Canvas
-          camera={{ position: [0, 0, 3.8], fov: 45 }}
+          camera={{ position: [0, 1.4, 3.4], fov: 45 }}
           gl={{ antialias: true, alpha: true }}
           style={{ background: 'transparent' }}
         >
-          <ambientLight intensity={0.9} />
-          <directionalLight position={[5, 5, 5]} intensity={1.2} />
-          <pointLight position={[-5, -5, -3]} color="#38BDF8" intensity={0.8} />
-          <InteractiveGlobe />
+          <ambientLight intensity={1.1} />
+          <directionalLight position={[4, 6, 4]} intensity={1.5} />
+          <pointLight position={[-4, -3, -3]} color="#38BDF8" intensity={0.9} />
+          <pointLight position={[0, 0, 0]} color="#34D399" intensity={0.8} />
+          <WorkflowPipeline3D />
         </Canvas>
       </ErrorBoundary3D>
-
-      {/* Floating Status Pill (Administrative style) */}
-      <div className="absolute bottom-2 right-2 bg-[#061828]/90 backdrop-blur-xs border border-slate-700/80 rounded-md px-2.5 py-1 text-[10px] text-slate-300 flex items-center gap-1.5 shadow-md pointer-events-none">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span className="font-mono font-medium tracking-wide">8 AICTE REGIONAL BUREAUS LIVE</span>
-      </div>
     </div>
   );
 };

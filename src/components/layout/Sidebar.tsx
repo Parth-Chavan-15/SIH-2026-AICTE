@@ -17,12 +17,14 @@ import {
   ChevronRight,
   AlertCircle,
   Building,
+  Sparkles,
 } from 'lucide-react';
 
 export type NavTab =
   | 'overview'
   | 'applications'
   | 'workflow'
+  | 'simulation'
   | 'pendency'
   | 'evc'
   | 'compliance'
@@ -85,6 +87,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'workflow',
       label: 'Approval Workflow',
       icon: GitMerge,
+      allowedRoles: ['all'],
+      section: 'Core Operations',
+    },
+    {
+      id: 'simulation',
+      label: 'Workflow Simulation',
+      icon: Sparkles,
       allowedRoles: ['all'],
       section: 'Core Operations',
     },

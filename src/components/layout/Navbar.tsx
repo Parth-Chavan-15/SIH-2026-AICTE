@@ -67,34 +67,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="sticky top-0 z-40 bg-gradient-to-b from-[#071A2E] to-[#0A2540] text-white shadow-lg" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-      {/* National Tricolor Top Accent Strip */}
-      <div className="tricolor-strip" />
-
-      {/* Top Prototype / Demonstration Notice */}
-      <div className="bg-[#04101D]/90 px-4 py-1.5 text-[11px] flex flex-wrap items-center justify-between text-slate-400" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-        <div className="flex items-center gap-2">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 badge-breathe"></span>
-          <span className="text-slate-300 font-medium">SIH 2026 Prototype — PS 26262</span>
-          <span className="hidden sm:inline text-slate-600">|</span>
-          <span className="hidden sm:inline text-[10px] font-medium px-2 py-0.5 rounded-md bg-blue-950/80 text-blue-300 border border-blue-800/40">
-            Simulated Case-Management Console &bull; Academic Evaluation
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="hidden md:inline text-amber-400/90 text-[10px] font-medium bg-amber-950/40 px-2 py-0.5 rounded border border-amber-800/30">
-            Demo Environment (Local Mock Mode)
-          </span>
-          <button
-            onClick={resetDemoData}
-            title="Reset demonstration data to clean state"
-            className="flex items-center gap-1 text-slate-400 hover:text-amber-300 transition-all duration-200 text-[11px] group"
-          >
-            <RotateCcw className="w-3 h-3 group-hover:rotate-180 transition-transform duration-500" />
-            <span>Reset Demo</span>
-          </button>
-        </div>
-      </div>
-
       {/* Main Bar */}
       <div className="px-4 sm:px-6 h-[60px] flex items-center justify-between gap-4">
         {/* Left: Hamburger & Brand */}
@@ -225,6 +197,16 @@ export const Navbar: React.FC<NavbarProps> = ({
               </>
             )}
           </div>
+
+          {/* Reset Demo Quick Action */}
+          <button
+            onClick={resetDemoData}
+            title="Reset demonstration data"
+            className="p-2 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-white/5 transition-all duration-200 active:scale-95 group"
+            aria-label="Reset demo data"
+          >
+            <RotateCcw className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" />
+          </button>
 
           {/* Notifications Button */}
           <button

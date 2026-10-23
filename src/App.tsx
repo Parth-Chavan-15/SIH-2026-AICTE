@@ -19,6 +19,7 @@ import { ReportsView } from './features/reports/ReportsView';
 import { AuditView } from './features/audit/AuditView';
 import { ConfigRulesView } from './features/admin/ConfigRulesView';
 import { UserManagementView } from './features/admin/UserManagementView';
+import { WorkflowSimulationView } from './features/simulation/WorkflowSimulationView';
 
 import { Search, ChevronRight, X, Building, Shield } from 'lucide-react';
 
@@ -70,6 +71,7 @@ const MainLayout: React.FC = () => {
     overview: 'Command Center Overview',
     applications: 'Application Management',
     workflow: 'Approval Workflow Automation',
+    simulation: 'Workflow Simulation Engine (3D USP)',
     pendency: 'SLA Pendency Monitoring',
     evc: 'EVC Inspection Scheduling',
     compliance: 'Institutional Compliance',
@@ -103,21 +105,6 @@ const MainLayout: React.FC = () => {
 
         {/* Content Area */}
         <main className="flex-1 overflow-y-auto flex flex-col" style={{ background: '#f0f2f7' }}>
-          {/* Breadcrumbs and Page Bar */}
-          <div className="bg-white/80 px-4 sm:px-8 py-2.5 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(226, 232, 240, 0.7)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
-            <div className="flex items-center gap-1.5 text-xs text-slate-500">
-              <span className="font-medium text-slate-400">Portal</span>
-              <ChevronRight className="w-3 h-3 text-slate-300" />
-              <span className="font-bold text-slate-800">{tabLabels[currentTab]}</span>
-            </div>
-
-            <div className="hidden sm:flex items-center gap-2 text-xs">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              <span className="text-slate-500">
-                Operating as: <strong className="text-slate-700">{user.roleTitle}</strong>
-              </span>
-            </div>
-          </div>
 
           {/* View Container */}
           <div className="p-4 sm:p-8 flex-1 max-w-7xl w-full mx-auto">
@@ -139,6 +126,8 @@ const MainLayout: React.FC = () => {
             {currentTab === 'workflow' && (
               <WorkflowView onSelectApplication={(id) => setSelectedAppId(id)} />
             )}
+
+            {currentTab === 'simulation' && <WorkflowSimulationView />}
 
             {currentTab === 'pendency' && (
               <PendencyView onSelectApplication={(id) => setSelectedAppId(id)} />
