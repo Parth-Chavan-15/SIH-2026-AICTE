@@ -83,9 +83,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* AICTE Official Logo */}
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white flex items-center justify-center shrink-0 relative overflow-hidden shadow-md border border-amber-500/30">
               <img
-                src="/assets/aistudio/image_e867798b.png"
+                src="/assets/logo_image/image_e867798b.png"
                 alt="AICTE Official Emblem"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain p-0.5"
               />
             </div>
             <div className="min-w-0">
