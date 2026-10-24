@@ -255,12 +255,13 @@ class APIService {
 
     return {
       id: actor?.id ?? 'UNAUTHENTICATED',
-      name: (actor?.id === 'SYN-ACTOR-COEP' || actor?.id === 'usr-inst-coep') ? 'Institution Signatory (College A–D)'
-        : (actor?.id === 'SYN-ACTOR-VJTI' || actor?.id === 'usr-inst-vjti') ? 'Institution Signatory (College E - Isolated)'
-        : (actor?.id === 'SYN-ACTOR-RO' || actor?.id === 'usr-ro-western') ? 'Regional Officer (Scrutiny Cell)'
-        : (actor?.id === 'SYN-ACTOR-EVC' || actor?.id === 'usr-evc-chair') ? 'EVC Inspection Committee Expert'
-        : (actor?.id === 'SYN-ACTOR-BUREAU' || actor?.id === 'usr-bureau-hq') ? 'Competent Authority (Council EC)'
-        : (actor?.id === 'SYN-ACTOR-ADMIN' || actor?.id === 'usr-admin-hq') ? 'Central Policy Administrator'
+      name: (actor?.id === 'SYN-ACTOR-COEP' || actor?.id === 'usr-inst-coep') ? 'Institution (Applicant)'
+        : (actor?.id === 'SYN-ACTOR-VJTI' || actor?.id === 'usr-inst-vjti') ? 'Institution (Applicant - Isolated)'
+        : (actor?.id === 'usr-scrutiny-reviewer') ? 'Scrutiny Reviewer (Committee)'
+        : (actor?.id === 'SYN-ACTOR-RO' || actor?.id === 'usr-ro-western') ? 'Regional / Bureau Officer (RO / RB)'
+        : (actor?.id === 'SYN-ACTOR-EVC' || actor?.id === 'usr-evc-chair') ? 'EVC Coordinator / Member'
+        : (actor?.id === 'SYN-ACTOR-BUREAU' || actor?.id === 'usr-bureau-hq') ? 'Competent Authority User'
+        : (actor?.id === 'SYN-ACTOR-ADMIN' || actor?.id === 'usr-admin-hq' || actor?.id === 'usr-admin') ? 'System Policy Administrator'
         : (actor?.id ?? 'Unauthenticated'),
       role,
       roleTitle: actor?.roles.join(', ') ?? 'Unauthenticated',

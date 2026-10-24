@@ -55,6 +55,19 @@ export const BUILT_IN_DEMO_ACCOUNTS: DemoAccount[] = [
     },
   },
   {
+    email: 'scrutiny.reviewer@aicte.gov.in',
+    passwordHash: DEMO_PW_HASH,
+    active: true,
+    actor: {
+      id: 'usr-scrutiny-reviewer',
+      roles: ['reviewer'],
+      permissions: ['case.read', 'case.transition', 'scrutiny.sign', 'scrutiny.rescrutinize', 'document.read', 'document.review', 'notification.read'],
+      scope: 'global',
+      institutionIds: [],
+      regionIds: ['WRO', 'SCRO', 'Western', 'South-Central'],
+    },
+  },
+  {
     email: 'ro.western@aicte.gov.in',
     passwordHash: DEMO_PW_HASH,
     active: true,
