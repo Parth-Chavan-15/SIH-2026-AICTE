@@ -797,7 +797,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-slate-900 text-sm">Time-Bound Undertakings &amp; Compliance Deficits</span>
-                        <span className="text-xs text-slate-500">6-Month Faculty &amp; 30-Day Lease Deeds (APH §2.20)</span>
+                        <span className="text-xs text-slate-500">6-Month Faculty &amp; 30-Day Lease Deeds (APH §2.25(c)/(f))</span>
                       </div>
                       <div className="border border-slate-200 rounded-xl overflow-hidden">
                         <table className="w-full text-left">

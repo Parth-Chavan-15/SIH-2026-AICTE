@@ -67,7 +67,7 @@ describe('T17–T22 Acceptance Verification Suite (100% PS 26262 & Ecosystem Har
       .set('Origin', 'http://localhost:3000')
       .send({
         targetStage: 'submitted',
-        reason: 'Deficiency identified in structural stability certificate per APH §2.20',
+        reason: 'Deficiency identified in structural stability certificate per APH §1.8(f) & §2.23.1',
         revertedBy: 'Regional Officer'
       });
     expect(validRes.status).toBe(200);

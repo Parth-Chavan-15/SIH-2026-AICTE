@@ -3,13 +3,16 @@
  * Smart India Hackathon 2026 | Problem Statement 26262: AICTE Regulation Bureau
  * 
  * Enforces Zero-Rewrite Companion Architecture connecting to existing AICTE & National systems:
- * 1. AICTE Web-Portal Automated Committee Selection Sync (APH §1.8(a), §1.9(a) & 2026-27 Addendum G02)
+ * 1. AICTE Web-Portal Automated Committee Selection Sync (APH §1.8(a)-(c), §1.9(a)-(g) & 2026-27 Addendum G02)
  * 2. AICTESigner / mSigner Class-3 DSC Verification Gateway (APH §1.4.3, §1.4.6, §2.3.4(a))
  * 3. API Setu / External Statutory Registries Hub (NBA, NAAC, NIRF, MoE IIC, ABC/APAAR, Anti-Ragging)
  * 4. Affiliating University & State DTE 15-Day NOC Concurrence Tracker (APH §1.4.5 & §2.19(c))
  * 5. Downstream Siebel Status Write-Back & 6-Authority Statutory Bulk Dispatch (APH §2.25)
  * 
- * Honesty Tag: Every adapter returns explicit SOURCE_STATUS_OBSERVED & SIMULATED_ADAPTER metadata.
+ * Honesty & Guardrail Tags:
+ * - integrationMode: "SIMULATED_COMPANION_ADAPTER"
+ * - evidenceState: "SOURCE_STATUS_OBSERVED"
+ * - syncStatus: "SYNCHRONIZED" | "RECONCILIATION_REQUIRED"
  */
 
 export interface CommitteeExpert {
@@ -17,28 +20,40 @@ export interface CommitteeExpert {
   name: string;
   designation: string;
   organization: string;
-  specialization: 'Academic Expert (NIT/IIT)' | 'Architect Expert (COA Registered)' | 'Legal Expert' | 'Industry Expert';
+  specialization: 'Academic Expert (NIT/IIT)' | 'Architect Expert (COA Registered per Def. 11)' | 'Legal Expert (Advocate Bar Council per Def. 4)' | 'Industry Expert';
   noConflictDeclarationSigned: boolean;
   declarationTimestamp: string;
 }
 
 export interface CommitteeRosterSync {
   adapterType: 'SIMULATED_ADAPTER';
-  sourceSystem: 'AICTE_CENTRAL_PORTAL_EXPERT_MANAGEMENT_SYSTEM';
+  integrationMode: 'SIMULATED_COMPANION_ADAPTER';
+  evidenceState: 'SOURCE_STATUS_OBSERVED';
+  authoritativeOwner: 'AICTE_CENTRAL_EXPERT_MANAGEMENT_PORTAL';
+  syncStatus: 'SYNCHRONIZED' | 'RECONCILIATION_REQUIRED';
   caseId: string;
   committeeId: string;
   committeeType: 'SCRUTINY' | 'EVC' | 'SAC_SHC' | 'RE_EVC';
   constitutedBy: 'AICTE_COUNCIL_EXECUTIVE_COMMITTEE';
+  statutoryCompositionRule: string;
   roster: CommitteeExpert[];
   unbiasedDeclarationComplete: boolean;
+  gpsInspectionWindow?: string;
+  walkthroughVideoStreamUrl?: string;
+  campusGpsCoordinates?: string;
   syncedAt: string;
 }
 
 export interface DSCVerificationResult {
   adapterType: 'SIMULATED_ADAPTER';
+  integrationMode: 'SIMULATED_COMPANION_ADAPTER';
+  evidenceState: 'SOURCE_STATUS_OBSERVED';
+  authoritativeOwner: 'CCA_INDIA_DIGITAL_SIGNATURE_GATEWAY';
   gateway: 'AICTESigner / mSigner V3.2';
+  syncStatus: 'SYNCHRONIZED' | 'RECONCILIATION_REQUIRED';
   documentId: string;
   dscSigned: boolean;
+  certificateLevel?: 'Class-3 e-Token';
   tokenType: 'ePass2003Auto USB Cryptographic Token' | 'mSigner Soft Token PKI';
   certificateAuthority: 'eMudhra Class-3 Corporate Sub CA' | 'NIC CA 2022' | 'Capricorn Sub CA';
   certSerialNumber: string;
@@ -52,7 +67,11 @@ export interface DSCVerificationResult {
 
 export interface ExternalRegistriesData {
   adapterType: 'SIMULATED_ADAPTER';
+  integrationMode: 'SIMULATED_COMPANION_ADAPTER';
+  evidenceState: 'SOURCE_STATUS_OBSERVED';
+  authoritativeOwner: 'API_SETU_NATIONAL_DATA_EXCHANGE';
   gateway: 'API_SETU_NATIONAL_EXCHANGE';
+  syncStatus: 'SYNCHRONIZED' | 'RECONCILIATION_REQUIRED';
   caseId: string;
   observedAt: string;
   nbaRegistry: {
@@ -97,6 +116,10 @@ export interface ExternalRegistriesData {
 
 export interface ConcurrenceTracker {
   adapterType: 'SIMULATED_ADAPTER';
+  integrationMode: 'SIMULATED_COMPANION_ADAPTER';
+  evidenceState: 'SOURCE_STATUS_OBSERVED';
+  authoritativeOwner: 'STATE_DTE_AND_AFFILIATING_UNIVERSITY_PORTAL';
+  syncStatus: 'SYNCHRONIZED' | 'RECONCILIATION_REQUIRED';
   caseId: string;
   affiliatingUniversity: {
     universityName: string;
@@ -123,6 +146,10 @@ export interface ConcurrenceTracker {
 
 export interface SiebelWritebackResult {
   adapterType: 'SIMULATED_ADAPTER';
+  integrationMode: 'SIMULATED_COMPANION_ADAPTER';
+  evidenceState: 'SOURCE_STATUS_OBSERVED';
+  authoritativeOwner: 'AICTE_SIEBEL_CORE_CRM';
+  syncStatus: 'SYNCHRONIZED' | 'RECONCILIATION_REQUIRED';
   targetSystem: 'AICTE_SIEBEL_CORE_CRM_PARTNER_PORTAL';
   caseId: string;
   syncTimestamp: string;
@@ -136,62 +163,200 @@ export interface SiebelWritebackResult {
 }
 
 /**
- * 1. AICTE Web-Portal Automated Committee Selection Sync
+ * 1. AICTE Web-Portal Automated Committee Selection Sync (APH §1.8, §1.9, §1.11 & GIITS Real 2026-27 Dossier)
  */
-export function getCommitteeRoster(caseId: string, committeeType: 'SCRUTINY' | 'EVC' | 'SAC_SHC' | 'RE_EVC' = 'EVC'): CommitteeRosterSync {
+export function getCommitteeRoster(
+  caseId: string,
+  committeeType: 'SCRUTINY' | 'EVC' | 'SAC_SHC' | 'RE_EVC' = 'EVC'
+): CommitteeRosterSync {
   const isGIITS = caseId.includes('GIITS');
+  const isNew = caseId.includes('NEW') || caseId.includes('LOA');
   const nowIso = new Date().toISOString();
 
-  const committeeId = committeeType === 'SCRUTINY' ? '2-SOC1770029225'
-    : committeeType === 'SAC_SHC' ? '2-SOC1776333767'
-    : committeeType === 'RE_EVC' ? '2-SOC1776678217'
-    : '2-SOC1774344316';
+  let committeeId: string;
+  let statutoryRule: string;
+  let roster: CommitteeExpert[];
 
-  const roster: CommitteeExpert[] = [
-    {
-      expertId: 'EXP-ACAD-01',
-      name: 'Prof. S. Velmurugan',
-      designation: 'Senior Professor (HAG) & Committee Chairman',
-      organization: 'Indian Institute of Technology (IIT) Madras',
-      specialization: 'Academic Expert (NIT/IIT)',
-      noConflictDeclarationSigned: true,
-      declarationTimestamp: '2026-10-24T09:30:00.000Z'
-    },
-    {
-      expertId: 'EXP-ARCH-02',
-      name: 'Dr. B. B. Ahuja',
-      designation: 'Former Director & Principal Architectural Expert',
-      organization: 'College of Engineering Pune (COEP) / Council of Architecture',
-      specialization: 'Architect Expert (COA Registered)',
-      noConflictDeclarationSigned: true,
-      declarationTimestamp: '2026-10-24T09:35:00.000Z'
-    },
-    {
-      expertId: 'EXP-LEGAL-03',
-      name: 'Adv. K. R. Ramanathan',
-      designation: 'Senior Standing Counsel',
-      organization: 'High Court of Judicature',
-      specialization: 'Legal Expert',
-      noConflictDeclarationSigned: true,
-      declarationTimestamp: '2026-10-24T09:40:00.000Z'
+  if (committeeType === 'SCRUTINY') {
+    committeeId = '2-SOC1770029225';
+    if (isNew) {
+      statutoryRule = 'APH 2024–27 §1.8(a) & 2025–26 Scrutiny Proforma: 1 Academic Expert + 1 Legal Expert (Bar Council Def. 4) + 1 Architect';
+      roster = [
+        {
+          expertId: 'EXP-ACAD-01',
+          name: 'Prof. S. Velmurugan',
+          designation: 'Senior Professor (HAG)',
+          organization: 'National Institute of Technology (NIT) Calicut',
+          specialization: 'Academic Expert (NIT/IIT)',
+          noConflictDeclarationSigned: true,
+          declarationTimestamp: '2026-10-24T09:30:00.000Z'
+        },
+        {
+          expertId: 'EXP-LEGAL-01',
+          name: 'Adv. K. R. Ramanathan',
+          designation: 'Senior Standing Counsel (Bar Council Reg. Def. 4)',
+          organization: 'High Court of Judicature',
+          specialization: 'Legal Expert (Advocate Bar Council per Def. 4)',
+          noConflictDeclarationSigned: true,
+          declarationTimestamp: '2026-10-24T09:32:00.000Z'
+        },
+        {
+          expertId: 'EXP-ARCH-01',
+          name: 'Dr. B. B. Ahuja',
+          designation: 'Former Director & Principal Architect (COA Reg. Def. 11)',
+          organization: 'College of Engineering Pune (COEP) / Council of Architecture',
+          specialization: 'Architect Expert (COA Registered per Def. 11)',
+          noConflictDeclarationSigned: true,
+          declarationTimestamp: '2026-10-24T09:35:00.000Z'
+        }
+      ];
+    } else {
+      // Real GIITS 2026-27 Scrutiny Committee (04-FEB-2026): 2 Academic Experts per APH §1.8(a)
+      statutoryRule = 'APH 2024–27 §1.8(a): 2 Academic Experts for Existing Institution Modification Scrutiny';
+      roster = [
+        {
+          expertId: 'EXP-ACAD-MPS',
+          name: 'Prof. Maheshwari Prasad Singh',
+          designation: 'Professor (Computer Science & Engineering)',
+          organization: 'National Institute of Technology (NIT) Patna',
+          specialization: 'Academic Expert (NIT/IIT)',
+          noConflictDeclarationSigned: true,
+          declarationTimestamp: '2026-02-04T09:30:00.000Z'
+        },
+        {
+          expertId: 'EXP-ACAD-RK',
+          name: 'Prof. Rakesh Kumar',
+          designation: 'Professor & Dean of Engineering',
+          organization: 'Central University of Haryana',
+          specialization: 'Academic Expert (NIT/IIT)',
+          noConflictDeclarationSigned: true,
+          declarationTimestamp: '2026-02-04T09:35:00.000Z'
+        }
+      ];
     }
-  ];
+  } else if (committeeType === 'SAC_SHC') {
+    // Real GIITS 2026-27 Standing Appellate Committee (18-APR-2026)
+    committeeId = '2-SOC1776333767';
+    statutoryRule = 'APH 2024–27 §1.11(b) & §2.24(b): 1 Committee Chairman + 1 Academic Expert + 1 Registered Architect';
+    roster = [
+      {
+        expertId: 'EXP-SAC-CHAIR',
+        name: 'Prof. Sadanand Sadashiv Gokhale',
+        designation: 'Former Director & SAC Chairman',
+        organization: 'Indian Institute of Technology (IIT) Madras / NIT Nagpur',
+        specialization: 'Academic Expert (NIT/IIT)',
+        noConflictDeclarationSigned: true,
+        declarationTimestamp: '2026-04-18T10:00:00.000Z'
+      },
+      {
+        expertId: 'EXP-SAC-ACAD',
+        name: 'Prof. G Yoganandan',
+        designation: 'Senior Professor of Management & Technology',
+        organization: 'Periyar University',
+        specialization: 'Academic Expert (NIT/IIT)',
+        noConflictDeclarationSigned: true,
+        declarationTimestamp: '2026-04-18T10:05:00.000Z'
+      },
+      {
+        expertId: 'EXP-SAC-ARCH',
+        name: 'Architect Umit Saini',
+        designation: 'Senior Registered Architect (Reg: CA/2012/55490)',
+        organization: 'Council of Architecture (COA)',
+        specialization: 'Architect Expert (COA Registered per Def. 11)',
+        noConflictDeclarationSigned: true,
+        declarationTimestamp: '2026-04-18T10:10:00.000Z'
+      }
+    ];
+  } else if (committeeType === 'RE_EVC') {
+    // Real GIITS 2026-27 Re-EVC Committee (22-APR-2026)
+    committeeId = '2-SOC1776678217';
+    statutoryRule = 'APH 2024–27 §1.9 & §2.23.2: 2 Academic Experts + 1 Registered Architect (Re-EVC)';
+    roster = [
+      {
+        expertId: 'EXP-REEVC-01',
+        name: 'Assoc. Prof. S K Panda',
+        designation: 'Associate Professor (Civil Engineering)',
+        organization: 'Indian Institute of Technology (IIT BHU) Varanasi',
+        specialization: 'Academic Expert (NIT/IIT)',
+        noConflictDeclarationSigned: true,
+        declarationTimestamp: '2026-04-22T09:30:00.000Z'
+      },
+      {
+        expertId: 'EXP-REEVC-02',
+        name: 'Prof. S. Velmurugan',
+        designation: 'Senior Professor',
+        organization: 'National Institute of Technology (NIT) Calicut',
+        specialization: 'Academic Expert (NIT/IIT)',
+        noConflictDeclarationSigned: true,
+        declarationTimestamp: '2026-04-22T09:35:00.000Z'
+      },
+      {
+        expertId: 'EXP-REEVC-ARCH',
+        name: 'Architect Subramanian Brintha',
+        designation: 'Registered Architect (COA Reg: CA/2008/42119)',
+        organization: 'Faculty of Technology, MSU Baroda',
+        specialization: 'Architect Expert (COA Registered per Def. 11)',
+        noConflictDeclarationSigned: true,
+        declarationTimestamp: '2026-04-22T09:40:00.000Z'
+      }
+    ];
+  } else {
+    // EVC-1: Real GIITS 2026-27 Inspection Committee (27-MAR-2026)
+    committeeId = '2-SOC1774344316';
+    statutoryRule = 'AICTE Act 1987 §11(2) & APH 2024–27 §1.9: 2 Academic Experts + 1 Registered Architect (COA Reg. Def. 11)';
+    roster = [
+      {
+        expertId: 'EXP-EVC-CHAIR',
+        name: 'Prof. Sivasubramanian Velmurugan',
+        designation: 'Senior Professor & Committee Chairman',
+        organization: 'National Institute of Technology (NIT) Calicut',
+        specialization: 'Academic Expert (NIT/IIT)',
+        noConflictDeclarationSigned: true,
+        declarationTimestamp: '2026-03-27T09:30:00.000Z'
+      },
+      {
+        expertId: 'EXP-EVC-ACAD2',
+        name: 'Assoc. Prof. Hareesh K',
+        designation: 'Associate Professor (Mechanical Engineering)',
+        organization: 'K.K. Government Engineering College',
+        specialization: 'Academic Expert (NIT/IIT)',
+        noConflictDeclarationSigned: true,
+        declarationTimestamp: '2026-03-27T09:35:00.000Z'
+      },
+      {
+        expertId: 'EXP-EVC-ARCH',
+        name: 'Architect Md. Danish',
+        designation: 'Registered Architect (COA Reg: CA/2014/61201)',
+        organization: 'National Institute of Technology (NIT) Patna / COA',
+        specialization: 'Architect Expert (COA Registered per Def. 11)',
+        noConflictDeclarationSigned: true,
+        declarationTimestamp: '2026-03-27T09:40:00.000Z'
+      }
+    ];
+  }
 
   return {
     adapterType: 'SIMULATED_ADAPTER',
-    sourceSystem: 'AICTE_CENTRAL_PORTAL_EXPERT_MANAGEMENT_SYSTEM',
+    integrationMode: 'SIMULATED_COMPANION_ADAPTER',
+    evidenceState: 'SOURCE_STATUS_OBSERVED',
+    authoritativeOwner: 'AICTE_CENTRAL_EXPERT_MANAGEMENT_PORTAL',
+    syncStatus: 'SYNCHRONIZED',
     caseId,
     committeeId,
     committeeType,
     constitutedBy: 'AICTE_COUNCIL_EXECUTIVE_COMMITTEE',
+    statutoryCompositionRule: statutoryRule,
     roster,
     unbiasedDeclarationComplete: true,
+    gpsInspectionWindow: '30-Minute Geo-Tagged Video Walkthrough',
+    walkthroughVideoStreamUrl: 'https://storage.aicte-india.org/evc/2026/walkthrough-2-SOC1774344316.mp4',
+    campusGpsCoordinates: '17° 42\' 7" N, 83° 6\' 47" E (Gonnavanipalem, Parawada Mandal, Visakhapatnam)',
     syncedAt: nowIso
   };
 }
 
 /**
- * 2. AICTESigner / mSigner Class-3 DSC Verification Gateway
+ * 2. AICTESigner / mSigner Class-3 DSC Verification Gateway (APH §1.4.3, §1.4.6, §2.3.4(a))
  */
 export function verifyDSCSignature(payload: {
   documentId: string;
@@ -207,9 +372,14 @@ export function verifyDSCSignature(payload: {
   const nowIso = new Date().toISOString();
   return {
     adapterType: 'SIMULATED_ADAPTER',
+    integrationMode: 'SIMULATED_COMPANION_ADAPTER',
+    evidenceState: 'SOURCE_STATUS_OBSERVED',
+    authoritativeOwner: 'CCA_INDIA_DIGITAL_SIGNATURE_GATEWAY',
     gateway: 'AICTESigner / mSigner V3.2',
+    syncStatus: 'SYNCHRONIZED',
     documentId: payload.documentId,
     dscSigned: true,
+    certificateLevel: 'Class-3 e-Token',
     tokenType: (payload.tokenType as any) || 'ePass2003Auto USB Cryptographic Token',
     certificateAuthority: 'eMudhra Class-3 Corporate Sub CA',
     certSerialNumber: '8252400885863006',
@@ -223,17 +393,20 @@ export function verifyDSCSignature(payload: {
 }
 
 /**
- * 3. API Setu / External Statutory Registries Hub
+ * 3. API Setu / External Statutory Registries Hub (NBA, NAAC, NIRF, MoE IIC, ABC/APAAR, Anti-Ragging)
  */
 export function getExternalRegistriesData(caseId: string): ExternalRegistriesData {
   const isCOEP = caseId.includes('COEP');
   const isGIITS = caseId.includes('GIITS');
-  const isEVIT = caseId.includes('EVIT');
   const nowIso = new Date().toISOString();
 
   return {
     adapterType: 'SIMULATED_ADAPTER',
+    integrationMode: 'SIMULATED_COMPANION_ADAPTER',
+    evidenceState: 'SOURCE_STATUS_OBSERVED',
+    authoritativeOwner: 'API_SETU_NATIONAL_DATA_EXCHANGE',
     gateway: 'API_SETU_NATIONAL_EXCHANGE',
+    syncStatus: 'SYNCHRONIZED',
     caseId,
     observedAt: nowIso,
     nbaRegistry: {
@@ -278,7 +451,7 @@ export function getExternalRegistriesData(caseId: string): ExternalRegistriesDat
 }
 
 /**
- * 4. Affiliating University & State DTE 15-Day NOC Concurrence Tracker
+ * 4. Affiliating University & State DTE 15-Day NOC Concurrence Tracker (APH §1.4.5 & §2.19(c))
  */
 export function getConcurrenceTracker(caseId: string): ConcurrenceTracker {
   const isGIITS = caseId.includes('GIITS');
@@ -290,15 +463,19 @@ export function getConcurrenceTracker(caseId: string): ConcurrenceTracker {
 
   return {
     adapterType: 'SIMULATED_ADAPTER',
+    integrationMode: 'SIMULATED_COMPANION_ADAPTER',
+    evidenceState: 'SOURCE_STATUS_OBSERVED',
+    authoritativeOwner: 'STATE_DTE_AND_AFFILIATING_UNIVERSITY_PORTAL',
+    syncStatus: 'SYNCHRONIZED',
     caseId,
     affiliatingUniversity: {
-      universityName: isGIITS ? 'Jawaharlal Nehru Technological University (JNTU-GV), Vizianagaram' : 'Savitribai Phule Pune University (SPPU), Pune',
+      universityName: isGIITS ? 'Jawaharlal Nehru Technological University Gurajada (JNTU-GV), Vizianagaram' : 'Savitribai Phule Pune University (SPPU), Pune',
       forwardedAt: forwardedDate,
       status: 'NOC_CONCURRED',
       viewsReceivedAt: '2026-10-20T11:00:00.000Z'
     },
     stateDte: {
-      directorateName: isGIITS ? 'Directorate of Technical Education, Andhra Pradesh' : 'Directorate of Technical Education (DTE), Maharashtra',
+      directorateName: isGIITS ? 'Department of Technical Education, Government of Andhra Pradesh' : 'Directorate of Technical Education (DTE), Maharashtra',
       forwardedAt: forwardedDate,
       status: daysRemaining === 0 ? 'DEEMED_CONCURRED' : 'PENDING'
     },
@@ -315,12 +492,16 @@ export function getConcurrenceTracker(caseId: string): ConcurrenceTracker {
 }
 
 /**
- * 5. Downstream Siebel Status Write-Back & 6-Authority Bulk Dispatch
+ * 5. Downstream Siebel Status Write-Back & 6-Authority Bulk Dispatch (APH §2.25)
  */
 export function executeSiebelWriteback(caseId: string, currentStage: string = 'Approval Issued'): SiebelWritebackResult {
   const nowIso = new Date().toISOString();
   return {
     adapterType: 'SIMULATED_ADAPTER',
+    integrationMode: 'SIMULATED_COMPANION_ADAPTER',
+    evidenceState: 'SOURCE_STATUS_OBSERVED',
+    authoritativeOwner: 'AICTE_SIEBEL_CORE_CRM',
+    syncStatus: 'SYNCHRONIZED',
     targetSystem: 'AICTE_SIEBEL_CORE_CRM_PARTNER_PORTAL',
     caseId,
     syncTimestamp: nowIso,

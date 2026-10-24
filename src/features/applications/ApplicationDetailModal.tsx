@@ -185,7 +185,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
 
   const handleRevertStage = async () => {
     if (!revertReason.trim() || revertReason.trim().length < 5) {
-      setRevertError('A substantive revert reason (minimum 5 characters) must be recorded per APH §2.20');
+      setRevertError('A substantive revert reason (minimum 5 characters) must be recorded per APH §1.8(f)-(g) & §2.23.1');
       return;
     }
     setRevertError(null);
@@ -231,7 +231,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
         addToast({
           type: 'success',
           title: 'Case Compliance Formally Closed',
-          message: 'All obligations verified under APH §2.20. Closure certificate recorded.',
+          message: 'All obligations verified under APH §2.25(c)/(f). Closure certificate recorded.',
         });
       }
     } catch (e: any) {
@@ -353,7 +353,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
               <button
                 onClick={() => setShowRevertModal(true)}
                 className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 transition-colors shadow-2xs"
-                title="Return / Revert application stage per APH §2.20"
+                title="Return / Revert application stage per APH §1.8(f)-(g) & §2.23.1"
               >
                 <History className="w-3.5 h-3.5 text-amber-700" />
                 <span>Return / Revert</span>
@@ -958,7 +958,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-slate-900 flex items-center gap-1.5">
                         <MapPin className="w-4 h-4 text-rose-600" />
-                        30-Minute Geo-Tagged Video &amp; GPS Verification (APH §2.10)
+                        30-Minute Geo-Tagged Video &amp; GPS Verification (AICTE Act §11(2) &amp; APH §1.9 / §2.23.2)
                       </span>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
                         GPS Verified
@@ -967,7 +967,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-600">
                       <div>
                         <span>Campus Coordinates: </span>
-                        <strong className="font-mono text-slate-900">16.9891° N, 81.7840° E</strong>
+                        <strong className="font-mono text-slate-900">17° 42' 7" N, 83° 6' 47" E (17.702834° N, 83.113288° E)</strong>
                       </div>
                       <div>
                         <span>Video Walkthrough: </span>
@@ -1031,7 +1031,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                     Institutional Undertakings & Mandatory Compliances
                   </h4>
                   <p className="text-[11px] text-slate-500">
-                    Monitored under AICTE Approval Process Handbook (APH §2.20 &amp; Table 2.3)
+                    Monitored under AICTE Approval Process Handbook (APH §2.25(c)/(f) &amp; Table 2.3)
                   </p>
                 </div>
 
@@ -1097,7 +1097,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                     Electronic Case Summary &amp; Standardised Statutory Notices
                   </h4>
                   <p className="text-[11px] text-slate-500">
-                    Compliant with PS 26262 Domain A (Bullet 4) &amp; APH §1.8, §2.10, §2.18, §2.23
+                    Compliant with PS 26262 Domain A (Bullet 4) &amp; APH §1.8, §1.9, §2.23, §2.25
                   </p>
                 </div>
                 <button
@@ -1755,7 +1755,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
             <div className="bg-[#B91C1C] text-white p-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <History className="w-5 h-5 text-amber-200" />
-                <h3 className="font-bold text-sm">Authorized Case Return / Revert (APH §2.20)</h3>
+                <h3 className="font-bold text-sm">Authorized Case Return / Revert (APH §1.8(f)-(g) &amp; §2.23.1)</h3>
               </div>
               <button
                 onClick={() => setShowRevertModal(false)}
@@ -1799,7 +1799,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                     setRevertReason(e.target.value);
                     setRevertError(null);
                   }}
-                  placeholder="Specify statutory ground (e.g., deficiency identified in Fire NOC, need for structural re-verification under APH §2.20)..."
+                  placeholder="Specify statutory ground (e.g., deficiency identified in Fire NOC, need for structural re-verification under APH §1.8(f)-(g) & §2.23.1)..."
                   className="w-full p-2.5 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none"
                 />
                 {revertError && (

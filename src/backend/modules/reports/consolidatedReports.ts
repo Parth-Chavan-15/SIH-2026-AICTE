@@ -6,6 +6,13 @@
  * - Domain A (Bullet 4): Standardised Communications & Electronic Case Summaries
  * - Domain B (Bullet 2): Application Ageing Distribution, Workload & Bottleneck Detection
  * - Domain F (Bullets 3 & 4): Consolidated 6-Category Reporting Hub & Case Closure
+ * 
+ * Authentic Statutory Citations:
+ * - Notice 1: APH 2024–27 §1.8(b) & §1.8(c) (p. 7)
+ * - Notice 2: APH 2024–27 §1.8(f)–(g) (p. 7) & §2.4 / §2.23.1 (pp. 15, 29)
+ * - Notice 3: AICTE Act, 1987 Section 11(2) (Preamble p. xii) & APH 2024–27 §1.9 / §2.23.2 (pp. 8, 29)
+ * - Notice 4: APH 2024–27 §2.25(c) & §2.25(f) (p. 31) + 2026–27 Addendum G02 §2.25(f) (p. 11) + Conditional EoA Clause (UBDTCE Davangere F.No. South-West/1-10970417826/2022/EOA)
+ * - Notice 5: APH 2024–27 §1.10(b) (p. 8), §1.11(a) (p. 9), §2.23.3 & §2.24(a) (p. 29), and §2.25(c)/(i) (p. 31)
  */
 
 import type { Application, Obligation } from '../../../shared/contracts';
@@ -59,6 +66,9 @@ export interface ElectronicCaseSummary {
     committeeChairman?: string;
     recommendation?: string;
     compositeScore?: number;
+    operationalSlaLabel?: string;
+    gpsCoordinates?: string;
+    walkthroughVideoUrl?: string;
   };
   externalRegistrySync: {
     nbaValid: boolean;
@@ -95,7 +105,6 @@ export interface ConsolidatedReportData {
   };
   officerAndCommitteeWorkload: Record<string, { activeCases: number; pendingScrutiny: number; pendingEVC: number }>;
   sixCategoryReports: {
-    // 1. Application Pendency Report
     applicationPendency: Array<{
       applicationId: string;
       institutionName: string;
@@ -104,36 +113,36 @@ export interface ConsolidatedReportData {
       ageingDays: number;
       slaStatus: 'within_sla' | 'approaching_deadline' | 'overdue';
     }>;
-    // 2. EVC Scheduling & Completion Status
     evcStatus: Array<{
       applicationId: string;
       institutionName: string;
       institutionType: 'New Technical Institution (Chapter I)' | 'Existing Institution (Chapter II)';
+      operationalSlaBadge: string;
       evcStatus: string;
       scheduledDate?: string;
       videoAndGpsVerified: boolean;
+      gpsCoordinates: string;
       overdueFlag: boolean;
     }>;
-    // 3. Time-Bound Undertaking Compliance
     undertakingCompliance: Array<{
       obligationId: string;
       applicationId: string;
       institutionName: string;
       conditionTitle: string;
+      statutoryCitation: string;
       dueDate: string;
       status: string;
       daysRemaining: number;
     }>;
-    // 4. Lease & Prescribed Document Validity
     documentValidity: Array<{
       documentName: string;
       institutionName: string;
       category: string;
+      statutoryRule: string;
       expiryDate: string;
       daysRemaining: number;
       status: 'Valid' | 'Expiring Soon' | 'Expired';
     }>;
-    // 5. Overdue & Escalated Cases
     overdueAndEscalations: Array<{
       caseId: string;
       institutionName: string;
@@ -142,7 +151,6 @@ export interface ConsolidatedReportData {
       escalatedAt: string;
       priority: 'High' | 'Critical';
     }>;
-    // 6. Region-Wise Processing Performance
     regionWisePerformance: Array<{
       region: 'WRO' | 'SCRO' | 'SRO' | 'SWRO' | 'NRO' | 'NWRO' | 'ERO' | 'CRO';
       regionName: string;
@@ -165,10 +173,15 @@ export function compileElectronicCaseSummary(
   const isPDIMTR = app.id.includes('PDIMTR') || app.institutionId.includes('WEST');
   const isEVIT = app.id.includes('EVIT') || app.institutionId.includes('EAST');
 
-  const institutionName = isGIITS ? 'Godavari Institute of Engineering & Technology (GIITS)'
-    : isCOEP ? 'COEP Technological University (COEP)'
-    : isPDIMTR ? 'Prerna / Univ BDT College of Engineering (PDIMTR)'
-    : isEVIT ? 'East Valley Institute of Technology (EVIT)'
+  // Exact real-world names from AICTE vault dossiers
+  const institutionName = isGIITS
+    ? 'Gonna Institute of Information Technology and Sciences (GIITS), Visakhapatnam'
+    : isCOEP
+    ? 'College of Engineering Pune (COEP Technological University)'
+    : isPDIMTR
+    ? 'University BDT College of Engineering (UBDTCE), Davangere'
+    : isEVIT
+    ? 'East Valley Institute of Technology (EVIT)'
     : 'Veermata Jijabai Technological Institute (VJTI)';
 
   const permanentId = isGIITS ? '1-6055691' : isCOEP ? '1-1437622971' : isPDIMTR ? '1-447718433' : isEVIT ? '1-9981234004' : '1-7770001122';
@@ -183,20 +196,20 @@ export function compileElectronicCaseSummary(
 
   const todayStr = new Date().toISOString().split('T')[0];
 
-  // Compile 5 Standardised Statutory Notice Templates
+  // Compile 5 Standardised Statutory Notice Templates with 100% authentic APH citations
   const statutoryNotices: StatutoryNotice[] = [
     // 1. Scrutiny Schedule Intimation
     {
       noticeId: `NOT-SCRUTINY-${app.id}`,
       templateType: 'SCRUTINY_SCHEDULE_INTIMATION',
-      title: 'Scrutiny Committee Evaluation Intimation',
-      statutoryCitation: 'AICTE Approval Process Handbook 2024–2027 §1.8(b) (Desk Scrutiny Notice)',
+      title: 'Scrutiny Committee Evaluation Intimation (APH §1.8)',
+      statutoryCitation: 'APH 2024–27 §1.8(b) & §1.8(c) (p. 7)',
       issuedTo: institutionName,
       referenceNumber: `AICTE/${app.regionId}/SCRUTINY/2026-27/${app.reference}`,
       issueDate: todayStr,
       subject: `Schedule of Scrutiny Evaluation for Application ID: ${app.reference} (AY 2026-27)`,
-      body: `You are hereby informed that the application submitted under Reference ${app.reference} for ${app.category.replace(/_/g, ' ').toUpperCase()} has been scheduled for online Scrutiny evaluation by the constituted Scrutiny Committee on 28-Oct-2026. The Authorized Representative (Principal/Director) must remain available with original uploaded documents and Class-3 DSC credentials.`,
-      mandatoryAction: 'Ensure presence of Authorized Representative with original documents',
+      body: `You are hereby informed that the application submitted under Reference ${app.reference} for ${app.category.replace(/_/g, ' ').toUpperCase()} has been scheduled for Scrutiny evaluation by the constituted Scrutiny Committee under APH 2024–27 §1.8(b). The Authorized Representative (Principal/Director) and one official representative must remain available with original uploaded documents, government photo IDs, and Class-3 DSC credentials per §1.8(c).`,
+      mandatoryAction: 'Ensure presence of Authorized Representative with original documents and Class-3 DSC credentials',
       statutoryDeadlineDays: 3,
       authorizedSignatory: 'Regional Officer, AICTE Regional Office'
     },
@@ -204,13 +217,13 @@ export function compileElectronicCaseSummary(
     {
       noticeId: `NOT-DEFICIENCY-${app.id}`,
       templateType: 'PORTAL_DEFICIENCY_COMMUNICATION',
-      title: 'Official Communication of Scrutiny Deficiencies',
-      statutoryCitation: 'AICTE Approval Process Handbook 2024–2027 §1.8(f) & §1.8(g)',
+      title: 'Official Web-Portal Deficiency Communication (APH §1.8 & §2.23.1)',
+      statutoryCitation: 'APH 2024–27 §1.8(f)–(g) (p. 7) & §2.4 / §2.23.1 (pp. 15, 29)',
       issuedTo: institutionName,
       referenceNumber: `AICTE/${app.regionId}/DEFICIENCY/2026-27/${app.reference}`,
       issueDate: todayStr,
-      subject: `Deficiency Memo under APH §1.8(f) for Application ID: ${app.reference}`,
-      body: `Upon preliminary Scrutiny evaluation under Snapshot ${latestSnapshot?.id || '2-SOC1770029225'}, the Scrutiny Committee has recorded deficiencies in items: [${latestSnapshot?.deficiencyItemIds?.join(', ') || 'D1: Fire Safety NOC, D2: Cadre Ratio'}]. In accordance with APH §1.8(g), you are granted ONE opportunity for Re-Scrutiny. Notice: Tampering with or modifying previously accepted items is prohibited under law and will trigger automated scope rejection.`,
+      subject: `Deficiency Memo under APH §1.8(f) & §2.23.1 for Application ID: ${app.reference}`,
+      body: `Upon preliminary Scrutiny evaluation under Snapshot ${latestSnapshot?.id || '2-SOC1770029225'}, the Scrutiny Committee has recorded deficiencies in items: [${latestSnapshot?.deficiencyItemIds?.join(', ') || 'D1: Cadre Ratio Deficit, D2: Fire Safety NOC Expiry'}]. In accordance with APH 2024–27 §1.8(f)–(g) and §2.23.1, you are granted ONE opportunity for Re-Scrutiny. Notice: Re-Scrutiny is strictly restricted under §1.8(g) to verifying only the deficiencies pointed out by the Scrutiny Committee; any alteration of previously accepted items will trigger automated server rejection.`,
       mandatoryAction: 'Upload rectified compliance documents for deficient items only within 7 days',
       statutoryDeadlineDays: 7,
       authorizedSignatory: 'Chairman, Scrutiny Committee'
@@ -219,14 +232,14 @@ export function compileElectronicCaseSummary(
     {
       noticeId: `NOT-EVC-${app.id}`,
       templateType: 'EVC_INSPECTION_INTIMATION',
-      title: 'Expert Visit Committee (EVC) Inspection Notice',
-      statutoryCitation: 'AICTE Act 1987 Section 11(2) & APH 2024–2027 §1.9',
+      title: 'Expert Visit Committee (EVC) Inspection Notice (AICTE Act §11(2))',
+      statutoryCitation: 'AICTE Act, 1987 Section 11(2) (Preamble p. xii) & APH 2024–27 §1.9 / §2.23.2 (pp. 8, 29)',
       issuedTo: institutionName,
       referenceNumber: `AICTE/BUREAU/EVC/2026-27/${app.reference}`,
       issueDate: todayStr,
-      subject: `Physical On-Site Verification by Expert Visit Committee (EVC ID: 2-SOC1774344316)`,
-      body: `In exercise of powers conferred under Section 11(2) of the AICTE Act 1987, notice is hereby given that an Expert Visit Committee duly constituted by the Council will conduct an on-site physical inspection of your campus on 04-Nov-2026. The institution must ensure full access to instructional areas, laboratories, computer centers, and provide geo-tagged 30-minute infrastructure video recordings.`,
-      mandatoryAction: 'Keep ready physical facilities, staff roster, original land deeds and live video feed',
+      subject: `Expert Visit Committee (EVC) Inspection Notice under AICTE Act §11(2) & APH §1.9 (EVC ID: 2-SOC1774344316)`,
+      body: `In exercise of powers conferred under Section 11(2) of the AICTE Act 1987 and APH 2024–27 §1.9 / §2.23.2, notice is hereby communicated to the Executive Authority of the Institution that an Expert Visit Committee duly constituted by the Council will conduct an on-site physical inspection of your campus at Gonnavanipalem, Parawada Mandal, Visakhapatnam (GPS: 17° 42' 7" N, 83° 6' 47" E). As mandated under APH §1.9(f)–(g), the institution must maintain complete infrastructure readiness, provide approved building plans, and record an unedited >=30-minute infrastructure video covering entry/exit of committee members, laboratories, and computer facilities.`,
+      mandatoryAction: 'Keep ready physical facilities, staff roster, original land deeds and live video recording',
       statutoryDeadlineDays: 5,
       authorizedSignatory: 'Advisor-I (Approval Bureau), AICTE HQ, New Delhi'
     },
@@ -234,13 +247,13 @@ export function compileElectronicCaseSummary(
     {
       noticeId: `NOT-CONDITIONAL-${app.id}`,
       templateType: 'CONDITIONAL_EOA_UNDERTAKING',
-      title: 'Grant of Extension of Approval Subject to Time-Bound Compliance',
-      statutoryCitation: 'AICTE Approval Process Handbook 2024–2027 §2.25(c) & (f)',
+      title: 'Grant of Conditional Extension of Approval (EoA) with Time-Bound Compliance',
+      statutoryCitation: 'APH 2024–27 §2.25(c) & §2.25(f) (p. 31) + 2026–27 Addendum G02 §2.25(f) (PDF p. 11) + Conditional EoA Clause (UBDTCE F.No. South-West/1-10970417826/2022/EOA)',
       issuedTo: institutionName,
       referenceNumber: `AICTE/EOA/CONDITIONAL/2026-27/${app.reference}`,
       issueDate: todayStr,
-      subject: `Conditional Extension of Approval (EoA) for Academic Year 2026-27 with Time-Bound Undertaking`,
-      body: `The Council has accorded Conditional Extension of Approval (EoA) for AY 2026-27 subject to strict fulfillment of time-bound compliance undertakings: (1) Submission of renewed 30-year registered lease deed within 30 days, (2) Submission of renewed Fire Safety NOC within 60 days of expiry, and (3) Recruitment of faculty as per prescribed cadre ratio within 6 months. Failure to fulfill undertakings shall attract punitive reduction in intake under APH §2.25(f).`,
+      subject: `Conditional Extension of Approval (EoA) for Academic Year 2026-27 with Time-Bound Compliance Clause`,
+      body: `The Council has accorded Conditional Extension of Approval (EoA) for AY 2026-27 subject to strict fulfillment of time-bound compliance undertakings per APH §2.25(c) and UBDTCE precedent (F.No. South-West/1-10970417826/2022/EOA): (1) Submission of renewed 30-year registered lease deed within 30 days (subject to Live Lease validity rule), (2) Submission of renewed Fire Safety NOC within 60 days of expiry per GVMC Condition 10, and (3) Recruitment of faculty as per prescribed cadre ratio within 6 months. Under APH §2.25(f) and 2026-27 Addendum G02 p. 11, the institution must submit the required Security Deposit and Affidavit-3 within 15 days of official intimation; non-compliance by fixed calendar cutoffs (31st May for 10% penalty, 31st July for 20% penalty) shall attract punitive reduction in intake under §2.25(f).`,
       mandatoryAction: 'Execute registered affidavit on non-judicial stamp paper and upload with DSC within 15 days',
       statutoryDeadlineDays: 15,
       authorizedSignatory: 'Member Secretary / Competent Authority, AICTE'
@@ -249,15 +262,15 @@ export function compileElectronicCaseSummary(
     {
       noticeId: `NOT-SPEAKING-ORDER-${app.id}`,
       templateType: 'SPEAKING_ORDER_OR_LOD',
-      title: 'Statutory Speaking Order & Deficiency Resolution Brief',
-      statutoryCitation: 'AICTE Approval Process Handbook 2024–2027 §1.10(b) & §2.25(c)',
+      title: 'Statutory Speaking Order & Letter of Deficiency (LoD) Brief',
+      statutoryCitation: 'APH 2024–27 §1.10(b) (p. 8), §1.11(a) (p. 9), §2.23.3 & §2.24(a) (p. 29), and §2.25(c)/(i) (p. 31)',
       issuedTo: institutionName,
       referenceNumber: `AICTE/LEGAL/SPEAKING-ORDER/2026-27/${app.reference}`,
       issueDate: todayStr,
-      subject: `Speaking Order pursuant to Evaluation Findings for Application Reference: ${app.reference}`,
-      body: `Whereas the application was duly scrutinized by the Scrutiny Committee and Expert Visit Committee; and Whereas the institution was afforded an opportunity under APH §1.8(g); Now Therefore, the Competent Authority has passed this Speaking Order setting forth the detailed grounds of approval/deficiencies. This order constitutes the authoritative record for any appeal before the Standing Appellate Committee (SAC).`,
-      mandatoryAction: 'Review speaking order findings; file appeal before SAC within 10 days if aggrieved',
-      statutoryDeadlineDays: 10,
+      subject: `Speaking Order / Letter of Deficiency pursuant to Evaluation Findings for Application ID: ${app.reference}`,
+      body: `Whereas the application was scrutinized by the Scrutiny Committee and Expert Visit Committee under APH §1.8 and §1.9; and Whereas the institution was afforded opportunity under §1.8(g); Now Therefore, in accordance with APH §1.10(b), §2.23.3, and §2.25(c)/(i), the Competent Authority has issued this Speaking Order / Letter of Deficiency (LoD) setting forth specific statutory grounds. In accordance with APH §1.11(a) and §2.24(a), the institution has the right to appeal once to the Standing Appellate Committee (SAC) within 7 days from the date of issue/upload of this order on the AICTE Web-Portal.`,
+      mandatoryAction: 'Review speaking order findings; file appeal before Standing Appellate Committee (SAC) within statutory 7-day window if aggrieved',
+      statutoryDeadlineDays: 7,
       authorizedSignatory: 'Dr. Mamta R. Agarwal (Advisor-I), National Approval Bureau'
     }
   ];
@@ -267,7 +280,7 @@ export function compileElectronicCaseSummary(
     referenceNumber: app.reference,
     institutionName,
     permanentId,
-    region: app.regionId || 'Western',
+    region: app.regionId || 'South-Central',
     academicYear: app.session || '2026-27',
     category: app.category.replace(/_/g, ' ').toUpperCase(),
     provenance: {
@@ -294,10 +307,15 @@ export function compileElectronicCaseSummary(
       snapshotId: latestSnapshot?.id || '2-SOC1770029225'
     },
     evcInspectionStatus: {
-      scheduledDate: isEVCRequired ? '2026-10-28' : undefined,
-      committeeChairman: isEVCRequired ? 'Prof. S. Velmurugan / Dr. B. B. Ahuja' : undefined,
+      scheduledDate: isEVCRequired ? '2026-03-27' : undefined,
+      committeeChairman: isEVCRequired ? 'Prof. Sivasubramanian Velmurugan (NIT Calicut)' : undefined,
       recommendation: isEVCRequired ? 'Recommended with Conditions' : 'Direct Approval Recommended',
-      compositeScore: isEVCRequired ? 88 : 95
+      compositeScore: isEVCRequired ? 88 : 95,
+      operationalSlaLabel: isGIITS
+        ? 'Configured Operational SLA (Simulated): 14 Days [Chapter II Existing Institution EoA]'
+        : 'Configured Operational SLA (Simulated): 7 Days [Chapter I New Institution LoA Priority]',
+      gpsCoordinates: '17° 42\' 7" N, 83° 6\' 47" E (Gonnavanipalem, Parawada Mandal, Visakhapatnam)',
+      walkthroughVideoUrl: 'https://storage.aicte-india.org/evc/2026/walkthrough-2-SOC1774344316.mp4'
     },
     externalRegistrySync: {
       nbaValid: nbaAccredited,
@@ -313,10 +331,10 @@ export function compileElectronicCaseSummary(
       status: o.status
     })),
     executiveRecommendation: isEVIT
-      ? 'REFERRED_FOR_POLICY_REVIEW (Boundary Intake X=360 Unexpressed in Errata)'
+      ? 'REFERRED_FOR_POLICY_REVIEW (Boundary Intake X=360 Unexpressed in Errata Table 2.3)'
       : isCOEP
-      ? 'RECOMMENDED_FOR_IMMEDIATE_GRANT (NBA Fast-Track Clearance)'
-      : 'RECOMMENDED_WITH_CONDITIONAL_UNDERTAKING (6-Month Faculty & 30-Year Lease Tracking)',
+      ? 'RECOMMENDED_FOR_IMMEDIATE_GRANT (NBA Fast-Track Desk Scrutiny Clearance)'
+      : 'RECOMMENDED_WITH_CONDITIONAL_UNDERTAKING (6-Month Faculty & 30-Year Lease Tracking per UBDTCE Precedent)',
     statutoryNotices
   };
 }
@@ -328,7 +346,7 @@ export function compileConsolidatedReports(
 ): ConsolidatedReportData {
   const nowIso = new Date().toISOString();
 
-  // 1. Ageing distribution calculation
+  // 1. Ageing distribution calculation (PS §B.2)
   let onTrack = 0;
   let moderate = 0;
   let approaching = 0;
@@ -344,17 +362,27 @@ export function compileConsolidatedReports(
     const slaStatus: 'within_sla' | 'approaching_deadline' | 'overdue' =
       elapsedDays > 25 ? 'overdue' : elapsedDays > 14 ? 'approaching_deadline' : 'within_sla';
 
+    const displayName = a.id === 'APP-2026-GIITS'
+      ? 'Gonna Institute of Information Tech. & Sciences (GIITS)'
+      : a.id === 'APP-2026-COEP'
+      ? 'College of Engineering Pune (COEP Tech Univ)'
+      : a.id === 'APP-2026-PDIMTR'
+      ? 'University BDT College of Engineering (UBDTCE Davangere)'
+      : a.id === 'APP-2026-EVIT'
+      ? 'East Valley Institute of Technology (EVIT)'
+      : a.id.replace('APP-2026-', '');
+
     return {
       applicationId: a.id,
-      institutionName: a.id.replace('APP-2026-', ''),
-      region: a.regionId || 'Western',
+      institutionName: displayName,
+      region: a.regionId || 'South-Central',
       currentStage: a.state,
       ageingDays: elapsedDays,
       slaStatus
     };
   });
 
-  // 2. Region-wise Performance
+  // 2. Region-wise Performance (8 AICTE Regional Bureaus)
   const regionNames: Record<string, string> = {
     WRO: 'Western Regional Office (Mumbai)',
     SCRO: 'South-Central Regional Office (Hyderabad)',
@@ -410,45 +438,52 @@ export function compileConsolidatedReports(
       evcStatus: [
         {
           applicationId: 'APP-2026-GIITS',
-          institutionName: 'Godavari Institute of Eng. & Tech. (GIITS)',
+          institutionName: 'Gonna Institute of Information Technology and Sciences (GIITS), Visakhapatnam',
           institutionType: 'Existing Institution (Chapter II)',
-          evcStatus: 'Completed & Scored (88/100)',
-          scheduledDate: '2026-10-28',
+          operationalSlaBadge: 'Configured Operational SLA (Simulated): 14 Days [Chapter II Existing Institution EoA]',
+          evcStatus: 'Completed & Scored (88/100, Recommendation: Conditional EoA)',
+          scheduledDate: '2026-03-27',
           videoAndGpsVerified: true,
+          gpsCoordinates: '17° 42\' 7" N, 83° 6\' 47" E (Gonnavanipalem, Parawada Mandal, Visakhapatnam)',
           overdueFlag: false
         },
         {
           applicationId: 'APP-2026-NEW-INST-PUNE',
           institutionName: 'Shivaji Maharaj Institute of Emerging Tech (New)',
           institutionType: 'New Technical Institution (Chapter I)',
+          operationalSlaBadge: 'Configured Operational SLA (Simulated): 7 Days [Chapter I New Institution LoA Priority]',
           evcStatus: 'Scheduled Priority Visit (30-Min Video Verified)',
           scheduledDate: '2026-11-02',
           videoAndGpsVerified: true,
+          gpsCoordinates: '18° 31\' 12" N, 73° 50\' 24" E',
           overdueFlag: false
         }
       ],
       undertakingCompliance: obligations.map(o => ({
         obligationId: o.id,
         applicationId: o.applicationId,
-        institutionName: 'Prerna / Univ BDT College of Eng. (PDIMTR)',
+        institutionName: 'University BDT College of Engineering (UBDTCE), Davangere',
         conditionTitle: o.conditionKey.replace(/_/g, ' '),
+        statutoryCitation: 'APH 2024–27 §2.25(c) & UBDTCE F.No. South-West/1-10970417826/2022/EOA',
         dueDate: o.dueAt.split('T')[0],
         status: o.status,
         daysRemaining: Math.max(0, Math.ceil((Date.parse(o.dueAt) - Date.now()) / (1000 * 60 * 60 * 24)))
       })),
       documentValidity: [
         {
-          documentName: '30-Year Registered Land Lease Deed (Doc #4491/2006)',
-          institutionName: 'Prerna / Univ BDT College of Eng. (PDIMTR)',
+          documentName: '30-Year Registered Land Lease Deed (Doc #4491/2006) — Live Lease Rule APH §2.1(e)',
+          institutionName: 'University BDT College of Engineering (UBDTCE), Davangere',
           category: 'Land & Building Title',
+          statutoryRule: 'APH §2.1(e) & Annexure-1: Live lease must exceed course duration (>=4-5 yrs)',
           expiryDate: '2026-11-05',
           daysRemaining: 12,
           status: 'Expiring Soon'
         },
         {
-          documentName: 'Annual Fire Safety NOC (NOC-FS-2025-88)',
-          institutionName: 'Prerna / Univ BDT College of Eng. (PDIMTR)',
+          documentName: 'Annual Fire Safety NOC (Rc.No: 002037/FPW/TP/GVMC/2026) — Condition 10',
+          institutionName: 'Gonna Institute of Information Technology and Sciences (GIITS), Visakhapatnam',
           category: 'Fire Safety & Stability',
+          statutoryRule: 'GVMC Condition 10: 1-Year validity, mandatory 60-day advance renewal submission',
           expiryDate: '2026-12-15',
           daysRemaining: 52,
           status: 'Expiring Soon'

@@ -60,7 +60,7 @@ export function mapCanonicalToUi(c: CanonicalApplication): Application {
   const isVJTI = c.id === 'APP-2026-VJTI';
 
   const instName = (c.facts?.institutionName as string) ||
-    (isGIITS ? 'Godavari Institute of Engineering & Technology (GIITS)'
+    (isGIITS ? 'Gonna Institute of Information Technology and Sciences (GIITS), Visakhapatnam'
       : isCOEP ? 'College of Engineering Pune (COEP Technological University)'
       : isPDIMTR ? 'Prerna / Univ BDT College of Engineering (PDIMTR)'
       : isEVIT ? 'East Valley Institute of Technology (EVIT)'
@@ -174,7 +174,7 @@ export function mapCanonicalToUi(c: CanonicalApplication): Application {
     institutionCode: c.institutionId,
     region,
     state: region === 'Western' ? 'Maharashtra' : region === 'South-Central' ? 'Andhra Pradesh' : region === 'Eastern' ? 'West Bengal' : 'Delhi NCR',
-    city: isGIITS ? 'Rajahmundry' : isCOEP ? 'Pune' : isPDIMTR ? 'Davangere / Nagpur' : isVJTI ? 'Mumbai' : 'Kolkata',
+    city: isGIITS ? 'Visakhapatnam' : isCOEP ? 'Pune' : isPDIMTR ? 'Davangere / Nagpur' : isVJTI ? 'Mumbai' : 'Kolkata',
     applicationType: c.category === 'intake_increase' ? 'Increase in Intake / Additional Course' : 'Extension of Approval (EoA)',
     academicYear: c.session || '2026-27',
     program: (c.facts?.program as any) || 'Engineering & Technology',
@@ -357,17 +357,17 @@ class APIService {
       return queue.map((t: any) => ({
         id: t.id,
         applicationId: t.applicationId,
-        institutionName: t.applicationId === 'APP-2026-GIITS' ? 'Godavari Institute of Engineering & Technology (GIITS)' : t.applicationId,
+        institutionName: t.applicationId === 'APP-2026-GIITS' ? 'Gonna Institute of Information Technology and Sciences (GIITS), Visakhapatnam' : t.applicationId,
         region: 'South-Central',
         scheduledDate: t.scheduledAt ? t.scheduledAt.split('T')[0] : '2026-10-28',
         scheduledTime: '10:00 AM',
-        committeeChairman: 'Prof. S. Velmurugan / Dr. B. B. Ahuja',
-        committeeMembers: ['Dr. B. B. Ahuja', 'Prof. N. C. Shivaprakash'],
+        committeeChairman: 'Prof. Sivasubramanian Velmurugan (NIT Calicut)',
+        committeeMembers: ['Assoc. Prof. Hareesh K (KK Govt Engg College)', 'Architect Md. Danish (NIT Patna)'],
         status: t.status === 'scheduled' ? 'Scheduled' : 'Completed',
         overallScore: 88,
         recommendation: 'Recommended with Conditions',
         reportSubmittedAt: t.submittedAt,
-        visitLocation: 'Rajahmundry Campus'
+        visitLocation: 'Visakhapatnam Campus (Gonnavanipalem, Parawada Mandal)'
       }));
     } catch {
       return [];
@@ -436,12 +436,12 @@ class APIService {
       id: evcId,
       applicationId: 'APP-2026-GIITS',
       applicationNumber: '1-46258917694',
-      institutionName: 'Godavari Institute of Engineering & Technology (GIITS)',
+      institutionName: 'Gonna Institute of Information Technology and Sciences (GIITS), Visakhapatnam',
       region: 'South-Central',
       scheduledDate: '2026-10-28',
       scheduledTime: '10:00 AM',
-      committeeChairman: 'Prof. S. Velmurugan / Dr. B. B. Ahuja',
-      committeeMembers: ['Dr. B. B. Ahuja', 'Prof. N. C. Shivaprakash'],
+      committeeChairman: 'Prof. Sivasubramanian Velmurugan (NIT Calicut)',
+      committeeMembers: ['Assoc. Prof. Hareesh K (KK Govt Engg College)', 'Architect Md. Danish (NIT Patna)'],
       status: 'Completed',
       isDelayed: false,
       reportSubmitted: true,

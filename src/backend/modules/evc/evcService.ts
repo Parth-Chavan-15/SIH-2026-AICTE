@@ -18,6 +18,7 @@ const idempotencyStore = new Map<string, ApiResult<any>>();
 export interface EnrichedEVCTask extends EVCTask {
   institutionType?: 'New Technical Institution (Chapter I)' | 'Existing Institution (Chapter II)';
   prioritySlaDays?: number;
+  slaClassification?: string;
   videoUrlVerified?: boolean;
   videoUrl?: string;
   gpsCoordinatesVerified?: boolean;
@@ -33,12 +34,15 @@ export function enrichTask(t: EVCTask): EnrichedEVCTask {
     ...t,
     institutionType: isNew ? 'New Technical Institution (Chapter I)' : 'Existing Institution (Chapter II)',
     prioritySlaDays: isNew ? 7 : 14,
+    slaClassification: isNew
+      ? 'Configured Operational SLA (Simulated): 7 Days [Chapter I New Institution LoA Priority]'
+      : 'Configured Operational SLA (Simulated): 14 Days [Chapter II Existing Institution EoA]',
     videoUrlVerified: true,
     videoUrl: `https://storage.aicte-india.org/evc-media/${t.id}/30min_walkthrough.mp4`,
     gpsCoordinatesVerified: true,
-    gpsLatitude: 16.9891,
-    gpsLongitude: 81.7840,
-    statutoryRule: 'APH 2024–27 §1.9(f)-(g) (Geo-tagged 30-min Infrastructure Video & GPS Verification)',
+    gpsLatitude: 17.702834,
+    gpsLongitude: 83.113288,
+    statutoryRule: 'APH 2024–27 §1.9 / §2.23.2 & AICTE Act §11(2) (Geo-tagged 30-min Infrastructure Video & GPS Verification at 17° 42\' 7" N, 83° 6\' 47" E)',
     isOverdueEscalated: false
   };
 }

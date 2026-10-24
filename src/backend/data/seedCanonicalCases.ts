@@ -39,7 +39,7 @@ export const CANONICAL_INSTITUTIONS: Institution[] = [
   {
     id: 'INST-NORTH',
     permanentId: '1-6055691',
-    name: 'Godavari Institute of Engineering & Technology (GIITS)',
+    name: 'Gonna Institute of Information Technology and Sciences (GIITS), Visakhapatnam',
     regionId: 'South-Central',
     status: 'active'
   },
@@ -83,7 +83,10 @@ export const CANONICAL_APPLICATIONS: Application[] = [
     category: 'intake_increase',
     session: '2026-2027',
     facts: {
-      institutionName: 'Godavari Institute of Engineering & Technology (GIITS)',
+      institutionName: 'Gonna Institute of Information Technology and Sciences (GIITS), Visakhapatnam',
+      societyName: 'Sri Veera Jagannadha Educational Society',
+      address: 'Gonnavanipalem, Aganampudi, Parawada Mandal, Visakhapatnam, Andhra Pradesh 530053',
+      gpsCoordinates: { latitude: 17.702834, longitude: 83.113288, formatted: '17° 42\' 7" N, 83° 6\' 47" E' },
       permanentInstituteId: '1-6055691',
       program: 'Engineering & Technology',
       course: 'Computer Science & Engineering',
@@ -323,7 +326,7 @@ export const CANONICAL_OBLIGATIONS: Obligation[] = [
     source: SRC_APH_2024_27,
     timerKind: 'event_relative',
     dueAt: '2027-04-24T00:00:00.000Z',
-    dueReason: '6-Month faculty appointment undertaking per Conditional EoA letter clause',
+    dueReason: '6-Month faculty appointment undertaking per Conditional EoA letter clause (UBDTCE Davangere Precedent, F.No. South-West/1-10970417826/2022/EOA per APH §2.25(c)/(f))',
     version: 1,
     status: 'pending'
   }
@@ -369,7 +372,7 @@ export const CANONICAL_DECISIONS: Decision[] = [
         triggerEventId: 'EVT-TRIG-03',
         timerKind: 'event_relative',
         dueAt: '2027-04-24T00:00:00.000Z',
-        dueReason: '6-Month faculty appointment undertaking per Conditional EoA letter clause'
+        dueReason: '6-Month faculty appointment undertaking per Conditional EoA letter clause (UBDTCE Davangere Precedent, F.No. South-West/1-10970417826/2022/EOA per APH §2.25(c)/(f))'
       }
     ]
   }
