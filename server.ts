@@ -48,28 +48,22 @@ app.use((req, res, next) => {
 });
 
 // Database & Companion Layer Selection
-// Default to authoritative in-memory Companion Layer with Canonical Fixtures (AY 2026-27).
-// Gracefully falls back if external MongoDB is offline or unconfigured.
-import apiRouter from './src/backend/routes/index.js';
+// Connects to Production MongoDB Store when available and seeds canonical fixtures.
+// Seamlessly provides zero-downtime canonical in-memory fallback when offline.
+import { initMongoDatabase } from './src/backend/persistence/mongoInit.ts';
 import { createCompanionApp } from './src/backend/companionApp.ts';
 
-let mongoConnected = false;
-if (process.env.MONGODB_URI) {
-  try {
-    await mongoose.connect(process.env.MONGODB_URI, {
-      autoCreate: false,
-      autoIndex: false,
-      bufferCommands: false,
-      serverSelectionTimeoutMS: 1500,
-    });
-    mongoConnected = mongoose.connection.readyState === 1;
-    if (mongoConnected) {
-      console.log('📦 Connected to MongoDB backend store.');
-    }
-  } catch {
-    console.log('ℹ️ External MongoDB not reachable. Running in Canonical In-Memory Companion Mode.');
-    mongoConnected = false;
+const mongoInit = await initMongoDatabase(process.env.MONGODB_URI);
+
+if (mongoInit.connected) {
+  console.log(`🍃 Connected to Production MongoDB Database [${mongoInit.dbName}].`);
+  if (mongoInit.collectionsSeeded && mongoInit.collectionsSeeded > 0) {
+    console.log(`📦 Seeded ${mongoInit.collectionsSeeded} Canonical College Cases into MongoDB.`);
+  } else {
+    console.log('📦 Verified existing MongoDB collections and indexes.');
   }
+} else {
+  console.log(`ℹ️ External MongoDB not active (${mongoInit.reason || 'unreachable'}). Running with Zero-Downtime Canonical Storage Engine.`);
 }
 
 // Attach io instance to request
@@ -78,13 +72,9 @@ app.use((req: any, res, next) => {
   next();
 });
 
-if (mongoConnected) {
-  app.use('/api/v1', apiRouter);
-} else {
-  console.log('🏛️ Initializing AICTE PravahReg Companion Runtime with Canonical Fixtures (2026-27)...');
-  const companion = createCompanionApp();
-  app.use(companion.app);
-}
+console.log('🏛️ Initializing AICTE NiyamSetu (नियमसेतु) Companion Runtime (AY 2026–27)...');
+const companion = createCompanionApp();
+app.use(companion.app);
 
 // Realtime is closed until authenticated, scoped subscriptions have a reviewed adapter.
 io.use((_socket, next) => next(new Error('Realtime subscriptions unavailable')));

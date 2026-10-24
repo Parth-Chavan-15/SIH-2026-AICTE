@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { logout, getSession } from '../../services/session';
+import { login, logout, getSession } from '../../services/session';
 import { REGULATORY_ROLES } from '../../features/auth/SessionGate';
 import {
   Clock,
@@ -42,6 +42,28 @@ export const Navbar: React.FC<NavbarProps> = ({
     6;
 
   const activeRoleConfig = REGULATORY_ROLES.find(r => r.roleNumber === roleNumber) || REGULATORY_ROLES[3];
+  const [switchingRole, setSwitchingRole] = useState(false);
+
+  const ROLES_LIST = [
+    { num: 1, label: 'Applicant', icon: Building2, email: 'principal@coep.ac.in', tab: 'inst-apps', activeClass: 'bg-blue-600 text-white shadow-xs' },
+    { num: 2, label: 'Scrutiny Cell', icon: FileCheck, email: 'scrutiny.reviewer@aicte.gov.in', tab: 'scrutiny-eval', activeClass: 'bg-amber-600 text-white shadow-xs' },
+    { num: 3, label: 'EVC Committee', icon: Award, email: 'evc.chair@aicte.gov.in', tab: 'evc-inspect', activeClass: 'bg-purple-600 text-white shadow-xs' },
+    { num: 4, label: 'Regional Desk', icon: Shield, email: 'ro.western@aicte.gov.in', tab: 'ro-pendency', activeClass: 'bg-emerald-600 text-white shadow-xs' },
+    { num: 5, label: 'Approval Bureau', icon: Award, email: 'bureau.approval@aicte.gov.in', tab: 'ca-decision', activeClass: 'bg-rose-600 text-white shadow-xs' },
+    { num: 6, label: 'Policy Admin', icon: Sliders, email: 'admin@aicte.gov.in', tab: 'admin-policy', activeClass: 'bg-slate-700 text-white shadow-xs' },
+  ];
+
+  const handleSwitchRole = async (targetRoleNumber: number, targetEmail: string, targetTab: string) => {
+    setSwitchingRole(true);
+    try {
+      await login({ email: targetEmail, password: 'password123' });
+      onNavigateTab?.(targetTab);
+    } catch (err) {
+      console.error('Role switch failed:', err);
+    } finally {
+      setSwitchingRole(false);
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -54,19 +76,19 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="sticky top-0 z-40 bg-[#071A2E] text-white border-b border-slate-700/80 shadow-md">
       <div className="px-4 sm:px-6 py-2 flex flex-wrap items-center justify-between gap-3 min-h-[56px]">
-        {/* Left: Official AICTE Emblem & Platform Brand */}
+        {/* Left: Official NiyamSetu Brand with Emblem */}
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center p-1 shrink-0 shadow-xs">
+          <div className="h-10 w-auto flex items-center justify-center p-0.5 shrink-0 bg-white/10 rounded-lg border border-white/20">
             <img
-              src="/assets/logo_image/image_e867798b.png"
-              alt="AICTE Emblem"
-              className="w-full h-full object-contain"
+              src="/niyamsetu-logo.png"
+              alt="NiyamSetu Logo"
+              className="h-9 w-auto object-contain rounded"
             />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-sm tracking-tight text-white leading-tight">
-                AICTE PravahReg
+              <span className="font-extrabold text-base tracking-tight text-white leading-tight">
+                NiyamSetu <span className="text-xs font-normal text-teal-300">(नियमसेतु)</span>
               </span>
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-400/30">
                 AY 2026–27
@@ -75,105 +97,64 @@ export const Navbar: React.FC<NavbarProps> = ({
                 WORM SHA-256
               </span>
             </div>
-            <p className="text-[11px] text-slate-300 hidden lg:block">
-              Regulation Bureau Companion Layer &bull; PS 26262 Solution
+            <p className="text-[10px] font-medium text-slate-300 tracking-wider hidden lg:block uppercase">
+              Bridging Rules &bull; Empowering Institutions
             </p>
           </div>
         </div>
 
-        {/* Center: Role-Dedicated Operational Status Card */}
-        <div className="hidden md:flex items-center gap-3 px-3.5 py-1.5 rounded-xl bg-slate-800/90 border border-slate-700/80 shadow-xs text-xs">
+        {/* Center: Interactive One-Click Multi-Role Demonstration Switcher */}
+        <div className="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-none">
+          <div className="flex items-center gap-1 bg-slate-900/95 p-1 rounded-xl border border-slate-700/80 shadow-inner">
+            {ROLES_LIST.map((r) => {
+              const Icon = r.icon;
+              const isActive = roleNumber === r.num;
+              return (
+                <button
+                  key={r.num}
+                  disabled={switchingRole}
+                  onClick={() => handleSwitchRole(r.num, r.email, r.tab)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    isActive
+                      ? r.activeClass + ' ring-1 ring-white/30'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
+                  } ${switchingRole ? 'opacity-50 cursor-wait' : ''}`}
+                  title={`Switch to Role ${r.num}: ${r.label}`}
+                >
+                  <span className="font-mono text-[10px] px-1 py-0.2 rounded bg-black/40 text-white/90">
+                    #{r.num}
+                  </span>
+                  <span className="hidden xl:inline">{r.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* College Quick-Switcher when in Role 1 */}
           {roleNumber === 1 && (
-            <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-1 font-bold text-blue-300 bg-blue-950/60 px-2 py-0.5 rounded border border-blue-800/60">
-                <Building2 className="w-3.5 h-3.5 text-blue-400" />
-                Applicant Workspace
-              </span>
-              <span className="text-slate-300 font-medium hidden lg:inline">
-                {(activeActor?.id === 'usr-inst-giits' || (activeActor as any)?.email === 'principal@giits.ac.in') ? 'GIITS Visakhapatnam • ID: 1-462589176'
-                  : (activeActor?.id === 'usr-inst-pdimtr' || (activeActor as any)?.email === 'principal@pdimtr.ac.in') ? 'PDIMTR Nagpur • ID: 1-109704178'
-                  : (activeActor?.id === 'usr-inst-evit' || (activeActor as any)?.email === 'principal@evit.ac.in') ? 'EVIT College • ID: 1-462228700'
-                  : (activeActor?.id === 'usr-inst-vjti' || (activeActor as any)?.email === 'principal@vjti.ac.in') ? 'VJTI Mumbai • ID: 1-436575682'
-                  : 'COEP Tech Univ • ID: 1-435789102'}
-              </span>
-              <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-800/50">
-                <CheckCircle2 className="w-3 h-3" /> NSWS Ingested
-              </span>
-            </div>
-          )}
-
-          {roleNumber === 2 && (
-            <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-1 font-bold text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-800/60">
-                <FileCheck className="w-3.5 h-3.5 text-amber-400" />
-                Desk Scrutiny Cell
-              </span>
-              <span className="text-slate-300 font-medium hidden lg:inline">
-                Roster: 2-SOC1770029225 &bull; 3/3 Experts
-              </span>
-              <span className="inline-flex items-center gap-1 text-[11px] text-amber-400 bg-amber-950/40 px-2 py-0.5 rounded border border-amber-800/50">
-                <Shield className="w-3 h-3" /> Snapshot v1 Guard Active
-              </span>
-            </div>
-          )}
-
-          {roleNumber === 3 && (
-            <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-1 font-bold text-purple-300 bg-purple-950/60 px-2 py-0.5 rounded border border-purple-800/60">
-                <Award className="w-3.5 h-3.5 text-purple-400" />
-                EVC Inspection Panel
-              </span>
-              <span className="text-slate-300 font-medium hidden lg:inline">
-                GIITS Visakhapatnam
-              </span>
-              <span className="inline-flex items-center gap-1 text-[11px] text-purple-300 bg-purple-950/40 px-2 py-0.5 rounded border border-purple-800/50">
-                <MapPin className="w-3 h-3" /> GPS &amp; Video Validated
-              </span>
-            </div>
-          )}
-
-          {roleNumber === 4 && (
-            <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-1 font-bold text-emerald-300 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/60">
-                <Shield className="w-3.5 h-3.5 text-emerald-400" />
-                Regional Desk (RO / RB)
-              </span>
-              <span className="text-slate-300 font-medium hidden lg:inline">
-                Western Region (WRO)
-              </span>
-              <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-800/50">
-                <Clock className="w-3 h-3" /> 15-Day Concurrence Active
-              </span>
-            </div>
-          )}
-
-          {roleNumber === 5 && (
-            <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-1 font-bold text-rose-300 bg-rose-950/60 px-2 py-0.5 rounded border border-rose-800/60">
-                <Award className="w-3.5 h-3.5 text-rose-400" />
-                Approval Authority Gate
-              </span>
-              <span className="text-slate-300 font-medium hidden lg:inline">
-                Council Executive Committee
-              </span>
-              <span className="inline-flex items-center gap-1 text-[11px] text-rose-300 bg-rose-950/40 px-2 py-0.5 rounded border border-rose-800/50">
-                <Shield className="w-3 h-3" /> Statutory DSC Armed
-              </span>
-            </div>
-          )}
-
-          {roleNumber === 6 && (
-            <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-1 font-bold text-slate-300 bg-slate-900 px-2 py-0.5 rounded border border-slate-700">
-                <Sliders className="w-3.5 h-3.5 text-slate-400" />
-                Policy &amp; Rules Engine
-              </span>
-              <span className="text-slate-300 font-medium hidden lg:inline">
-                APH 2024–27 &amp; Errata G02
-              </span>
-              <span className="inline-flex items-center gap-1 text-[11px] text-amber-300 bg-amber-950/40 px-2 py-0.5 rounded border border-amber-800/50">
-                X=360 Boundary Active
-              </span>
+            <div className="hidden lg:flex items-center gap-1 bg-slate-900/90 px-2 py-1 rounded-xl border border-blue-900/60 text-[11px]">
+              <span className="text-[10px] text-slate-400 font-semibold uppercase pr-1">Tenant:</span>
+              {[
+                { id: 'coep', label: 'COEP (NBA)', email: 'principal@coep.ac.in' },
+                { id: 'giits', label: 'GIITS (Non-NBA)', email: 'principal@giits.ac.in' },
+                { id: 'pdimtr', label: 'PDIMTR (Lease)', email: 'principal@pdimtr.ac.in' },
+              ].map((col) => {
+                const isColActive = (activeActor as any)?.email === col.email || activeActor?.id === `usr-inst-${col.id}`;
+                return (
+                  <button
+                    key={col.id}
+                    disabled={switchingRole}
+                    onClick={() => handleSwitchRole(1, col.email, 'inst-apps')}
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                      isColActive
+                        ? 'bg-blue-600 text-white shadow-2xs'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                    }`}
+                  >
+                    {col.label}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>

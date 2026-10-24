@@ -5,6 +5,7 @@ import { SLABadge, StageBadge, PriorityBadge } from '../../components/common/Sta
 import { formatDateIndian } from '../../utils/slaCalculator';
 import { getEligibleNextStages, validateWorkflowTransition } from '../../utils/workflowEngine';
 import { api } from '../../services/api';
+import { getSession } from '../../services/session';
 import {
   X,
   Building,
@@ -207,7 +208,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
       return;
     }
     try {
-      await verifyDocument(application.id, correctingDoc.id, 'Pending' as any, `Deficiency rectified: ${rectificationComment}`);
+      await verifyDocument(application.id, correctingDoc.id, 'Pending Verification', `Deficiency rectified: ${rectificationComment}`);
       addToast({
         type: 'success',
         title: 'Rectified Document Filed',
@@ -221,7 +222,20 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
     }
   };
 
-  const isInstitution = role === 'institution';
+  const session = getSession();
+  const activeActor = session?.actor;
+  const roleNumber: number =
+    (activeActor?.id === 'usr-inst-coep' || activeActor?.id === 'usr-inst-giits' || activeActor?.id === 'usr-inst-pdimtr' || activeActor?.id === 'usr-inst-evit' || activeActor?.id === 'usr-inst-vjti' || activeActor?.roles?.includes('institution')) ? 1 :
+    (activeActor?.id === 'usr-scrutiny-reviewer' || (activeActor?.roles?.includes('reviewer') && !activeActor?.roles?.includes('regional_officer'))) ? 2 :
+    (activeActor?.id === 'usr-evc-chair' || activeActor?.roles?.includes('evc')) ? 3 :
+    (activeActor?.id === 'usr-ro-western' || activeActor?.roles?.includes('regional_officer')) ? 4 :
+    (activeActor?.id === 'usr-bureau-hq' || activeActor?.roles?.includes('demo_authority') || activeActor?.roles?.includes('bureau_officer')) ? 5 :
+    6;
+
+  const isInstitution = roleNumber === 1;
+  const isReviewer = roleNumber === 2;
+  const canRevert = roleNumber === 4 || roleNumber === 5 || roleNumber === 6;
+  const canExecuteTransition = roleNumber === 4 || roleNumber === 5;
 
   // Dynamic statutory vault artifact mapped to actual case & processing stage
   const isPendingScrutiny = application.currentStage === 'Application Submitted' || application.currentStage === 'Draft';
@@ -271,21 +285,14 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
         title: 'Stream official AICTE Scrutiny Evaluation Report'
       };
 
-  const tabs = isInstitution
-    ? [
-        { id: 'overview', label: '📋 Application Status & Details' },
-        { id: 'documents', label: `📁 Submitted Documents (${application.documents.length})` },
-        { id: 'timeline', label: '⏱️ Approval Timeline' },
-        { id: 'observations', label: `💬 Remarks & Notices (${application.observations.length})` },
-      ]
-    : [
-        { id: 'overview', label: '📋 Status & Officer Actions' },
-        { id: 'documents', label: `📁 Document Verification (${application.documents.length})` },
-        { id: 'timeline', label: '⏱️ Workflow Timeline' },
-        { id: 'observations', label: `💬 Observations (${application.observations.length})` },
-        ...(application.currentStage === 'EVC Scheduled' || application.currentStage === 'EVC Inspection Completed' ? [{ id: 'evc', label: '📍 EVC Details' }] : []),
-        ...(appCompliances.length > 0 ? [{ id: 'compliance', label: `🛡️ Obligations (${appCompliances.length})` }] : []),
-      ];
+  const tabs = [
+    { id: 'overview', label: isInstitution ? '📋 Application Status & Details' : '📋 Case Status & Summary' },
+    { id: 'documents', label: `📁 Submitted Documents (${application.documents.length})` },
+    { id: 'timeline', label: '⏱️ Approval Timeline' },
+    ...(application.observations.length > 0 ? [{ id: 'observations', label: `💬 Remarks & Notices (${application.observations.length})` }] : []),
+    ...(application.currentStage === 'EVC Scheduled' || application.currentStage === 'EVC Inspection Completed' ? [{ id: 'evc', label: '📍 EVC Details' }] : []),
+    ...(appCompliances.length > 0 ? [{ id: 'compliance', label: `🛡️ Obligations (${appCompliances.length})` }] : []),
+  ];
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5">
@@ -350,7 +357,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
 
           {/* Quick Action Triggers */}
           <div className="flex items-center gap-2">
-            {(role === 'regional_officer' || role === 'bureau_officer' || role === 'admin') && (
+            {canRevert && (
               <button
                 onClick={() => setShowRevertModal(true)}
                 className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 transition-colors shadow-2xs"
@@ -402,11 +409,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
               <span>Why this route?</span>
               {showWhyRouteDrawer ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             </button>
-            {eligibleStages.length > 0 && (
-              <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded border border-blue-200">
-                Action Eligible ({eligibleStages.length})
-              </span>
-            )}
+
           </div>
         </div>
 
@@ -524,8 +527,8 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                 </div>
               </div>
 
-              {/* Regulatory Action Execution Box */}
-              {!isInstitution ? (
+              {/* Regulatory Action Execution Box: Authorized Regional / Bureau Officers Only */}
+              {canExecuteTransition ? (
                 <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <FileCheck className="w-4 h-4 text-blue-700" />
@@ -758,6 +761,23 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                           <Lock className="w-3.5 h-3.5 text-slate-500" />
                           <span>Locked (Scrutiny Cleared)</span>
                         </span>
+                      ) : (doc.status === 'Needs Resubmission' || doc.status === 'Rejected') && role === 'institution' ? (
+                        <button
+                          onClick={() => {
+                            setCorrectingDoc(doc);
+                            setRectificationComment('');
+                            setRectificationError(null);
+                          }}
+                          className="px-2.5 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-2xs transition-colors flex items-center gap-1.5"
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>Rectify & Upload</span>
+                        </button>
+                      ) : doc.status === 'Pending Verification' ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
+                          <Clock className="w-3.5 h-3.5 text-amber-600" />
+                          <span>Pending Desk Scrutiny</span>
+                        </span>
                       ) : (role === 'regional_officer' || role === 'bureau_officer' || role === 'admin') ? (
                         <>
                           <button
@@ -776,22 +796,10 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                             Reject
                           </button>
                         </>
-                      ) : role === 'institution' ? (
-                        <button
-                          onClick={() => {
-                            setCorrectingDoc(doc);
-                            setRectificationComment('');
-                            setRectificationError(null);
-                          }}
-                          className="px-2.5 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-2xs transition-colors flex items-center gap-1.5"
-                        >
-                          <Upload className="w-3.5 h-3.5" />
-                          <span>Rectify & Upload</span>
-                        </button>
                       ) : (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
                           <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-                          <span>Correction Open</span>
+                          <span>Deficiency Communicated</span>
                         </span>
                       )}
                       <button

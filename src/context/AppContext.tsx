@@ -49,7 +49,7 @@ interface AppContextType {
   verifyDocument: (
     appId: string,
     docId: string,
-    status: 'Verified' | 'Rejected',
+    status: 'Verified' | 'Rejected' | 'Pending Verification',
     reason?: string
   ) => Promise<void>;
   scheduleEVC: (
@@ -88,8 +88,8 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [role] = useState<UserRole>(api.getUserProfile().role);
-  const [user] = useState<UserProfile>(api.getUserProfile());
+  const [role, setRoleState] = useState<UserRole>(api.getUserProfile().role);
+  const [user, setUserState] = useState<UserProfile>(api.getUserProfile());
   const [applications, setApplications] = useState<Application[]>([]);
   const [evcInspections, setEvcInspections] = useState<EVCInspection[]>([]);
   const [complianceItems, setComplianceItems] = useState<ComplianceUndertaking[]>([]);
@@ -180,6 +180,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     refreshData();
   }, [role]);
 
+  // Reactive multi-role session switcher synchronization
+  useEffect(() => {
+    const handleSessionChange = () => {
+      const profile = api.getUserProfile();
+      setRoleState(profile.role);
+      setUserState(profile);
+      refreshData();
+    };
+    window.addEventListener('sih:sessionchanged', handleSessionChange);
+    return () => window.removeEventListener('sih:sessionchanged', handleSessionChange);
+  }, []);
+
   const handleCreateApplication = async (data: Partial<Application>): Promise<Application> => {
     try {
       const created = await api.createApplication(data, user);
@@ -238,7 +250,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const handleVerifyDocument = async (
     appId: string,
     docId: string,
-    status: 'Verified' | 'Rejected',
+    status: 'Verified' | 'Rejected' | 'Pending Verification',
     reason?: string
   ) => {
     try {

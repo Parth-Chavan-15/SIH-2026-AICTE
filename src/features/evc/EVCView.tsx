@@ -37,8 +37,32 @@ export const EVCView: React.FC<EVCViewProps> = ({ onSelectApplication }) => {
   const [selectedAppId, setSelectedAppId] = useState('');
   const [visitDate, setVisitDate] = useState('2026-10-30');
   const [visitTime, setVisitTime] = useState('10:00 AM IST');
-  const [chairman, setChairman] = useState('Prof. S. K. Ramanathan');
-  const [membersInput, setMembersInput] = useState('Dr. A. N. Murthy (IIT Madras), Prof. V. Rajesh (NIT Trichy)');
+  const [chairman, setChairman] = useState('Prof. Sivasubramanian Velmurugan');
+  const [membersInput, setMembersInput] = useState('Assoc. Prof. Hareesh K (Govt Engg), Architect Md. Danish (NIT Patna / COA Reg)');
+  const [fetchingRoster, setFetchingRoster] = useState(false);
+
+  const fetchPortalRoster = async (committeeType = 'EVC') => {
+    setFetchingRoster(true);
+    try {
+      const res = await fetch('/api/v1/adapter/committee-sync/' + (selectedAppId || 'APP-2026-GIITS'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ committeeType })
+      });
+      const json = await res.json();
+      if (json.success && json.data && json.data.roster) {
+        const roster = json.data.roster;
+        const chair = roster[0];
+        setChairman(chair.name + ' (' + chair.designation + ', ' + chair.organization + ')');
+        const otherMembers = roster.slice(1).map((m: any) => m.name + ' (' + (m.specialization || m.designation) + ', ' + m.organization + ')').join(', ');
+        setMembersInput(otherMembers);
+      }
+    } catch (e) {
+      // keep
+    } finally {
+      setFetchingRoster(false);
+    }
+  };
 
   // Report submission modal state
   const [reportingEVC, setReportingEVC] = useState<EVCInspection | null>(null);
@@ -422,6 +446,40 @@ export const EVCView: React.FC<EVCViewProps> = ({ onSelectApplication }) => {
                 </div>
               </div>
 
+              {/* AICTE Web-Portal Automated Committee Selection & Allocation */}
+              <div className="bg-indigo-50/80 p-3 rounded-xl border border-indigo-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-indigo-950 text-xs flex items-center gap-1.5">
+                    <Shield className="w-3.5 h-3.5 text-indigo-600" />
+                    AICTE Automated Committee Sync (APH §1.9)
+                  </span>
+                  <span className="text-[10px] font-mono text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded font-semibold">
+                    Simulated Companion Adapter
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600">
+                  Fetch council-approved committee experts from AICTE's automated selector portal or dynamically reallocate an alternate roster.
+                </p>
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => fetchPortalRoster('EVC')}
+                    disabled={fetchingRoster}
+                    className="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-[11px] transition-colors shadow-2xs flex items-center gap-1"
+                  >
+                    <span>⚡ Fetch Council EVC Panel</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fetchPortalRoster('RE_EVC')}
+                    disabled={fetchingRoster}
+                    className="px-2.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold text-[11px] transition-colors shadow-2xs flex items-center gap-1"
+                  >
+                    <span>🔄 Reallocate to Alternate Panel (Re-EVC)</span>
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <label className="font-bold text-slate-700 block mb-1">Committee Chairman</label>
                 <input
@@ -525,6 +583,27 @@ export const EVCView: React.FC<EVCViewProps> = ({ onSelectApplication }) => {
                     onChange={(e) => setLabsScore(Number(e.target.value))}
                     className="w-full p-2 rounded-lg border border-slate-300 text-center font-bold"
                   />
+                </div>
+              </div>
+
+              {/* Statutory Physical Inspection Verification (APH §1.9(f)-(g)) */}
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+                <span className="font-bold text-[11px] text-slate-800 uppercase tracking-wider block">
+                  Mandatory Physical Verification Checks (APH 2026–27 §1.9)
+                </span>
+                <div className="space-y-1.5 text-[11px]">
+                  <label className="flex items-center gap-2 text-slate-700 cursor-pointer">
+                    <input type="checkbox" defaultChecked className="rounded text-blue-600 focus:ring-blue-500" />
+                    <span><strong>APH §1.9(f):</strong> 30-minute uninterrupted walkthrough video uploaded &amp; verified</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-slate-700 cursor-pointer">
+                    <input type="checkbox" defaultChecked className="rounded text-blue-600 focus:ring-blue-500" />
+                    <span><strong>APH §1.9(g):</strong> Geo-coordinates verified: <code>17.702834° N, 83.113288° E</code> (&plusmn;10m radius)</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-slate-700 cursor-pointer">
+                    <input type="checkbox" defaultChecked className="rounded text-blue-600 focus:ring-blue-500" />
+                    <span><strong>Cadre Physical Audit:</strong> Faculty physical presence verified with Form 16 / Aadhaar</span>
+                  </label>
                 </div>
               </div>
 

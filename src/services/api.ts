@@ -52,6 +52,9 @@ export const canDecide = (actor: Actor, app: CanonicalApplication) =>
   actor.roles.includes('demo_authority') &&
   app.state === 'decision_pending';
 
+// Live in-memory document state tracking across Scrutiny & Deficiency Cure
+const liveDocumentStates: Record<string, Record<string, Partial<DocumentItem>>> = {};
+
 export function mapCanonicalToUi(c: CanonicalApplication): Application {
   const isGIITS = c.id === 'APP-2026-GIITS';
   const isCOEP = c.id === 'APP-2026-COEP';
@@ -79,6 +82,7 @@ export function mapCanonicalToUi(c: CanonicalApplication): Application {
   else if (c.state === 'rejected') currentStage = 'Application Rejected';
   else if (c.state === 'policy_review_required') currentStage = 'Draft';
 
+  const isPendingScrutiny = c.state === 'submitted' || c.state === 'scrutiny_pending';
   const defaultDocs: DocumentItem[] = [
     {
       id: 'DOC-C3',
@@ -87,10 +91,10 @@ export function mapCanonicalToUi(c: CanonicalApplication): Application {
       fileName: 'Land_Title_Deed_30Yr_Lease.pdf',
       fileSize: '4.2 MB',
       uploadedAt: '2026-10-20',
-      verified: true,
-      verifiedBy: 'Regional Scrutiny Committee',
-      verificationDate: '2026-10-23',
-      status: 'Verified',
+      verified: isPendingScrutiny ? false : true,
+      verifiedBy: isPendingScrutiny ? undefined : 'Desk Scrutiny Committee (Snapshot v1)',
+      verificationDate: isPendingScrutiny ? undefined : '2026-10-23',
+      status: isPendingScrutiny ? 'Pending Verification' : 'Verified',
       expiryDate: isPDIMTR ? '2026-11-05' : '2045-12-31'
     },
     {
@@ -100,10 +104,10 @@ export function mapCanonicalToUi(c: CanonicalApplication): Application {
       fileName: 'Municipal_Building_Occupancy_NOC.pdf',
       fileSize: '6.8 MB',
       uploadedAt: '2026-10-20',
-      verified: true,
-      verifiedBy: 'Regional Scrutiny Committee',
-      verificationDate: '2026-10-23',
-      status: 'Verified'
+      verified: isPendingScrutiny ? false : true,
+      verifiedBy: isPendingScrutiny ? undefined : 'Desk Scrutiny Committee (Snapshot v1)',
+      verificationDate: isPendingScrutiny ? undefined : '2026-10-23',
+      status: isPendingScrutiny ? 'Pending Verification' : 'Verified'
     },
     {
       id: 'DOC-D1',
@@ -112,8 +116,8 @@ export function mapCanonicalToUi(c: CanonicalApplication): Application {
       fileName: 'Faculty_Cadre_Form16_Summary.pdf',
       fileSize: '3.1 MB',
       uploadedAt: '2026-10-21',
-      verified: !isGIITS,
-      status: isGIITS ? 'Needs Resubmission' : 'Verified',
+      verified: isPendingScrutiny || isGIITS ? false : true,
+      status: isPendingScrutiny ? 'Pending Verification' : isGIITS ? 'Needs Resubmission' : 'Verified',
       rejectionReason: isGIITS ? 'Professor deficit: 2 required, 0 available in CSE/IT departments' : undefined
     },
     {
@@ -123,12 +127,17 @@ export function mapCanonicalToUi(c: CanonicalApplication): Application {
       fileName: 'State_Fire_Department_NOC.pdf',
       fileSize: '2.4 MB',
       uploadedAt: '2026-10-21',
-      verified: !isGIITS && !isPDIMTR,
-      status: isGIITS || isPDIMTR ? 'Needs Resubmission' : 'Verified',
+      verified: isPendingScrutiny || isGIITS || isPDIMTR ? false : true,
+      status: isPendingScrutiny ? 'Pending Verification' : isGIITS || isPDIMTR ? 'Needs Resubmission' : 'Verified',
       expiryDate: isPDIMTR ? '2026-11-24' : '2026-11-07',
       rejectionReason: isGIITS ? 'Fire NOC expires in 14 days (<60-day renewal threshold)' : undefined
     }
   ];
+
+  const docs = defaultDocs.map((doc) => {
+    const override = liveDocumentStates[c.id]?.[doc.id];
+    return override ? { ...doc, ...override } : doc;
+  });
 
   const defaultObservations: Observation[] = isGIITS ? [
     {
@@ -192,7 +201,7 @@ export function mapCanonicalToUi(c: CanonicalApplication): Application {
     overdueDays: sla.overdueDays,
     isEscalated: isEVIT,
     escalatedTo: isEVIT ? 'National Approval Bureau (Dr. Mamta R. Agarwal)' : undefined,
-    documents: defaultDocs,
+    documents: docs,
     observations: defaultObservations,
     timeline: defaultTimeline,
     evcId: isGIITS ? '2-SOC1774344316' : undefined
@@ -342,13 +351,28 @@ class APIService {
   }
 
   public async verifyDocument(
-    _applicationId: string,
-    _docId: string,
-    _status: 'Verified' | 'Rejected',
+    applicationId: string,
+    docId: string,
+    status: 'Verified' | 'Rejected' | 'Pending Verification',
     _actor: UserProfile,
-    _rejectionReason?: string
+    rejectionReason?: string
   ): Promise<Application> {
-    throw new Error('Domain API is not integrated; no changes were recorded.');
+    if (applicationId === 'SYN' || applicationId === 'SYN-CASE' || !applicationId.startsWith('APP-2026-')) {
+      throw new Error('Domain API is not integrated; no changes were recorded.');
+    }
+    if (!liveDocumentStates[applicationId]) {
+      liveDocumentStates[applicationId] = {};
+    }
+    liveDocumentStates[applicationId][docId] = {
+      status,
+      verified: status === 'Verified',
+      verificationDate: status === 'Verified' ? new Date().toISOString().split('T')[0] : undefined,
+      verifiedBy: status === 'Verified' ? 'Desk Scrutiny Committee (Snapshot v1)' : undefined,
+      rejectionReason: status === 'Rejected' ? (rejectionReason || 'Deficiency flagged by Scrutiny Committee') : undefined
+    };
+
+    const updated = await this.getApplicationById(applicationId);
+    return updated!;
   }
 
   // --- EVC Inspections (Wired to /evc/queue) ---

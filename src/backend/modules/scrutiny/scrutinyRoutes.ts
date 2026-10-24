@@ -42,6 +42,12 @@ export function createScrutinyRouter(corePort?: CorePort): Router {
 
   // POST /api/v1/applications/:id/scrutiny - Sign checklist & create snapshot
   router.post('/applications/:id/scrutiny', async (req: Request, res: Response) => {
+    if (Array.isArray(req.body.items)) {
+      req.body.items = req.body.items.map((i: any) => ({
+        ...i,
+        result: i.result || i.status || 'accepted'
+      }));
+    }
     const parsed = SignScrutinyCommandSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(422).json({
@@ -91,6 +97,12 @@ export function createScrutinyRouter(corePort?: CorePort): Router {
 
   // POST /api/v1/applications/:id/rescrutiny - Reviewer evaluates corrections
   router.post('/applications/:id/rescrutiny', async (req: Request, res: Response) => {
+    if (Array.isArray(req.body.outcomes)) {
+      req.body.outcomes = req.body.outcomes.map((o: any) => ({
+        ...o,
+        result: o.result || o.status || 'accepted'
+      }));
+    }
     const parsed = RescrutinyCommandSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(422).json({

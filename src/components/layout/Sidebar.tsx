@@ -44,49 +44,43 @@ export const ROLE_NAV_ITEMS: Record<RolePortalId, { portalTitle: string; subtitl
     items: [
       { id: 'inst-apps', label: 'My Applications', icon: FolderKanban },
       { id: 'inst-deficiencies', label: 'Deficiency Cure Window (Annex. 7)', icon: FileWarning, badge: 'D1, D2', badgeColor: 'bg-amber-400 text-slate-900 font-bold' },
-      { id: 'inst-renewals', label: 'Post-Approval Renewals', icon: ShieldCheck },
-      { id: 'inst-dossier', label: 'Statutory Dossier & EoA', icon: FileText },
+      { id: 'inst-renewals', label: 'Post-Approval Obligations', icon: ShieldCheck, badge: '3 ACTIVE', badgeColor: 'bg-emerald-500 text-white font-bold' },
     ]
   },
   2: {
     portalTitle: 'Scrutiny Committee Cell',
     subtitle: 'Desk Review • Roster 2-SOC1770029225',
     items: [
-      { id: 'scrutiny-queue', label: 'Assigned Scrutiny Queue', icon: FolderKanban },
       { id: 'scrutiny-eval', label: 'Checklist Review & Snapshot v1', icon: FileCheck },
       { id: 'scrutiny-rescrutiny', label: 'Differential Re-Scrutiny (§1.8(g))', icon: Lock, badge: 'LOCKED C3', badgeColor: 'bg-amber-500 text-white font-bold' },
       { id: 'scrutiny-committee', label: 'Expert Roster & Declarations', icon: Users },
+      { id: 'scrutiny-queue', label: 'All Assigned Cases', icon: FolderKanban },
     ]
   },
   3: {
     portalTitle: 'EVC Committee Portal',
-    subtitle: 'Expert Visit & SAC Appellate Cell',
+    subtitle: 'Expert Visit & Inspection Panel',
     items: [
-      { id: 'evc-queue', label: 'Eligible EVC Queue', icon: CalendarCheck, badge: 'NBA SKIP', badgeColor: 'bg-emerald-500 text-white font-bold' },
-      { id: 'evc-inspect', label: 'GPS & Video Inspection Console', icon: MapPin },
-      { id: 'evc-sac', label: 'SAC / SHC Hearing Loops', icon: Layers },
-      { id: 'evc-reports', label: 'Signed Inspection Reports', icon: FileText },
+      { id: 'evc-inspect', label: 'Panel Inspections & Scoring', icon: MapPin, badge: 'NBA SKIP', badgeColor: 'bg-emerald-500 text-white font-bold' },
+      { id: 'evc-reports', label: 'Signed Inspection Reports (APH §1.9)', icon: FileText },
     ]
   },
   4: {
     portalTitle: 'Regional Office Desk (RO)',
     subtitle: 'Western Region • Compliance Monitoring',
     items: [
-      { id: 'ro-pendency', label: 'Regional Pendency & SLAs', icon: Clock, badge: '10d/15d', badgeColor: 'bg-rose-500 text-white font-bold' },
-      { id: 'ro-schedule', label: 'Committee Member Allocation', icon: Users, badge: 'ALLOCATE', badgeColor: 'bg-blue-600 text-white font-bold' },
-      { id: 'ro-obligations', label: '4-Clock Post-Approval Timers', icon: ShieldCheck, badge: '3 ACTIVE', badgeColor: 'bg-amber-500 text-white font-bold' },
-      { id: 'ro-verify', label: 'Document Verification (5-State)', icon: FileCheck },
-      { id: 'ro-concurrence', label: '15-Day University & DTE NOC', icon: Building2 },
+      { id: 'ro-pendency', label: 'Stage-Ageing Command Center & SLAs', icon: Clock, badge: '10d/15d', badgeColor: 'bg-rose-500 text-white font-bold' },
+      { id: 'ro-schedule', label: 'Committee Allocation & Timetable', icon: Users, badge: 'AICTE SYNC', badgeColor: 'bg-blue-600 text-white font-bold' },
+      { id: 'ro-obligations', label: 'Post-Approval 4-Clock Timers', icon: ShieldCheck, badge: '3 ACTIVE', badgeColor: 'bg-amber-500 text-white font-bold' },
     ]
   },
   5: {
     portalTitle: 'Competent Authority Chamber',
     subtitle: 'Approval Bureau & Council Executive Committee',
     items: [
-      { id: 'ca-dossiers', label: 'Cases Awaiting Approval', icon: FolderKanban },
-      { id: 'ca-decision', label: 'Statutory Decision Gate (EoA)', icon: Award, badge: 'HUMAN ONLY', badgeColor: 'bg-rose-600 text-white font-bold' },
-      { id: 'ca-gazette', label: 'Issued Approval Orders', icon: FileText },
-      { id: 'ca-dispatch', label: 'Siebel Write-Back & 6-Authority', icon: Send },
+      { id: 'ca-decision', label: 'Statutory Decision Gate (APH §1.10)', icon: Award, badge: 'HUMAN ONLY', badgeColor: 'bg-rose-600 text-white font-bold' },
+      { id: 'ca-dossiers', label: 'All Cases Awaiting Approval', icon: FolderKanban },
+      { id: 'ca-dispatch', label: 'Siebel Write-Back & Ecosystem Dispatch', icon: Send },
     ]
   },
   6: {
@@ -96,7 +90,7 @@ export const ROLE_NAV_ITEMS: Record<RolePortalId, { portalTitle: string; subtitl
       { id: 'admin-policy', label: 'Policy Registry & Pinned Rules', icon: Sliders },
       { id: 'admin-worm', label: 'WORM HMAC-SHA256 Audit Trail', icon: History, badge: 'IMMUTABLE', badgeColor: 'bg-emerald-600 text-white font-bold' },
       { id: 'admin-adapters', label: '5 National Ecosystem Endpoints', icon: Globe2 },
-      { id: 'admin-analytics', label: '6-Category Statutory Analytics', icon: BarChart3 },
+      { id: 'admin-analytics', label: 'Consolidated Statutory Analytics', icon: BarChart3 },
     ]
   }
 };

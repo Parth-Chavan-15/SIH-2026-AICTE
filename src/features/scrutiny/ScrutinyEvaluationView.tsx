@@ -30,7 +30,7 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
   mode,
   onSelectApplication,
 }) => {
-  const { applications, transitionStage, addToast } = useApp();
+  const { applications, transitionStage, verifyDocument, addToast } = useApp();
 
   // Reviewable cases (COEP, GIITS, PDIMTR, VJTI)
   const [selectedCaseId, setSelectedCaseId] = useState<string>(
@@ -189,6 +189,7 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
     const deficientItems = checklistItems.filter((i) => i.status === 'deficient');
     const itemsPayload = checklistItems.map((i) => ({
       itemId: i.itemId,
+      result: i.status,
       status: i.status,
       reason: i.remark,
       evidenceVersionIds: [i.evidenceVersion],
@@ -197,6 +198,17 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
     const result = await signSnapshot('2026-27-v1', itemsPayload);
     if (result.success) {
       setSignedSuccess(result.data);
+
+      // Dynamically update document states according to the scrutiny evaluation
+      for (const item of checklistItems) {
+        const docId = `DOC-${item.itemId}`;
+        if (item.status === 'accepted') {
+          await verifyDocument(currentApp.id, docId, 'Verified', item.remark).catch(() => {});
+        } else {
+          await verifyDocument(currentApp.id, docId, 'Rejected', item.remark).catch(() => {});
+        }
+      }
+
       addToast({
         type: 'success',
         title: 'Scrutiny Snapshot v1 Signed',

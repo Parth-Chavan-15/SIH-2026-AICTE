@@ -23,11 +23,22 @@ import { ReportsView } from './features/reports/ReportsView';
 import { AuditView } from './features/audit/AuditView';
 import { ConfigRulesView } from './features/admin/ConfigRulesView';
 import { ScrutinyEvaluationView } from './features/scrutiny/ScrutinyEvaluationView';
+import { InstitutionDeficiencyCureView } from './features/institution/InstitutionDeficiencyCureView';
+import { ScrutinyRosterDeclarationView } from './features/scrutiny/ScrutinyRosterDeclarationView';
+import { CompetentAuthorityDecisionView } from './features/ca/CompetentAuthorityDecisionView';
 
 import { Search, X } from 'lucide-react';
 
 const MainLayout: React.FC = () => {
   const { selectedAppId, setSelectedAppId, applications } = useApp();
+  const [sessionRevision, setSessionRevision] = useState(0);
+
+  useEffect(() => {
+    const handleSessionChange = () => setSessionRevision((r) => r + 1);
+    window.addEventListener('sih:sessionchanged', handleSessionChange);
+    return () => window.removeEventListener('sih:sessionchanged', handleSessionChange);
+  }, []);
+
   const session = getSession();
   const activeActor = session?.actor;
 
@@ -42,10 +53,10 @@ const MainLayout: React.FC = () => {
 
   const defaultTab = 
     roleNumber === 1 ? 'inst-apps' :
-    roleNumber === 2 ? 'scrutiny-queue' :
-    roleNumber === 3 ? 'evc-queue' :
+    roleNumber === 2 ? 'scrutiny-eval' :
+    roleNumber === 3 ? 'evc-inspect' :
     roleNumber === 4 ? 'ro-pendency' :
-    roleNumber === 5 ? 'ca-dossiers' : 'admin-policy';
+    roleNumber === 5 ? 'ca-decision' : 'admin-policy';
 
   const [currentTab, setCurrentTab] = useState<string>(defaultTab);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -125,7 +136,7 @@ const MainLayout: React.FC = () => {
               />
             )}
             {currentTab === 'inst-deficiencies' && (
-              <WorkflowView onSelectApplication={(id) => setSelectedAppId(id)} />
+              <InstitutionDeficiencyCureView onSelectApplication={(id) => setSelectedAppId(id)} />
             )}
             {currentTab === 'inst-renewals' && <ComplianceView />}
             {currentTab === 'inst-dossier' && <DocumentExpiryView />}
@@ -149,7 +160,9 @@ const MainLayout: React.FC = () => {
                 onSelectApplication={(id) => setSelectedAppId(id)}
               />
             )}
-            {currentTab === 'scrutiny-committee' && <GovernmentEndpointsView />}
+            {currentTab === 'scrutiny-committee' && (
+              <ScrutinyRosterDeclarationView onNavigateToScrutiny={() => setCurrentTab('scrutiny-eval')} />
+            )}
 
             {/* Role 3: EVC Coordinator / Member Pages */}
             {currentTab === 'evc-queue' && (
@@ -182,10 +195,9 @@ const MainLayout: React.FC = () => {
               />
             )}
             {currentTab === 'ca-decision' && (
-              <DashboardView
-                onNavigateTab={(tab) => setCurrentTab(tab)}
-                onOpenNewAppModal={() => setShowNewAppModal(true)}
+              <CompetentAuthorityDecisionView
                 onSelectApplication={(id) => setSelectedAppId(id)}
+                onNavigateTab={(tab) => setCurrentTab(tab)}
               />
             )}
             {currentTab === 'ca-gazette' && <ReportsView />}

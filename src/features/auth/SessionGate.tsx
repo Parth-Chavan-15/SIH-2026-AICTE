@@ -213,17 +213,19 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
       {/* Top National Brand Bar */}
       <header className="bg-[#071A2E] text-white border-b border-slate-800 px-6 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center p-0.5 shadow-sm">
+          <div className="h-8 w-auto flex items-center justify-center p-0.5 rounded-md bg-white shadow-sm">
             <img
-              src="/assets/logo_image/image_e867798b.png"
-              alt="AICTE Emblem"
-              className="w-full h-full object-contain"
+              src="/niyamsetu-logo.png"
+              alt="NiyamSetu Logo"
+              className="h-7 w-auto object-contain rounded"
             />
           </div>
           <div className="flex items-center gap-2 font-mono text-xs tracking-wider">
-            <span className="font-extrabold text-white">AICTE PravahReg</span>
+            <span className="font-extrabold text-white text-sm">NIYAMSETU</span>
             <span className="text-slate-500">|</span>
-            <span className="text-blue-300">ACCESS GATEWAY</span>
+            <span className="text-teal-300 font-sans font-semibold">नियमसेतु</span>
+            <span className="text-slate-500 hidden sm:inline">|</span>
+            <span className="text-blue-300 hidden sm:inline">AICTE COMPLIANCE GATEWAY</span>
           </div>
         </div>
 
@@ -239,21 +241,24 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
 
       {/* Main Enterprise Gateway Hero */}
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 max-w-6xl mx-auto w-full">
-        {/* Gateway Title */}
+        {/* Gateway Title with Official Logo */}
         <div className="text-center space-y-2 mb-10">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-white shadow-md border border-slate-200 mb-2 p-1">
+          <div className="inline-flex items-center justify-center p-2 rounded-2xl bg-white shadow-md border border-slate-200 mb-2">
             <img
-              src="/assets/logo_image/image_e867798b.png"
-              alt="AICTE Official Emblem"
-              className="w-full h-full object-contain"
+              src="/niyamsetu-logo.png"
+              alt="NiyamSetu Logo"
+              className="h-16 w-auto object-contain rounded-xl"
             />
           </div>
           <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            AICTE PravahReg Enterprise Gateway
+            NIYAMSETU <span className="text-2xl font-normal text-teal-700">(नियमसेतु)</span>
           </h1>
-          <p className="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-widest">
-            OFFICIAL AUTHORIZED PERSONNEL ACCESS GATEWAY &bull; PS 26262 SOLUTION
+          <p className="text-sm sm:text-base font-bold text-slate-700 tracking-tight">
+            AICTE Approval &amp; Compliance Management Platform
           </p>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-900 font-extrabold text-xs tracking-widest uppercase">
+            Bridging Rules &bull; Empowering Institutions
+          </div>
         </div>
 
         {/* Error Notice */}
