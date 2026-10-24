@@ -255,19 +255,19 @@ class APIService {
 
     return {
       id: actor?.id ?? 'UNAUTHENTICATED',
-      name: actor?.id === 'SYN-ACTOR-COEP' ? 'Principal Dr. D. N. Sonawane'
-        : actor?.id === 'SYN-ACTOR-VJTI' ? 'Director Dr. Sachin Kore (VJTI)'
-        : actor?.id === 'SYN-ACTOR-RO' ? 'Dr. R. K. Soni (Regional Officer)'
-        : actor?.id === 'SYN-ACTOR-EVC' ? 'Prof. S. Velmurugan / Dr. B. B. Ahuja'
-        : actor?.id === 'SYN-ACTOR-BUREAU' ? 'Dr. Mamta R. Agarwal (Advisor-I)'
-        : actor?.id === 'SYN-ACTOR-ADMIN' ? 'AICTE Central Policy Administrator'
+      name: (actor?.id === 'SYN-ACTOR-COEP' || actor?.id === 'usr-inst-coep') ? 'Institution Signatory (College A–D)'
+        : (actor?.id === 'SYN-ACTOR-VJTI' || actor?.id === 'usr-inst-vjti') ? 'Institution Signatory (College E - Isolated)'
+        : (actor?.id === 'SYN-ACTOR-RO' || actor?.id === 'usr-ro-western') ? 'Regional Officer (Scrutiny Cell)'
+        : (actor?.id === 'SYN-ACTOR-EVC' || actor?.id === 'usr-evc-chair') ? 'EVC Inspection Committee Expert'
+        : (actor?.id === 'SYN-ACTOR-BUREAU' || actor?.id === 'usr-bureau-hq') ? 'Competent Authority (Council EC)'
+        : (actor?.id === 'SYN-ACTOR-ADMIN' || actor?.id === 'usr-admin-hq') ? 'Central Policy Administrator'
         : (actor?.id ?? 'Unauthenticated'),
       role,
       roleTitle: actor?.roles.join(', ') ?? 'Unauthenticated',
       organization: 'AICTE Regulation Bureau (2026-27)',
       region: actor?.regionIds?.join(', ') ?? 'National',
       email: (actor as any)?.email ?? '',
-      avatarInitials: actor?.id ? actor.id.slice(0, 2).toUpperCase() : 'DM'
+      avatarInitials: actor?.id ? actor.id.slice(0, 2).toUpperCase() : 'AI'
     };
   }
 

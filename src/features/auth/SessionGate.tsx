@@ -6,47 +6,47 @@ import { Lock, Mail, Shield, CheckCircle2, UserCheck, KeyRound, AlertTriangle } 
 export const DEMO_PERSONAS = [
   {
     email: 'principal@coep.ac.in',
-    name: 'Dr. D. N. Sonawane',
-    institution: 'COEP Technological University',
+    name: 'Institution Signatory (College A–D)',
+    institution: 'COEP / GIITS / PDIMTR / EVIT (General)',
     roleLabel: 'Institution Signatory',
-    tag: 'College A–D Owner',
+    tag: 'College A–D',
     description: 'Manages applications for COEP, GIITS, PDIMTR, and EVIT within assigned jurisdiction.'
   },
   {
     email: 'principal@vjti.ac.in',
-    name: 'Dr. Sachin Kore',
-    institution: 'VJTI Autonomous Institute',
+    name: 'Institution Signatory (College E - Isolated)',
+    institution: 'VJTI Autonomous Institute (Tenant-Isolated)',
     roleLabel: 'Institution Signatory',
-    tag: 'College E (Cross-Tenant)',
+    tag: 'College E Scope',
     description: 'Tenant-isolated institution account strictly restricted to VJTI cases.'
   },
   {
     email: 'ro.western@aicte.gov.in',
-    name: 'Dr. R. K. Soni',
+    name: 'Regional Officer (Scrutiny Cell)',
     institution: 'AICTE Western / South-Central Regional Office',
     roleLabel: 'Regional Officer / Reviewer',
-    tag: 'Scrutiny & Re-Scrutiny Signatory',
+    tag: 'Scrutiny & Reviewer',
     description: 'Authorized for desk scrutiny evaluations, deficiency returns, and evidence verification.'
   },
   {
     email: 'evc.chair@aicte.gov.in',
-    name: 'Prof. S. Velmurugan / Dr. B. B. Ahuja',
+    name: 'EVC Inspection Committee Expert',
     institution: 'Expert Visit Committee Panel',
-    roleLabel: 'EVC Committee Chairman',
-    tag: 'On-Site Inspection Proforma',
+    roleLabel: 'EVC Committee Expert',
+    tag: 'EVC Inspection Expert',
     description: 'Conducts physical/virtual inspections, GPS verification, and submits EVC reports.'
   },
   {
     email: 'bureau.approval@aicte.gov.in',
-    name: 'Dr. Mamta R. Agarwal',
-    institution: 'Approval Bureau & Council Executive Committee',
-    roleLabel: 'Advisor-I (Competent Authority)',
-    tag: 'Decision Gate (decision.record)',
+    name: 'Competent Authority (Council EC)',
+    institution: 'Approval Bureau & Executive Committee',
+    roleLabel: 'Competent Authority (decision.record)',
+    tag: 'Decision Gate',
     description: 'Statutory decision authority for issuing Letters of Approval (LoA/EoA) and Speaking Orders.'
   },
   {
     email: 'admin@aicte.gov.in',
-    name: 'Policy Administrator',
+    name: 'Central Policy Administrator',
     institution: 'AICTE Headquarters (New Delhi)',
     roleLabel: 'Central System Admin',
     tag: 'Central Policy Admin',

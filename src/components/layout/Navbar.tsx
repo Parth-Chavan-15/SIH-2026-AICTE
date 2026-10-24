@@ -35,32 +35,32 @@ export const Navbar: React.FC<NavbarProps> = ({
   const rolesList: { role: UserRole; title: string; subtitle: string; icon: any }[] = [
     {
       role: 'institution',
-      title: 'Institution / College Portal',
-      subtitle: 'COEP Tech Pune (Principal Dr. Arvind Mehta)',
+      title: 'Institution Signatory',
+      subtitle: 'College Signatory (General / Tenant-Isolated)',
       icon: Building2,
     },
     {
       role: 'regional_officer',
       title: 'Regional Officer Dashboard',
-      subtitle: 'Western Regional Office (WRO Mumbai)',
+      subtitle: 'Regional Officer (Scrutiny Cell)',
       icon: FileCheck,
     },
     {
       role: 'bureau_officer',
-      title: 'Bureau Officer Dashboard',
-      subtitle: 'Approval Bureau AICTE HQ (Dr. Sunita Sharma)',
+      title: 'Competent Authority Dashboard',
+      subtitle: 'Approval Bureau & Council Executive Committee',
       icon: Shield,
     },
     {
       role: 'evc_committee',
-      title: 'EVC / Committee Portal',
-      subtitle: 'Inspection Panel Chair (Prof. S. K. Ramanathan)',
+      title: 'EVC Committee Portal',
+      subtitle: 'EVC Inspection Committee Expert',
       icon: Award,
     },
     {
       role: 'admin',
       title: 'System Administrator Portal',
-      subtitle: 'e-Governance Cell AICTE New Delhi',
+      subtitle: 'Central Policy Administrator',
       icon: Users,
     },
   ];

@@ -19,8 +19,6 @@ import { NotificationsView } from './features/notifications/NotificationsView';
 import { ReportsView } from './features/reports/ReportsView';
 import { AuditView } from './features/audit/AuditView';
 import { ConfigRulesView } from './features/admin/ConfigRulesView';
-import { UserManagementView } from './features/admin/UserManagementView';
-import { WorkflowSimulationView } from './features/simulation/WorkflowSimulationView';
 
 import { Search, X } from 'lucide-react';
 
@@ -111,12 +109,6 @@ const MainLayout: React.FC = () => {
               <WorkflowView onSelectApplication={(id) => setSelectedAppId(id)} />
             )}
 
-            {currentTab === 'simulation' && <WorkflowSimulationView />}
-
-            {currentTab === 'pendency' && (
-              <PendencyView onSelectApplication={(id) => setSelectedAppId(id)} />
-            )}
-
             {currentTab === 'evc' && (
               <EVCView onSelectApplication={(id) => setSelectedAppId(id)} />
             )}
@@ -125,19 +117,21 @@ const MainLayout: React.FC = () => {
 
             {currentTab === 'documents' && <DocumentExpiryView />}
 
-            {currentTab === 'notifications' && (
-              <NotificationsView onSelectApplication={(id) => setSelectedAppId(id)} />
+            {currentTab === 'pendency' && (
+              <PendencyView onSelectApplication={(id) => setSelectedAppId(id)} />
             )}
 
             {currentTab === 'reports' && <ReportsView />}
+
+            {currentTab === 'notifications' && (
+              <NotificationsView onSelectApplication={(id) => setSelectedAppId(id)} />
+            )}
 
             {currentTab === 'audit' && (
               <AuditView onSelectApplication={(id) => setSelectedAppId(id)} />
             )}
 
             {currentTab === 'rules' && <ConfigRulesView />}
-
-            {currentTab === 'users' && <UserManagementView />}
           </div>
         </main>
       </div>

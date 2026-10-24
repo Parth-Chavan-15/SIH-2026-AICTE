@@ -24,16 +24,14 @@ export type NavTab =
   | 'overview'
   | 'applications'
   | 'workflow'
-  | 'simulation'
-  | 'pendency'
   | 'evc'
   | 'compliance'
+  | 'pendency'
   | 'documents'
   | 'notifications'
   | 'reports'
   | 'audit'
-  | 'rules'
-  | 'users';
+  | 'rules';
 
 interface SidebarProps {
   currentTab: NavTab;
@@ -70,52 +68,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }[] = [
     {
       id: 'overview',
-      label: 'Overview',
+      label: 'Command Center',
       icon: LayoutDashboard,
       allowedRoles: ['all'],
-      section: 'Core Operations',
+      section: 'Approval Operations',
     },
     {
       id: 'applications',
-      label: 'Applications',
+      label: 'Applications Pipeline',
       icon: FolderKanban,
       badge: applications.length,
       allowedRoles: ['all'],
-      section: 'Core Operations',
+      section: 'Approval Operations',
     },
     {
       id: 'workflow',
-      label: 'Approval Workflow',
+      label: 'Scrutiny & Stages',
       icon: GitMerge,
       allowedRoles: ['all'],
-      section: 'Core Operations',
-    },
-    {
-      id: 'simulation',
-      label: 'Workflow Simulation',
-      icon: Sparkles,
-      allowedRoles: ['all'],
-      section: 'Core Operations',
-    },
-    {
-      id: 'pendency',
-      label: 'Pendency Monitoring',
-      icon: Clock,
-      badge: overdueCount,
-      badgeColor: 'bg-rose-500 text-white',
-      allowedRoles: ['regional_officer', 'bureau_officer', 'admin'],
-      section: 'Monitoring & Inspection',
+      section: 'Approval Operations',
     },
     {
       id: 'evc',
-      label: 'EVC Scheduling',
+      label: 'EVC Inspection Queue',
       icon: CalendarCheck,
       allowedRoles: ['regional_officer', 'bureau_officer', 'evc_committee', 'admin'],
-      section: 'Monitoring & Inspection',
+      section: 'Approval Operations',
     },
     {
       id: 'compliance',
-      label: 'Institutional Compliance',
+      label: 'Post-Approval Compliance',
       icon: ShieldCheck,
       badge: pendingComplianceCount,
       badgeColor: 'bg-amber-500 text-white',
@@ -124,7 +106,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: 'documents',
-      label: 'Document Expiry',
+      label: 'Document & Lease Validity',
       icon: FileWarning,
       badge: expiringCount,
       badgeColor: 'bg-amber-500 text-white',
@@ -132,41 +114,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
       section: 'Compliance & Validity',
     },
     {
+      id: 'pendency',
+      label: 'SLA Pendency & Alerts',
+      icon: Clock,
+      badge: overdueCount,
+      badgeColor: 'bg-rose-500 text-white',
+      allowedRoles: ['regional_officer', 'bureau_officer', 'admin'],
+      section: 'Monitoring & Reports',
+    },
+    {
+      id: 'reports',
+      label: '6-Category Reports & Siebel',
+      icon: BarChart3,
+      allowedRoles: ['regional_officer', 'bureau_officer', 'admin'],
+      section: 'Monitoring & Reports',
+    },
+    {
       id: 'notifications',
-      label: 'Notifications & Escalations',
+      label: 'Outbox Reminders',
       icon: BellRing,
       badge: unreadNotifs,
       badgeColor: 'bg-blue-600 text-white',
       allowedRoles: ['all'],
-      section: 'Governance & Analytics',
-    },
-    {
-      id: 'reports',
-      label: 'Reports & Analytics',
-      icon: BarChart3,
-      allowedRoles: ['regional_officer', 'bureau_officer', 'admin'],
-      section: 'Governance & Analytics',
+      section: 'Monitoring & Reports',
     },
     {
       id: 'audit',
-      label: 'Audit Trail',
+      label: 'Immutable Audit Trail',
       icon: History,
       allowedRoles: ['regional_officer', 'bureau_officer', 'admin', 'evc_committee'],
-      section: 'Governance & Analytics',
+      section: 'System Governance',
     },
     {
       id: 'rules',
-      label: 'Rules & Configuration',
+      label: 'Policy Registry & Rules',
       icon: Sliders,
       allowedRoles: ['admin', 'bureau_officer'],
-      section: 'System Administration',
-    },
-    {
-      id: 'users',
-      label: 'User Management',
-      icon: Users2,
-      allowedRoles: ['admin', 'bureau_officer'],
-      section: 'System Administration',
+      section: 'System Governance',
     },
   ];
 
