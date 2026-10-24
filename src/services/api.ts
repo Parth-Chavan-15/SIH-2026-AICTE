@@ -255,8 +255,11 @@ class APIService {
 
     return {
       id: actor?.id ?? 'UNAUTHENTICATED',
-      name: (actor?.id === 'SYN-ACTOR-COEP' || actor?.id === 'usr-inst-coep') ? 'Institution (Applicant)'
-        : (actor?.id === 'SYN-ACTOR-VJTI' || actor?.id === 'usr-inst-vjti') ? 'Institution (Applicant - Isolated)'
+      name: (actor?.id === 'SYN-ACTOR-COEP' || actor?.id === 'usr-inst-coep') ? 'COEP Technological University, Pune'
+        : (actor?.id === 'usr-inst-giits') ? 'Gonna Institute of IT & Sciences (GIITS)'
+        : (actor?.id === 'usr-inst-pdimtr') ? 'Prerna / Univ BDT College (PDIMTR)'
+        : (actor?.id === 'usr-inst-evit') ? 'East Valley Institute of Technology (EVIT)'
+        : (actor?.id === 'SYN-ACTOR-VJTI' || actor?.id === 'usr-inst-vjti') ? 'Veermata Jijabai Technological Institute (VJTI)'
         : (actor?.id === 'usr-scrutiny-reviewer') ? 'Scrutiny Reviewer (Committee)'
         : (actor?.id === 'SYN-ACTOR-RO' || actor?.id === 'usr-ro-western') ? 'Regional / Bureau Officer (RO / RB)'
         : (actor?.id === 'SYN-ACTOR-EVC' || actor?.id === 'usr-evc-chair') ? 'EVC Coordinator / Member'

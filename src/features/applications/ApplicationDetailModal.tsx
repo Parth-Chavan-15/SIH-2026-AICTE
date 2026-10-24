@@ -40,8 +40,6 @@ import {
   Video,
   MapPin,
 } from 'lucide-react';
-import { useScrutiny } from './hooks/useScrutiny';
-import { getOrCreateSnapshotForApplication } from '../../backend/modules/scrutiny/scrutinyService';
 
 interface ApplicationDetailModalProps {
   applicationId: string;
@@ -69,31 +67,12 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
 
   const [activeTab, setActiveTab] = useState<
     | 'overview'
-    | 'details'
     | 'documents'
     | 'timeline'
     | 'observations'
     | 'evc'
     | 'compliance'
-    | 'audit'
-    | 'scrutiny_lock'
-    | 'case_summary'
-    | 'ecosystem_adapters'
   >('overview');
-
-  const {
-    snapshots: scrutinySnapshots,
-    latestSnapshot,
-    loading: scrutinyLoading,
-    error: scrutinyError,
-    isSynthetic: isScrutinySynthetic,
-    correct: submitScrutinyCorrection,
-    refetch: refetchScrutiny,
-  } = useScrutiny(applicationId);
-
-  const [testCorrectionItem, setTestCorrectionItem] = useState<'D1' | 'D2' | 'C3'>('D1');
-  const [testCorrectionText, setTestCorrectionText] = useState('Submitted rectified compliance documentation.');
-  const [testCorrectionFeedback, setTestCorrectionFeedback] = useState<{ success: boolean; message: string; rule?: string } | null>(null);
 
   // Transition form state
   const [selectedTargetStage, setSelectedTargetStage] = useState<WorkflowStage | ''>('');
@@ -115,22 +94,6 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
     rescrutiny_pending: { uiStage: 'Scrutiny Cleared', canonical: 'rescrutiny_pending' },
     evc_pending: { uiStage: 'EVC Scheduled', canonical: 'evc_pending' },
   };
-
-  // Case Summary & Standardised Statutory Notices state (Domain A.4)
-  const [caseSummary, setCaseSummary] = useState<any>(null);
-  const [summaryLoading, setSummaryLoading] = useState(false);
-  const [selectedNoticeIndex, setSelectedNoticeIndex] = useState(0);
-  const [copiedNotice, setCopiedNotice] = useState(false);
-
-  // Ecosystem Adapters state (Zero-Rewrite Companion Layer)
-  const [adapterResults, setAdapterResults] = useState<{
-    dsc?: any;
-    committee?: any;
-    externalRegistries?: any;
-    concurrence?: any;
-    siebel?: any;
-  }>({});
-  const [adapterLoading, setAdapterLoading] = useState<string | null>(null);
 
   // Authorized Compliance Closure state (Domain F.4)
   const [closingCompliance, setClosingCompliance] = useState(false);
@@ -208,20 +171,6 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
     }
   };
 
-  const loadCaseSummary = async () => {
-    setSummaryLoading(true);
-    try {
-      const res = await api.getCaseSummary(application.id);
-      if (res && res.data) {
-        setCaseSummary(res.data);
-      }
-    } catch (e: any) {
-      console.error('Failed to load case summary', e);
-    } finally {
-      setSummaryLoading(false);
-    }
-  };
-
   const handleCloseComplianceCase = async () => {
     setClosingCompliance(true);
     try {
@@ -272,19 +221,23 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
     }
   };
 
-  const tabs = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'details', label: 'Details' },
-    { id: 'documents', label: `Documents (${application.documents.length})` },
-    { id: 'timeline', label: 'Workflow Timeline' },
-    { id: 'observations', label: `Observations (${application.observations.length})` },
-    { id: 'evc', label: 'EVC Details' },
-    { id: 'compliance', label: `Compliance (${appCompliances.length})` },
-    { id: 'scrutiny_lock', label: 'Scrutiny & Scope Lock (USP)' },
-    { id: 'case_summary', label: 'Case Summary & Notices (PS §A.4)' },
-    { id: 'ecosystem_adapters', label: 'Ecosystem Adapters (5)' },
-    { id: 'audit', label: 'Audit History' },
-  ];
+  const isInstitution = role === 'institution';
+
+  const tabs = isInstitution
+    ? [
+        { id: 'overview', label: '📋 Application Status & Details' },
+        { id: 'documents', label: `📁 Submitted Documents (${application.documents.length})` },
+        { id: 'timeline', label: '⏱️ Approval Timeline' },
+        { id: 'observations', label: `💬 Remarks & Notices (${application.observations.length})` },
+      ]
+    : [
+        { id: 'overview', label: '📋 Status & Officer Actions' },
+        { id: 'documents', label: `📁 Document Verification (${application.documents.length})` },
+        { id: 'timeline', label: '⏱️ Workflow Timeline' },
+        { id: 'observations', label: `💬 Observations (${application.observations.length})` },
+        ...(application.currentStage === 'EVC Scheduled' || application.currentStage === 'EVC Inspection Completed' ? [{ id: 'evc', label: '📍 EVC Details' }] : []),
+        ...(appCompliances.length > 0 ? [{ id: 'compliance', label: `🛡️ Obligations (${appCompliances.length})` }] : []),
+      ];
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5">
@@ -472,12 +425,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id as any);
-                if (tab.id === 'case_summary' && !caseSummary) {
-                  loadCaseSummary();
-                }
-              }}
+              onClick={() => setActiveTab(tab.id as any)}
               className={`py-3 px-3 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'border-blue-600 text-blue-600'
@@ -516,91 +464,144 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
               </div>
 
               {/* Regulatory Action Execution Box */}
-              <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <FileCheck className="w-4 h-4 text-blue-700" />
-                  <h4 className="text-xs font-bold text-blue-900 uppercase tracking-wider">
-                    Workflow Action Console (Current Role: {user.roleTitle})
-                  </h4>
-                </div>
-
-                {eligibleStages.length === 0 ? (
-                  <p className="text-xs text-slate-600">
-                    No further automated transitions available from stage &ldquo;{application.currentStage}&rdquo;.
-                  </p>
-                ) : (
-                  <div className="space-y-3 mt-3">
-                    <p className="text-xs text-slate-700">
-                      Select next eligible stage transition. Notice: The backend validates regulatory authority; actions require mandatory justification reasons where applicable.
-                    </p>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {eligibleStages.map((opt) => (
-                        <label
-                          key={opt.stage}
-                          className={`flex items-start gap-2.5 p-3 rounded-lg border cursor-pointer transition-all ${
-                            selectedTargetStage === opt.stage
-                              ? 'bg-blue-600 text-white border-blue-700 shadow-xs'
-                              : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300'
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="targetStage"
-                            value={opt.stage}
-                            checked={selectedTargetStage === opt.stage}
-                            onChange={() => {
-                              setSelectedTargetStage(opt.stage);
-                              setTransitionError(null);
-                            }}
-                            className="mt-1"
-                          />
-                          <div>
-                            <span className="font-bold text-xs block">{opt.actionLabel}</span>
-                            <span className={`text-[11px] block mt-0.5 ${selectedTargetStage === opt.stage ? 'text-blue-100' : 'text-slate-500'}`}>
-                              {opt.description}
-                            </span>
-                            {opt.requiresMandatoryReason && (
-                              <span className={`inline-block mt-1 text-[10px] font-semibold px-1.5 py-0.2 rounded ${selectedTargetStage === opt.stage ? 'bg-amber-400 text-slate-950' : 'bg-amber-100 text-amber-800'}`}>
-                                Mandatory Reason Required
-                              </span>
-                            )}
-                          </div>
-                        </label>
-                      ))}
-                    </div>
-
-                    {selectedTargetStage && (
-                      <div className="space-y-2 mt-2 bg-white p-3 rounded-lg border border-slate-200">
-                        <label className="text-xs font-bold text-slate-700 block">
-                          Official Regulatory Remarks / Mandatory Reason:
-                        </label>
-                        <textarea
-                          rows={2}
-                          placeholder="Provide detailed justification, official remarks, or specific deficiencies observed..."
-                          value={mandatoryReason}
-                          onChange={(e) => setMandatoryReason(e.target.value)}
-                          className="w-full p-2.5 rounded-md border border-slate-300 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        />
-                        {transitionError && (
-                          <p className="text-xs font-semibold text-rose-600 flex items-center gap-1">
-                            <AlertCircle className="w-3.5 h-3.5" />
-                            {transitionError}
-                          </p>
-                        )}
-                        <button
-                          onClick={handleExecuteTransition}
-                          disabled={isTransitioning}
-                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-xs transition-colors flex items-center gap-1.5"
-                        >
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>{isTransitioning ? 'Validating...' : 'Confirm & Execute Stage Transition'}</span>
-                        </button>
-                      </div>
-                    )}
+              {!isInstitution ? (
+                <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileCheck className="w-4 h-4 text-blue-700" />
+                    <h4 className="text-xs font-bold text-blue-900 uppercase tracking-wider">
+                      Workflow Action Console (Current Role: {user.roleTitle})
+                    </h4>
                   </div>
-                )}
-              </div>
+
+                  {eligibleStages.length === 0 ? (
+                    <p className="text-xs text-slate-600">
+                      No further automated transitions available from stage &ldquo;{application.currentStage}&rdquo;.
+                    </p>
+                  ) : (
+                    <div className="space-y-3 mt-3">
+                      <p className="text-xs text-slate-700">
+                        Select next eligible stage transition. Notice: The backend validates regulatory authority; actions require mandatory justification reasons where applicable.
+                      </p>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {eligibleStages.map((opt) => (
+                          <label
+                            key={opt.stage}
+                            className={`flex items-start gap-2.5 p-3 rounded-lg border cursor-pointer transition-all ${
+                              selectedTargetStage === opt.stage
+                                ? 'bg-blue-600 text-white border-blue-700 shadow-xs'
+                                : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300'
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="targetStage"
+                              value={opt.stage}
+                              checked={selectedTargetStage === opt.stage}
+                              onChange={() => {
+                                setSelectedTargetStage(opt.stage);
+                                setTransitionError(null);
+                              }}
+                              className="mt-1"
+                            />
+                            <div>
+                              <span className="font-bold text-xs block">{opt.actionLabel}</span>
+                              <span className={`text-[11px] block mt-0.5 ${selectedTargetStage === opt.stage ? 'text-blue-100' : 'text-slate-500'}`}>
+                                {opt.description}
+                              </span>
+                              {opt.requiresMandatoryReason && (
+                                <span className={`inline-block mt-1 text-[10px] font-semibold px-1.5 py-0.2 rounded ${selectedTargetStage === opt.stage ? 'bg-amber-400 text-slate-950' : 'bg-amber-100 text-amber-800'}`}>
+                                  Mandatory Reason Required
+                                </span>
+                              )}
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+
+                      {selectedTargetStage && (
+                        <div className="space-y-2 mt-2 bg-white p-3 rounded-lg border border-slate-200">
+                          <label className="text-xs font-bold text-slate-700 block">
+                            Official Regulatory Remarks / Mandatory Reason:
+                          </label>
+                          <textarea
+                            rows={2}
+                            placeholder="Provide detailed justification, official remarks, or specific deficiencies observed..."
+                            value={mandatoryReason}
+                            onChange={(e) => setMandatoryReason(e.target.value)}
+                            className="w-full p-2.5 rounded-md border border-slate-300 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          />
+                          {transitionError && (
+                            <p className="text-xs font-semibold text-rose-600 flex items-center gap-1">
+                              <AlertCircle className="w-3.5 h-3.5" />
+                              {transitionError}
+                            </p>
+                          )}
+                          <button
+                            onClick={handleExecuteTransition}
+                            disabled={isTransitioning}
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-xs transition-colors flex items-center gap-1.5"
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>{isTransitioning ? 'Validating...' : 'Confirm & Execute Stage Transition'}</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Reassuring Stage Guidance for Institution Applicant */
+                <div className="bg-gradient-to-r from-blue-50/80 to-indigo-50/80 border border-blue-200/90 rounded-xl p-4.5 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                      <Clock className="w-5 h-5" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-extrabold uppercase tracking-wider text-blue-900">
+                          Current Processing Status
+                        </span>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-200/70 text-blue-800 font-bold">
+                          {application.currentStage}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-700 leading-relaxed">
+                        {application.currentStage === 'Application Submitted'
+                          ? 'Your application payload has been ingested via the NSWS & AICTE Siebel hand-off and queued for formal scrutiny review.'
+                          : application.currentStage === 'Scrutiny in Progress'
+                          ? 'Your application is currently under review by the Desk Scrutiny Committee Cell. Document checklists and statutory norms are being evaluated.'
+                          : application.currentStage === 'Deficiency Communicated'
+                          ? '⚠️ Action Required: The Scrutiny Committee has communicated specific deficiencies. Please navigate to the "Submitted Documents" tab to view notes and upload rectified evidence.'
+                          : application.currentStage === 'Scrutiny Cleared'
+                          ? 'Initial scrutiny evaluation has been completed compliant with norms. The case is proceeding along its designated handbook pathway.'
+                          : application.currentStage === 'EVC Scheduled'
+                          ? 'An Expert Visit Committee has been constituted to conduct campus physical verification. Please ensure physical labs and facilities are ready.'
+                          : application.currentStage === 'Executive Committee Approval'
+                          ? 'All scrutiny and committee reports are compiled. Final decision is under review by the Council Approval Bureau.'
+                          : application.currentStage === 'Approval Issued'
+                          ? '✅ Extension of Approval (EoA) Granted! Your official stamped order is available in the Remarks & Notices tab.'
+                          : 'Your application is in active regulatory processing.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-blue-200/60 text-xs">
+                    <div className="bg-white/80 p-2.5 rounded-lg border border-blue-100">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">Assigned Regional Office:</span>
+                      <span className="font-semibold text-slate-800">{application.region} Regional Office</span>
+                    </div>
+                    <div className="bg-white/80 p-2.5 rounded-lg border border-blue-100">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">Campus Location:</span>
+                      <span className="font-semibold text-slate-800">{application.city}, {application.state}</span>
+                    </div>
+                    <div className="bg-white/80 p-2.5 rounded-lg border border-blue-100">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">AICTE Permanent Institute ID:</span>
+                      <span className="font-mono font-semibold text-blue-700">{application.institutionCode}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Latest Observations Summary */}
               <div>
@@ -624,55 +625,6 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                     ))}
                   </div>
                 )}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 2: APPLICATION DETAILS */}
-          {activeTab === 'details' && (
-            <div className="space-y-4 text-xs">
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <h4 className="font-bold text-slate-900 text-sm mb-3">Institution Profile</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <span className="text-slate-500 font-semibold block text-[11px]">Institution Full Name:</span>
-                    <span className="text-slate-900 font-medium">{application.institutionName}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 font-semibold block text-[11px]">AICTE Permanent Institute ID:</span>
-                    <span className="text-slate-900 font-mono font-medium">{application.institutionCode}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 font-semibold block text-[11px]">Campus Location:</span>
-                    <span className="text-slate-900 font-medium">{application.city}, {application.state}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 font-semibold block text-[11px]">Regional Jurisdiction:</span>
-                    <span className="text-slate-900 font-medium">{application.region} Regional Office</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <h4 className="font-bold text-slate-900 text-sm mb-3">Approval Scope & Academic Course Proposal</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <span className="text-slate-500 font-semibold block text-[11px]">Application Category:</span>
-                    <span className="text-slate-900 font-medium">{application.applicationType}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 font-semibold block text-[11px]">Target Academic Session:</span>
-                    <span className="text-slate-900 font-medium">{application.academicYear}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 font-semibold block text-[11px]">Faculty Domain / Program:</span>
-                    <span className="text-slate-900 font-medium">{application.program}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 font-semibold block text-[11px]">Proposed Sanctioned Intake:</span>
-                    <span className="text-slate-900 font-medium">{application.proposedIntake} Students</span>
-                  </div>
-                </div>
               </div>
             </div>
           )}
@@ -835,70 +787,118 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
             </div>
           )}
 
-          {/* TAB 5: OBSERVATIONS */}
+          {/* TAB 5: OBSERVATIONS & STATUTORY NOTICES */}
           {activeTab === 'observations' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                  Official Observations & Clarifications
-                </h4>
-              </div>
-
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
-                <h5 className="font-bold text-xs text-slate-800">Record Regulatory Note / Remark</h5>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                  <select
-                    value={newObsType}
-                    onChange={(e) => setNewObsType(e.target.value as any)}
-                    className="p-2 rounded border border-slate-300 bg-white"
-                  >
-                    <option value="Observation">General Observation</option>
-                    <option value="Deficiency">Deficiency Note</option>
-                    <option value="Clarification Request">Clarification Request</option>
-                    <option value="Recommendation">Recommendation</option>
-                  </select>
-                  <label className="flex items-center gap-2 text-slate-700">
-                    <input
-                      type="checkbox"
-                      checked={newObsMandatory}
-                      onChange={(e) => setNewObsMandatory(e.target.checked)}
-                    />
-                    <span>Requires Mandatory Institution Response</span>
-                  </label>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                    Official Observations &amp; Statutory Communications
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    Official communications recorded under AICTE Approval Process Handbook
+                  </p>
                 </div>
-                <textarea
-                  rows={2}
-                  placeholder="Enter observation or deficiency details..."
-                  value={newObsComment}
-                  onChange={(e) => setNewObsComment(e.target.value)}
-                  className="w-full p-2.5 rounded border border-slate-300 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                />
-                <button
-                  onClick={handlePostObservation}
-                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-2xs"
-                >
-                  Append Official Note
-                </button>
               </div>
 
-              <div className="space-y-2">
-                {application.observations.map((obs) => (
-                  <div key={obs.id} className="p-3.5 bg-white rounded-xl border border-slate-200 text-xs">
-                    <div className="flex items-center justify-between text-slate-500 text-[11px] mb-1">
-                      <span className="font-bold text-slate-900">
-                        {obs.type} &bull; {obs.authorName} ({obs.authorRole})
-                      </span>
-                      <span>{formatDateIndian(obs.timestamp)}</span>
+              {/* If Approved, show Official EoA Order Card */}
+              {(application.currentStage === 'Approval Issued' || application.currentStage === 'Executive Committee Approval') && (
+                <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-900 to-teal-950 text-white space-y-3 shadow-md">
+                  <div className="flex items-center justify-between border-b border-emerald-800 pb-2">
+                    <div className="flex items-center gap-2">
+                      <Award className="w-5 h-5 text-amber-400" />
+                      <h5 className="font-bold text-sm text-white">
+                        Extension of Approval (EoA) Granted for AY 2026–27
+                      </h5>
                     </div>
-                    <p className="text-slate-800 mt-1 leading-relaxed">{obs.comment}</p>
-                    {obs.mandatoryResolutionRequired && (
-                      <span className="inline-block mt-2 text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded">
-                        Mandatory Rectification
-                      </span>
-                    )}
+                    <span className="font-mono text-[10px] bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 px-2 py-0.5 rounded">
+                      Order No: AICTE/AB/2026-27/{application.institutionCode}
+                    </span>
                   </div>
-                ))}
-              </div>
+                  <p className="text-xs text-emerald-100 leading-relaxed">
+                    The Council has accorded statutory approval under Section 10/11 of AICTE Act, 1987 and APH 2024–27 norms.
+                    Approved Intake: <strong>{application.proposedIntake} seats</strong> in <strong>{application.program}</strong>.
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <button
+                      onClick={() => window.print()}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-xs"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      <span>Print Official EoA Order (PDF)</span>
+                    </button>
+                    <span className="text-[11px] text-emerald-300">
+                      Digitally signed with Class-3 eMudhra DSC by Member Secretary, AICTE.
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Officer Note Recording Form (Officers only) */}
+              {!isInstitution && (
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                  <h5 className="font-bold text-xs text-slate-800">Record Regulatory Note / Remark</h5>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    <select
+                      value={newObsType}
+                      onChange={(e) => setNewObsType(e.target.value as any)}
+                      className="p-2 rounded border border-slate-300 bg-white"
+                    >
+                      <option value="Observation">General Observation</option>
+                      <option value="Deficiency">Deficiency Note</option>
+                      <option value="Clarification Request">Clarification Request</option>
+                      <option value="Recommendation">Recommendation</option>
+                    </select>
+                    <label className="flex items-center gap-2 text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={newObsMandatory}
+                        onChange={(e) => setNewObsMandatory(e.target.checked)}
+                      />
+                      <span>Requires Mandatory Institution Response</span>
+                    </label>
+                  </div>
+                  <textarea
+                    rows={2}
+                    placeholder="Enter observation or deficiency details..."
+                    value={newObsComment}
+                    onChange={(e) => setNewObsComment(e.target.value)}
+                    className="w-full p-2.5 rounded border border-slate-300 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                  <button
+                    onClick={handlePostObservation}
+                    className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-2xs"
+                  >
+                    Append Official Note
+                  </button>
+                </div>
+              )}
+
+              {application.observations.length === 0 ? (
+                <div className="p-6 text-center bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-500">
+                  <p className="font-semibold text-slate-700">No Deficiencies or Remarks Issued</p>
+                  <p className="mt-1">All scrutiny checks are clear or pending initial evaluation.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {application.observations.map((obs) => (
+                    <div key={obs.id} className="p-3.5 bg-white rounded-xl border border-slate-200 text-xs">
+                      <div className="flex items-center justify-between text-slate-500 text-[11px] mb-1">
+                        <span className="font-bold text-slate-900">
+                          {obs.type} &bull; {obs.authorName} ({obs.authorRole})
+                        </span>
+                        <span>{formatDateIndian(obs.timestamp)}</span>
+                      </div>
+                      <p className="text-slate-800 mt-1 leading-relaxed">{obs.comment}</p>
+                      {obs.mandatoryResolutionRequired && (
+                        <span className="inline-block mt-2 text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded">
+                          Mandatory Rectification
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -1088,650 +1088,6 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
             </div>
           )}
 
-          {/* TAB: ELECTRONIC CASE SUMMARY & STATUTORY NOTICES (Domain A.4) */}
-          {activeTab === 'case_summary' && (
-            <div className="space-y-5 animate-in fade-in duration-150">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900 tracking-tight">
-                    Electronic Case Summary &amp; Standardised Statutory Notices
-                  </h4>
-                  <p className="text-[11px] text-slate-500">
-                    Compliant with PS 26262 Domain A (Bullet 4) &amp; APH §1.8, §1.9, §2.23, §2.25
-                  </p>
-                </div>
-                <button
-                  onClick={loadCaseSummary}
-                  disabled={summaryLoading}
-                  className="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold text-xs flex items-center gap-1.5"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${summaryLoading ? 'animate-spin' : ''}`} />
-                  <span>Refresh Summary</span>
-                </button>
-              </div>
-
-              {summaryLoading ? (
-                <div className="p-10 text-center text-slate-500">
-                  <RefreshCw className="w-6 h-6 animate-spin mx-auto text-blue-600 mb-2" />
-                  <p className="text-xs font-semibold">Compiling electronic case dossier and statutory notices...</p>
-                </div>
-              ) : !caseSummary ? (
-                <div className="p-8 text-center text-slate-500 bg-slate-50 rounded-xl border">
-                  <p>Case summary is ready to compile.</p>
-                  <button
-                    onClick={loadCaseSummary}
-                    className="mt-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold"
-                  >
-                    Compile Electronic Dossier
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {/* Executive Case Summary Card */}
-                  <div className="p-4 rounded-xl bg-gradient-to-r from-blue-900 to-indigo-950 text-white space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-blue-800/80 pb-2">
-                      <div>
-                        <span className="text-[10px] text-blue-300 uppercase font-semibold">Electronic Dossier ID:</span>
-                        <p className="font-mono text-xs font-bold text-white">{caseSummary.applicationId}</p>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-[10px] text-blue-300 uppercase font-semibold">NSWS / Siebel Ref:</span>
-                        <p className="font-mono text-xs text-blue-200">{caseSummary.provenance?.nswsInvestorReference || caseSummary.referenceNumber}</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                      <div>
-                        <span className="text-[10px] text-blue-300 block">Evaluated Route:</span>
-                        <span className="font-bold">{caseSummary.policyAndRoute?.routeType}</span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-blue-300 block">EVC Mandate:</span>
-                        <span className="font-bold">{caseSummary.policyAndRoute?.isEVCRequired ? 'Physical Inspection' : 'Desk Scrutiny Only'}</span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-blue-300 block">Deficiency Count:</span>
-                        <span className="font-bold text-amber-300">{caseSummary.scrutinyStatus?.deficientItemsCount || 0} Items</span>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-blue-300 block">NBA Exemption:</span>
-                        <span className="font-bold text-emerald-300">{caseSummary.externalRegistrySync?.nbaValid ? 'Valid Active' : 'Non-Accredited'}</span>
-                      </div>
-                    </div>
-
-                    <div className="p-2.5 rounded-lg bg-blue-950/60 border border-blue-800 text-[11px] leading-relaxed">
-                      <strong>Executive Regulatory Recommendation:</strong> {caseSummary.executiveRecommendation}
-                    </div>
-                  </div>
-
-                  {/* 5 Statutory Notice Templates Selector */}
-                  <div className="space-y-2">
-                    <span className="text-xs font-bold text-slate-800 uppercase tracking-wider block">
-                      5 Standardised Statutory Communications (APH Prescribed Templates)
-                    </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-5 gap-1.5">
-                      {caseSummary.statutoryNotices?.map((notice: any, idx: number) => (
-                        <button
-                          key={notice.noticeId || idx}
-                          onClick={() => setSelectedNoticeIndex(idx)}
-                          className={`p-2.5 rounded-lg border text-left text-xs transition-all ${
-                            selectedNoticeIndex === idx
-                              ? 'bg-blue-600 text-white border-blue-700 shadow-xs'
-                              : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
-                          }`}
-                        >
-                          <span className="text-[10px] uppercase font-bold block opacity-80">Notice {idx + 1}</span>
-                          <span className="font-bold line-clamp-1 text-[11px] mt-0.5">{notice.title}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Rendered Notice Content */}
-                  {caseSummary.statutoryNotices && caseSummary.statutoryNotices[selectedNoticeIndex] && (() => {
-                    const activeNotice = caseSummary.statutoryNotices[selectedNoticeIndex];
-                    return (
-                      <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-3 shadow-xs">
-                        <div className="flex items-center justify-between border-b pb-2">
-                          <div>
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200">
-                              {activeNotice.statutoryCitation}
-                            </span>
-                            <h5 className="font-bold text-sm text-slate-900 mt-1">{activeNotice.subject}</h5>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => {
-                                navigator.clipboard.writeText(activeNotice.body);
-                                setCopiedNotice(true);
-                                setTimeout(() => setCopiedNotice(false), 2000);
-                              }}
-                              className="px-2.5 py-1.5 rounded-md border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 flex items-center gap-1"
-                            >
-                              {copiedNotice ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                              <span>{copiedNotice ? 'Copied' : 'Copy Text'}</span>
-                            </button>
-                            <button
-                              onClick={() => window.print()}
-                              className="px-2.5 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1"
-                            >
-                              <Printer className="w-3.5 h-3.5" />
-                              <span>Print Notice</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="bg-slate-50 p-4 rounded-lg font-mono text-xs text-slate-800 whitespace-pre-wrap leading-relaxed border border-slate-200">
-                          {activeNotice.body}
-                        </div>
-
-                        <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                          <span>Authorized Signatory: <strong>{activeNotice.authorizedSignatory}</strong></span>
-                          <span>Mandatory Action: <strong>{activeNotice.mandatoryAction}</strong></span>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* TAB: AICTE ECOSYSTEM ADAPTERS (5 Zero-Rewrite Companion Bridges) */}
-          {activeTab === 'ecosystem_adapters' && (
-            <div className="space-y-4 animate-in fade-in duration-150 text-xs">
-              <div className="p-4 rounded-xl bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Cpu className="w-5 h-5 text-indigo-400" />
-                    <h3 className="font-bold text-sm tracking-tight">
-                      Zero-Rewrite Companion Layer &bull; 5 Statutory AICTE Adapters
-                    </h3>
-                  </div>
-                  <p className="text-xs text-indigo-200 mt-0.5">
-                    Bidirectional interoperability bridges connecting canonical PravahReg to existing AICTE portals without rewriting legacy code.
-                  </p>
-                </div>
-                <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-400/30">
-                  SIMULATED_ADAPTER / SOURCE_STATUS_OBSERVED
-                </span>
-              </div>
-
-              {/* Adapter 1: Automated Committee Selection Sync */}
-              <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Building className="w-4 h-4 text-blue-700" />
-                    <span className="font-bold text-slate-900 text-xs">
-                      1. AICTE Web-Portal Committee Selection Sync (APH §1.8, §1.9)
-                    </span>
-                  </div>
-                  <button
-                    disabled={adapterLoading === 'committee'}
-                    onClick={async () => {
-                      setAdapterLoading('committee');
-                      try {
-                        const res = await api.syncCommittee(application.id, 'EVC');
-                        setAdapterResults((prev) => ({ ...prev, committee: res.data }));
-                      } finally {
-                        setAdapterLoading(null);
-                      }
-                    }}
-                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold disabled:opacity-50"
-                  >
-                    {adapterLoading === 'committee' ? 'Syncing...' : 'Sync 3-Expert Committee Roster'}
-                  </button>
-                </div>
-                {adapterResults.committee && (
-                  <div className="p-3 bg-slate-50 rounded-lg border text-[11px] space-y-2">
-                    <span className="font-bold text-slate-800">Constituted Committee Roster:</span>
-                    <ul className="space-y-1">
-                      {adapterResults.committee.roster?.map((exp: any, i: number) => (
-                        <li key={i} className="text-slate-700 flex items-center justify-between">
-                          <span>&bull; {exp.name} ({exp.designation}) &mdash; {exp.organization}</span>
-                          <span className="text-emerald-700 font-semibold font-mono">No-Conflict Signed</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-
-              {/* Adapter 2: AICTESigner / mSigner Class-3 DSC Verification */}
-              <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <FileSignature className="w-4 h-4 text-emerald-700" />
-                    <span className="font-bold text-slate-900 text-xs">
-                      2. AICTESigner / mSigner Class-3 DSC Verification Gateway (APH §1.4.3, §2.3.4)
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      disabled={adapterLoading === 'dsc_fail'}
-                      onClick={async () => {
-                        setAdapterLoading('dsc_fail');
-                        try {
-                          await api.verifyDSC('DOC-AFF-01', false);
-                        } catch (e: any) {
-                          setAdapterResults((prev) => ({
-                            ...prev,
-                            dsc: { rejected: true, message: e.message || '422 DSC_SIGNATURE_REQUIRED' }
-                          }));
-                        } finally {
-                          setAdapterLoading(null);
-                        }
-                      }}
-                      className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-lg text-xs font-semibold"
-                    >
-                      Test Unsigned Rejection (422)
-                    </button>
-                    <button
-                      disabled={adapterLoading === 'dsc_pass'}
-                      onClick={async () => {
-                        setAdapterLoading('dsc_pass');
-                        try {
-                          const res = await api.verifyDSC('DOC-AFF-01', true, 'ePass2003Auto USB Cryptographic Token', 'Dr. Ramesh Kumar, Principal');
-                          setAdapterResults((prev) => ({ ...prev, dsc: res.data }));
-                        } finally {
-                          setAdapterLoading(null);
-                        }
-                      }}
-                      className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold"
-                    >
-                      Verify Class-3 Token
-                    </button>
-                  </div>
-                </div>
-                {adapterResults.dsc && (
-                  <div className={`p-3 rounded-lg border text-[11px] ${adapterResults.dsc.rejected ? 'bg-rose-50 border-rose-200 text-rose-900' : 'bg-emerald-50 border-emerald-200 text-emerald-900'}`}>
-                    {adapterResults.dsc.rejected ? (
-                      <p><strong>Gateway Rejection:</strong> {adapterResults.dsc.message}</p>
-                    ) : (
-                      <div className="space-y-1">
-                        <p><strong>DSC Validated:</strong> Class-3 Crypto Token via {adapterResults.dsc.gateway}</p>
-                        <p className="font-mono text-[10px] text-slate-600">SHA-256 Digest: {adapterResults.dsc.integrityHashSha256}</p>
-                        <p className="font-semibold text-emerald-800">{adapterResults.dsc.statutoryCompliance}</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Adapter 3: API Setu External Statutory Registries Hub */}
-              <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Radio className="w-4 h-4 text-cyan-700" />
-                    <span className="font-bold text-slate-900 text-xs">
-                      3. API Setu / External Statutory Registries Hub (NBA, NAAC, IIC, APAAR, Anti-Ragging)
-                    </span>
-                  </div>
-                  <button
-                    disabled={adapterLoading === 'registries'}
-                    onClick={async () => {
-                      setAdapterLoading('registries');
-                      try {
-                        const res = await api.getExternalRegistries(application.id);
-                        setAdapterResults((prev) => ({ ...prev, externalRegistries: res.data }));
-                      } finally {
-                        setAdapterLoading(null);
-                      }
-                    }}
-                    className="px-3 py-1 bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg text-xs font-semibold disabled:opacity-50"
-                  >
-                    {adapterLoading === 'registries' ? 'Querying...' : 'Poll External Registries'}
-                  </button>
-                </div>
-                {adapterResults.externalRegistries && (
-                  <div className="p-3 bg-slate-50 rounded-lg border text-[11px] grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <div className="bg-white p-2 rounded border">
-                      <span className="text-[10px] text-slate-500 block">NBA Registry:</span>
-                      <strong className="text-emerald-700">{adapterResults.externalRegistries.nbaRegistry?.status}</strong>
-                    </div>
-                    <div className="bg-white p-2 rounded border">
-                      <span className="text-[10px] text-slate-500 block">MoE Innovation Cell:</span>
-                      <strong>{adapterResults.externalRegistries.moeInnovationCouncil?.annualActivityStarRating} Stars</strong>
-                    </div>
-                    <div className="bg-white p-2 rounded border">
-                      <span className="text-[10px] text-slate-500 block">Anti-Ragging Portal:</span>
-                      <strong className="text-emerald-700">{adapterResults.externalRegistries.antiRaggingPortal?.complianceStatus}</strong>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Adapter 4: Affiliating University & State DTE 15-Day Concurrence Tracker */}
-              <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-amber-700" />
-                    <span className="font-bold text-slate-900 text-xs">
-                      4. Affiliating University &amp; State DTE 15-Day NOC Concurrence Tracker (APH §2.19(c))
-                    </span>
-                  </div>
-                  <button
-                    disabled={adapterLoading === 'concurrence'}
-                    onClick={async () => {
-                      setAdapterLoading('concurrence');
-                      try {
-                        const res = await api.getConcurrence(application.id);
-                        setAdapterResults((prev) => ({ ...prev, concurrence: res.data }));
-                      } finally {
-                        setAdapterLoading(null);
-                      }
-                    }}
-                    className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold disabled:opacity-50"
-                  >
-                    {adapterLoading === 'concurrence' ? 'Checking...' : 'Check 15-Day Concurrence'}
-                  </button>
-                </div>
-                {adapterResults.concurrence && (
-                  <div className="p-3 bg-slate-50 rounded-lg border text-[11px] space-y-1">
-                    <p>
-                      <strong>Prescribed Statutory Window:</strong> {adapterResults.concurrence.concurrenceWindowDays} Days &bull; Days Elapsed: <strong>{adapterResults.concurrence.daysElapsed}d</strong>
-                    </p>
-                    <p>
-                      University NOC: <strong>{adapterResults.concurrence.universityConcurrence?.status}</strong> &bull; State DTE NOC: <strong>{adapterResults.concurrence.stateDteConcurrence?.status}</strong>
-                    </p>
-                    <p className="text-[10px] text-slate-500 italic">{adapterResults.concurrence.deemedConcurrenceRule?.statutoryCitation}</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Adapter 5: Downstream Siebel Status Write-Back & 6-Authority Bulk Dispatch */}
-              <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Send className="w-4 h-4 text-indigo-700" />
-                    <span className="font-bold text-slate-900 text-xs">
-                      5. Downstream Siebel Status Write-Back &amp; 6-Authority Bulk Dispatch (APH §2.25)
-                    </span>
-                  </div>
-                  <button
-                    disabled={adapterLoading === 'siebel'}
-                    onClick={async () => {
-                      setAdapterLoading('siebel');
-                      try {
-                        const res = await api.triggerSiebelWriteback(application.id, 'Approval Issued');
-                        setAdapterResults((prev) => ({ ...prev, siebel: res.data }));
-                      } finally {
-                        setAdapterLoading(null);
-                      }
-                    }}
-                    className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold disabled:opacity-50"
-                  >
-                    {adapterLoading === 'siebel' ? 'Dispatching...' : 'Execute Siebel Write-Back & Dispatch'}
-                  </button>
-                </div>
-                {adapterResults.siebel && (
-                  <div className="p-3 bg-slate-50 rounded-lg border text-[11px] space-y-2">
-                    <p>
-                      <strong>Siebel Partner Sync ID:</strong> <span className="font-mono text-indigo-700">{adapterResults.siebel.siebelPartnerSyncId}</span> &bull; Status: <strong className="text-emerald-700">{adapterResults.siebel.syncedStatus}</strong>
-                    </p>
-                    <span className="font-bold text-slate-800 block">6-Authority Digital Dispatch List:</span>
-                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[10px] text-slate-600">
-                      {adapterResults.siebel.sixAuthorityDistributionList?.map((auth: any, i: number) => (
-                        <li key={i} className="flex items-center justify-between bg-white p-1.5 rounded border">
-                          <span>{auth.authorityDesignation}</span>
-                          <span className="text-emerald-700 font-semibold">{auth.deliveryStatus}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 8: AUDIT HISTORY */}
-          {activeTab === 'audit' && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                  Case Activity & Audit Trail
-                </h4>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
-                  SHA-256 State Digest &bull; Simulated Ledger
-                </span>
-              </div>
-              <div className="space-y-2 text-xs font-mono">
-                {appAudits.map((log) => (
-                  <div key={log.id} className="p-3 rounded-lg bg-slate-50 border border-slate-200">
-                    <div className="flex items-center justify-between text-[10px] text-slate-500 mb-1">
-                      <span className="font-bold text-slate-800">{log.action}</span>
-                      <span>{log.timestamp}</span>
-                    </div>
-                    <p className="text-slate-800 text-xs font-sans">{log.reason || 'State transition'}</p>
-                    <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
-                      <span>Actor: {log.actorName} ({log.actorRole})</span>
-                      <span className="text-blue-600">Digest: {log.tamperProofHash.slice(0, 16)}...</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* TAB: SCRUTINY & SCOPED RE-SCRUTINY LOCK (M2 USP B06) */}
-          {activeTab === 'scrutiny_lock' && (
-            <div className="space-y-5 animate-in fade-in duration-150">
-              <div className="p-4 rounded-xl bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-5 h-5 text-amber-400" />
-                    <h3 className="font-bold text-sm tracking-tight">
-                      Scoped Re-scrutiny Correction Lock &bull; USP B06
-                    </h3>
-                  </div>
-                  <p className="text-xs text-blue-200 mt-0.5">
-                    Server-enforced immutability: Only items flagged in signed deficiency snapshot (D1/D2) can be altered.
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 text-[10px]">
-                  <span className="px-2.5 py-1 rounded-full font-mono font-semibold bg-blue-500/30 text-blue-200 border border-blue-400/30">
-                    Gate G2 &bull; Pure Enforcement
-                  </span>
-                  <span className={`px-2.5 py-1 rounded-full font-mono font-semibold ${
-                    isScrutinySynthetic ? 'bg-amber-500/30 text-amber-200 border border-amber-400/30' : 'bg-emerald-500/30 text-emerald-200 border border-emerald-400/30'
-                  }`}>
-                    {isScrutinySynthetic ? 'SYNTHETIC Adapter' : 'Live /api/v1'}
-                  </span>
-                </div>
-              </div>
-
-              {(() => {
-                const effectiveSnapshot = latestSnapshot || getOrCreateSnapshotForApplication(application.id, application.documents);
-                return (
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
-                    <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                      <div>
-                        <span className="text-[10px] uppercase font-bold text-slate-500">Active Signed Snapshot:</span>
-                        <p className="font-mono text-xs font-bold text-slate-800">{effectiveSnapshot.id}</p>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-[10px] uppercase font-bold text-slate-500">Signed Round:</span>
-                        <p className="font-bold text-xs text-indigo-700">Round {effectiveSnapshot.round} ({effectiveSnapshot.checklistVersion})</p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <span className="text-[11px] font-bold text-slate-700 block">Checklist Items &amp; Immutability Bounds:</span>
-                      <div className="grid grid-cols-1 gap-2">
-                        {effectiveSnapshot.items.map((item) => {
-                          const isDeficient = effectiveSnapshot.deficiencyItemIds.includes(item.itemId);
-                          return (
-                            <div
-                              key={item.itemId}
-                              className={`p-3 rounded-lg border flex items-center justify-between transition-all ${
-                                isDeficient
-                                  ? 'bg-amber-50/70 border-amber-300 text-amber-950'
-                                  : 'bg-emerald-50/70 border-emerald-300 text-emerald-950'
-                              }`}
-                            >
-                              <div className="flex items-center gap-2.5">
-                                {isDeficient ? (
-                                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                                ) : (
-                                  <Lock className="w-4 h-4 text-emerald-600 shrink-0" />
-                                )}
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-mono font-bold text-xs bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                                      {item.itemId}
-                                    </span>
-                                    <span className="font-semibold text-xs">{item.reason || `Item ${item.itemId}`}</span>
-                                  </div>
-                                  <span className="text-[10px] text-slate-500 block mt-0.5">
-                                    Evidence versions: {item.evidenceVersionIds.join(', ') || 'N/A'}
-                                  </span>
-                                </div>
-                              </div>
-
-                              <span
-                                className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
-                                  isDeficient
-                                    ? 'bg-amber-200 text-amber-900 border border-amber-300'
-                                    : 'bg-emerald-200 text-emerald-900 border border-emerald-300'
-                                }`}
-                              >
-                                {isDeficient ? 'Deficiency (Modifiable)' : 'Accepted (IMMUTABLE)'}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              <div className="bg-white border-2 border-indigo-200 rounded-xl p-4 space-y-3 shadow-xs">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-indigo-600" />
-                  <h4 className="text-xs font-bold text-indigo-950 uppercase tracking-wider">
-                    Interactive Scope Lock Test Console (Gate G2 Live Verification)
-                  </h4>
-                </div>
-                <p className="text-[11px] text-slate-600 leading-relaxed">
-                  Test server-side scope enforcement. Submit corrections for deficient items (<strong>D1</strong> or <strong>D2</strong>) to verify acceptance, or attempt to modify already-accepted item (<strong>C3</strong>) to verify server rejection.
-                </p>
-
-                <div className="space-y-3 pt-1">
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-800 block mb-1">
-                      Target Checklist Item:
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {(['D1', 'D2', 'C3'] as const).map((id) => (
-                        <button
-                          key={id}
-                          type="button"
-                          onClick={() => {
-                            setTestCorrectionItem(id);
-                            setTestCorrectionFeedback(null);
-                          }}
-                          className={`p-2 rounded-lg border text-xs font-bold transition-all text-center ${
-                            testCorrectionItem === id
-                              ? id === 'C3'
-                                ? 'bg-rose-600 text-white border-rose-700 shadow-sm'
-                                : 'bg-blue-600 text-white border-blue-700 shadow-sm'
-                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                          }`}
-                        >
-                          {id} {id === 'C3' ? '(Tamper Lock Test)' : '(Deficiency)'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-800 block mb-1">
-                      Correction Justification &amp; Evidence:
-                    </label>
-                    <input
-                      type="text"
-                      value={testCorrectionText}
-                      onChange={(e) => setTestCorrectionText(e.target.value)}
-                      className="w-full p-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
-                    />
-                  </div>
-
-                  {testCorrectionFeedback && (
-                    <div
-                      className={`p-3 rounded-xl border text-xs leading-relaxed animate-in fade-in duration-150 ${
-                        testCorrectionFeedback.success
-                          ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
-                          : 'bg-rose-50 border-rose-300 text-rose-950'
-                      }`}
-                    >
-                      <div className="flex items-start gap-2">
-                        {testCorrectionFeedback.success ? (
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                        ) : (
-                          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                        )}
-                        <div>
-                          <p className="font-bold">
-                            {testCorrectionFeedback.success ? 'Correction Accepted by Server' : 'Server Rejection: Scope Violation'}
-                          </p>
-                          <p className="mt-0.5">{testCorrectionFeedback.message}</p>
-                          {testCorrectionFeedback.rule && (
-                            <span className="font-mono text-[10px] mt-1 block font-semibold text-rose-700 bg-rose-100/60 px-1.5 py-0.5 rounded w-fit">
-                              Failed Rule: {testCorrectionFeedback.rule}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between pt-1">
-                    <span className="text-[10px] text-slate-400">
-                      Enforced server-side via pure validation &amp; event outbox.
-                    </span>
-                    <button
-                      type="button"
-                      disabled={scrutinyLoading}
-                      onClick={async () => {
-                        const targetSnapshot = latestSnapshot || getOrCreateSnapshotForApplication(application.id, application.documents);
-                        setTestCorrectionFeedback(null);
-                        const result = await submitScrutinyCorrection(targetSnapshot.id, [
-                          {
-                            itemId: testCorrectionItem,
-                            response: testCorrectionText,
-                            evidenceVersionIds: [`DOC-${testCorrectionItem}-UPDATE`]
-                          }
-                        ]);
-
-                        if (result.success) {
-                          setTestCorrectionFeedback({
-                            success: true,
-                            message: `Item ${testCorrectionItem} correction validated and accepted! Case state updated.`
-                          });
-                          await refetchScrutiny();
-                        } else {
-                          const err = 'error' in result ? result.error : null;
-                          setTestCorrectionFeedback({
-                            success: false,
-                            message: err?.message || 'Correction rejected by server.',
-                            rule: err?.failedRule
-                          });
-                        }
-                      }}
-                      className={`px-4 py-2 rounded-lg text-xs font-bold text-white transition-all shadow-sm ${
-                        testCorrectionItem === 'C3'
-                          ? 'bg-rose-600 hover:bg-rose-700'
-                          : 'bg-indigo-600 hover:bg-indigo-700'
-                      }`}
-                    >
-                      {scrutinyLoading ? 'Submitting to Backend...' : `Execute ${testCorrectionItem} Correction`}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Modal Footer */}

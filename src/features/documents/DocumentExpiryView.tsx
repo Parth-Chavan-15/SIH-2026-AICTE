@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { getSession } from '../../services/session';
 import { useApp } from '../../context/AppContext';
 import { ExpiringDocument } from '../../types';
 import {
@@ -29,7 +30,35 @@ export const DocumentExpiryView: React.FC = () => {
   const [renewalTarget, setRenewalTarget] = useState<ExpiringDocument | null>(null);
   const [renewalFileName, setRenewalFileName] = useState('');
 
-  const filteredDocs = expiringDocs.filter((doc) => {
+  const session = getSession();
+  const actor = session?.actor;
+  const isInstitution = role === 'institution';
+
+  const scopedDocs = useMemo(() => {
+    if (!isInstitution) return expiringDocs;
+    return expiringDocs.filter((doc) => {
+      const actorId = actor?.id || '';
+      const email = (actor as any)?.email || '';
+      if (actorId === 'usr-inst-pdimtr' || email === 'principal@pdimtr.ac.in') {
+        return doc.institutionName.includes('PDIMTR') || doc.institutionName.includes('Prerna');
+      }
+      if (actorId === 'usr-inst-coep' || email === 'principal@coep.ac.in') {
+        return doc.institutionName.includes('COEP') || doc.institutionName.includes('PDIMTR');
+      }
+      if (actorId === 'usr-inst-giits' || email === 'principal@giits.ac.in') {
+        return doc.institutionName.includes('GIITS') || doc.institutionName.includes('Gonna');
+      }
+      if (actorId === 'usr-inst-evit' || email === 'principal@evit.ac.in') {
+        return doc.institutionName.includes('EVIT') || doc.institutionName.includes('East Valley');
+      }
+      if (actorId === 'usr-inst-vjti' || email === 'principal@vjti.ac.in') {
+        return doc.institutionName.includes('VJTI');
+      }
+      return true;
+    });
+  }, [expiringDocs, isInstitution, actor]);
+
+  const filteredDocs = scopedDocs.filter((doc) => {
     const matchesSearch =
       doc.institutionName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       doc.documentType.toLowerCase().includes(searchQuery.toLowerCase()) ||

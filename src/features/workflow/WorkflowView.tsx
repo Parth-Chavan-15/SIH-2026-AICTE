@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { getSession } from '../../services/session';
 import { useApp } from '../../context/AppContext';
 import { Application, WorkflowStage, WorkflowRouteType } from '../../types';
 import { SLABadge, StageBadge } from '../../components/common/StatusBadge';
@@ -33,12 +34,43 @@ export const WorkflowView: React.FC<WorkflowViewProps> = ({ onSelectApplication 
   const [actionError, setActionError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
 
+  const session = getSession();
+  const actor = session?.actor;
+  const isInstitution = role === 'institution';
+
+  const scopedApps = useMemo(() => {
+    if (!isInstitution) return applications;
+    return applications.filter((app) => {
+      const actorId = actor?.id || '';
+      const email = (actor as any)?.email || '';
+      if (actorId === 'usr-inst-coep' || actorId === 'SYN-ACTOR-COEP' || email === 'principal@coep.ac.in') {
+        return app.id.includes('COEP') || app.institutionCode === 'INST-SOUTH';
+      }
+      if (actorId === 'usr-inst-giits' || email === 'principal@giits.ac.in') {
+        return app.id.includes('GIITS') || app.institutionCode === 'INST-NORTH';
+      }
+      if (actorId === 'usr-inst-pdimtr' || email === 'principal@pdimtr.ac.in') {
+        return app.id.includes('PDIMTR') || app.institutionCode === 'INST-WEST';
+      }
+      if (actorId === 'usr-inst-evit' || email === 'principal@evit.ac.in') {
+        return app.id.includes('EVIT') || app.institutionCode === 'INST-EAST';
+      }
+      if (actorId === 'usr-inst-vjti' || actorId === 'SYN-ACTOR-VJTI' || email === 'principal@vjti.ac.in') {
+        return app.id.includes('VJTI') || app.institutionCode === 'INST-VJTI';
+      }
+      if (actor?.institutionIds && actor.institutionIds.length > 0) {
+        return actor.institutionIds.includes(app.institutionCode);
+      }
+      return true;
+    });
+  }, [applications, isInstitution, actor]);
+
   // Filter applications by route
-  const filteredApps = applications.filter(
+  const filteredApps = scopedApps.filter(
     (a) => selectedRouteFilter === 'All' || a.routeType === selectedRouteFilter
   );
 
-  const currentApp = applications.find((a) => a.id === selectedAppId) || applications[0];
+  const currentApp = scopedApps.find((a) => a.id === selectedAppId) || scopedApps[0];
 
   const eligibleTransitions = currentApp
     ? getEligibleNextStages(currentApp.currentStage, currentApp.routeType)
@@ -282,7 +314,44 @@ export const WorkflowView: React.FC<WorkflowViewProps> = ({ onSelectApplication 
               </div>
             </div>
 
-            {/* Interactive Transition Executor Console */}
+            {/* Transition Console / Institution Guidance */}
+            {isInstitution ? (
+              <div className="bg-white rounded-2xl border border-blue-200 shadow-xs p-5 space-y-4">
+                <div className="flex items-center gap-2 border-b border-blue-100 pb-3">
+                  <FileCheck className="w-5 h-5 text-blue-600" />
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900">
+                      Deficiency Cure Window & Resubmission Guidance (Annexure 7)
+                    </h4>
+                    <p className="text-xs text-slate-500">
+                      Governed by AICTE Approval Process Handbook (APH §1.8(g))
+                    </p>
+                  </div>
+                </div>
+                <div className="p-4 rounded-xl bg-blue-50/80 border border-blue-200 text-xs text-slate-700 space-y-2">
+                  <p className="font-semibold text-blue-950">
+                    How deficiency rectification works:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-slate-600">
+                    <li>When the Scrutiny Committee flags a deficiency (e.g. land lease, faculty bio, building plan), the institution is given a formal rectification window.</li>
+                    <li><strong>Strict Scope Enforcement:</strong> Only deficient items (D1, D2) can be re-uploaded. Previously verified documents (C3, C4) are locked as immutable.</li>
+                    <li>To cure deficiencies, open your application dossier below and click <strong>&ldquo;Rectify Document&rdquo;</strong> in the Submitted Documents tab.</li>
+                  </ul>
+                </div>
+                <div className="flex items-center justify-between pt-2">
+                  <span className="text-xs text-slate-500">
+                    Case: <strong className="text-slate-800">{currentApp?.applicationNumber || ''}</strong> &bull; Current Stage: <strong className="text-blue-700">{currentApp?.currentStage || ''}</strong>
+                  </span>
+                  <button
+                    onClick={() => currentApp && onSelectApplication(currentApp.id)}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-xs transition-colors flex items-center gap-1.5"
+                  >
+                    <span>Open Application Dossier</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ) : (
             <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">
@@ -382,6 +451,7 @@ export const WorkflowView: React.FC<WorkflowViewProps> = ({ onSelectApplication 
                 </div>
               )}
             </div>
+            )}
           </div>
         )}
       </div>

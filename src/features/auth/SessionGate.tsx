@@ -34,6 +34,14 @@ export interface RegulatoryRole {
   icon: any;
 }
 
+export const DEMO_COLLEGES = [
+  { id: 'coep', name: 'COEP Technological University, Pune', email: 'principal@coep.ac.in', code: '1-435789102', tag: 'NBA Valid ($X=180$)' },
+  { id: 'giits', name: 'Gonna Institute of IT & Sciences (GIITS)', email: 'principal@giits.ac.in', code: '1-462589176', tag: 'Non-NBA ($X=180$)' },
+  { id: 'pdimtr', name: 'Prerna / Univ BDT College (PDIMTR)', email: 'principal@pdimtr.ac.in', code: '1-109704178', tag: 'Lease Compliance' },
+  { id: 'evit', name: 'East Valley Institute of Tech (EVIT)', email: 'principal@evit.ac.in', code: '1-462228700', tag: 'Boundary ($X=360$)' },
+  { id: 'vjti', name: 'Veermata Jijabai Tech Inst (VJTI)', email: 'principal@vjti.ac.in', code: '1-436575682', tag: 'Tenant Isolated' },
+];
+
 export const REGULATORY_ROLES: RegulatoryRole[] = [
   {
     id: 'role-1-inst',
@@ -126,6 +134,7 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
   const [checking, setChecking] = useState(true);
   const [email, setEmail] = useState('principal@coep.ac.in');
   const [password, setPassword] = useState('password123');
+  const [selectedCollegeEmail, setSelectedCollegeEmail] = useState('principal@coep.ac.in');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [showManualLogin, setShowManualLogin] = useState(false);
@@ -287,7 +296,7 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
                       {r.shortLabel}
                     </p>
                     <div className="text-[11px] font-mono text-blue-700 mt-1">
-                      {r.email}
+                      {r.roleNumber === 1 ? selectedCollegeEmail : r.email}
                     </div>
                   </div>
 
@@ -295,12 +304,35 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
                   <p className="text-xs text-slate-600 leading-relaxed min-h-[48px]">
                     {r.whatTheyDo}
                   </p>
+
+                  {/* College Selector for Role 1 */}
+                  {r.roleNumber === 1 && (
+                    <div className="pt-2 border-t border-slate-100">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                        Select Institution to Access:
+                      </label>
+                      <select
+                        value={selectedCollegeEmail}
+                        onChange={(e) => setSelectedCollegeEmail(e.target.value)}
+                        className="w-full text-xs font-semibold py-1.5 px-2.5 rounded-lg border border-slate-300 bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                      >
+                        {DEMO_COLLEGES.map((c) => (
+                          <option key={c.id} value={c.email}>
+                            {c.name} ({c.code})
+                          </option>
+                        ))}
+                      </select>
+                      <span className="text-[10px] text-blue-600 font-medium block mt-1">
+                        {DEMO_COLLEGES.find(c => c.email === selectedCollegeEmail)?.tag}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Action Button */}
                 <div className="pt-6 border-t border-slate-100 mt-4">
                   <button
-                    onClick={() => handleAccessNode(r.email)}
+                    onClick={() => handleAccessNode(r.roleNumber === 1 ? selectedCollegeEmail : r.email)}
                     disabled={busy}
                     className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-xs ${
                       r.roleNumber === 1

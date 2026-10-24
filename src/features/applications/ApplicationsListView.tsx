@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { getSession } from '../../services/session';
 import { useApp } from '../../context/AppContext';
 import { Application, WorkflowStage, PriorityLevel, SLAStatusType } from '../../types';
 import { SLABadge, StageBadge, PriorityBadge } from '../../components/common/StatusBadge';
@@ -27,6 +28,37 @@ export const ApplicationsListView: React.FC<ApplicationsListViewProps> = ({
   onOpenNewAppModal,
 }) => {
   const { role, applications, loading } = useApp();
+  const session = getSession();
+  const actor = session?.actor;
+  const isInstitution = role === 'institution';
+
+  // Enforce tenant isolation for institution logins: show ONLY that college's application
+  const scopedApps = useMemo(() => {
+    if (!isInstitution) return applications;
+    return applications.filter((app) => {
+      const actorId = actor?.id || '';
+      const email = (actor as any)?.email || '';
+      if (actorId === 'usr-inst-coep' || actorId === 'SYN-ACTOR-COEP' || email === 'principal@coep.ac.in') {
+        return app.id.includes('COEP') || app.institutionCode === 'INST-SOUTH';
+      }
+      if (actorId === 'usr-inst-giits' || email === 'principal@giits.ac.in') {
+        return app.id.includes('GIITS') || app.institutionCode === 'INST-NORTH';
+      }
+      if (actorId === 'usr-inst-pdimtr' || email === 'principal@pdimtr.ac.in') {
+        return app.id.includes('PDIMTR') || app.institutionCode === 'INST-WEST';
+      }
+      if (actorId === 'usr-inst-evit' || email === 'principal@evit.ac.in') {
+        return app.id.includes('EVIT') || app.institutionCode === 'INST-EAST';
+      }
+      if (actorId === 'usr-inst-vjti' || actorId === 'SYN-ACTOR-VJTI' || email === 'principal@vjti.ac.in') {
+        return app.id.includes('VJTI') || app.institutionCode === 'INST-VJTI';
+      }
+      if (actor?.institutionIds && actor.institutionIds.length > 0) {
+        return actor.institutionIds.includes(app.institutionCode);
+      }
+      return true;
+    });
+  }, [applications, isInstitution, actor?.id]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('All');
@@ -39,7 +71,7 @@ export const ApplicationsListView: React.FC<ApplicationsListViewProps> = ({
 
   // Filter logic
   const filteredApps = useMemo(() => {
-    return applications.filter((app) => {
+    return scopedApps.filter((app) => {
       const matchesSearch =
         app.applicationNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
         app.institutionName.toLowerCase().includes(searchQuery.toLowerCase()) ||

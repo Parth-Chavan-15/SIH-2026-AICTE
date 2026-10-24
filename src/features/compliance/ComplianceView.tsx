@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { getSession } from '../../services/session';
 import { useApp } from '../../context/AppContext';
 import { ComplianceUndertaking } from '../../types';
 import { formatDateIndian } from '../../utils/slaCalculator';
@@ -36,7 +37,35 @@ export const ComplianceView: React.FC = () => {
   const [verifyDecision, setVerifyDecision] = useState<'Verified' | 'Rejected'>('Verified');
   const [verifyRemarks, setVerifyRemarks] = useState('');
 
-  const filteredItems = complianceItems.filter((item) => {
+  const session = getSession();
+  const actor = session?.actor;
+  const isInstitution = role === 'institution';
+
+  const scopedItems = useMemo(() => {
+    if (!isInstitution) return complianceItems;
+    return complianceItems.filter((item) => {
+      const actorId = actor?.id || '';
+      const email = (actor as any)?.email || '';
+      if (actorId === 'usr-inst-pdimtr' || email === 'principal@pdimtr.ac.in') {
+        return item.institutionName.includes('PDIMTR') || item.institutionName.includes('Prerna');
+      }
+      if (actorId === 'usr-inst-coep' || email === 'principal@coep.ac.in') {
+        return item.institutionName.includes('COEP') || item.institutionName.includes('PDIMTR');
+      }
+      if (actorId === 'usr-inst-giits' || email === 'principal@giits.ac.in') {
+        return item.institutionName.includes('GIITS') || item.institutionName.includes('Gonna');
+      }
+      if (actorId === 'usr-inst-evit' || email === 'principal@evit.ac.in') {
+        return item.institutionName.includes('EVIT') || item.institutionName.includes('East Valley');
+      }
+      if (actorId === 'usr-inst-vjti' || email === 'principal@vjti.ac.in') {
+        return item.institutionName.includes('VJTI');
+      }
+      return true;
+    });
+  }, [complianceItems, isInstitution, actor]);
+
+  const filteredItems = scopedItems.filter((item) => {
     const matchesSearch =
       item.institutionName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.conditionTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||

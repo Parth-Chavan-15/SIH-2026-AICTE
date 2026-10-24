@@ -90,7 +90,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                 Applicant Workspace
               </span>
               <span className="text-slate-300 font-medium hidden lg:inline">
-                COEP Tech Univ &bull; ID: 1-435789102
+                {(activeActor?.id === 'usr-inst-giits' || (activeActor as any)?.email === 'principal@giits.ac.in') ? 'GIITS Visakhapatnam • ID: 1-462589176'
+                  : (activeActor?.id === 'usr-inst-pdimtr' || (activeActor as any)?.email === 'principal@pdimtr.ac.in') ? 'PDIMTR Nagpur • ID: 1-109704178'
+                  : (activeActor?.id === 'usr-inst-evit' || (activeActor as any)?.email === 'principal@evit.ac.in') ? 'EVIT College • ID: 1-462228700'
+                  : (activeActor?.id === 'usr-inst-vjti' || (activeActor as any)?.email === 'principal@vjti.ac.in') ? 'VJTI Mumbai • ID: 1-436575682'
+                  : 'COEP Tech Univ • ID: 1-435789102'}
               </span>
               <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-800/50">
                 <CheckCircle2 className="w-3 h-3" /> NSWS Ingested

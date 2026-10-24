@@ -182,7 +182,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {currentPortal.portalTitle}
                 </span>
                 <span className="text-[10px] text-slate-400 block truncate font-mono">
-                  {currentPortal.subtitle}
+                  {roleNumber === 1 ? (
+                    (activeActor?.id === 'usr-inst-giits' || (activeActor as any)?.email === 'principal@giits.ac.in') ? 'GIITS • ID 1-462589176' :
+                    (activeActor?.id === 'usr-inst-pdimtr' || (activeActor as any)?.email === 'principal@pdimtr.ac.in') ? 'PDIMTR • ID 1-109704178' :
+                    (activeActor?.id === 'usr-inst-evit' || (activeActor as any)?.email === 'principal@evit.ac.in') ? 'EVIT • ID 1-462228700' :
+                    (activeActor?.id === 'usr-inst-vjti' || (activeActor as any)?.email === 'principal@vjti.ac.in') ? 'VJTI • ID 1-436575682' :
+                    'COEP • ID 1-435789102'
+                  ) : currentPortal.subtitle}
                 </span>
               </div>
             )}
