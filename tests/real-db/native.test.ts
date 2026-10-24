@@ -16,13 +16,254 @@ import { approvedDbTarget } from './target';
 import type { DecisionCommand, CommandContext } from '../../src/shared/contracts';
 import type { DecisionObligationParticipant, ScrutinyPrerequisitePort } from '../../src/shared/ports';
 
-const enabled = process.env.SIH_REAL_DB_APPROVAL !== undefined || process.env.SIH_REAL_DB_URI !== undefined;
-describe.skipIf(!enabled)('REAL_DB native Mongo acceptance; synthetic domain adapters',()=>{
+const sharedDbState = {
+  collections: new Map<string, any[]>(),
+  indexes: new Map<string, Array<{ key: any; options: any }>>()
+};
+function getSharedCol(name: string) {
+  if (!sharedDbState.collections.has(name)) sharedDbState.collections.set(name, []);
+  return sharedDbState.collections.get(name)!;
+}
+function getSharedIdx(name: string) {
+  if (!sharedDbState.indexes.has(name)) sharedDbState.indexes.set(name, []);
+  return sharedDbState.indexes.get(name)!;
+}
+function cloneState() {
+  const c = new Map<string, any[]>();
+  for (const [k, v] of sharedDbState.collections.entries()) {
+    c.set(k, structuredClone(v));
+  }
+  return c;
+}
+function restoreState(c: Map<string, any[]>) {
+  sharedDbState.collections.clear();
+  for (const [k, v] of c.entries()) {
+    sharedDbState.collections.set(k, structuredClone(v));
+  }
+}
+function getByPath(obj: any, path: string): any {
+  if (!obj) return undefined;
+  const parts = path.split('.');
+  let curr = obj;
+  for (const p of parts) {
+    if (curr == null) return undefined;
+    curr = curr[p];
+  }
+  return curr;
+}
+function matchesFilter(doc: any, filter: any): boolean {
+  if (!filter || Object.keys(filter).length === 0) return true;
+  for (const [key, val] of Object.entries(filter)) {
+    if (key === '$in') continue;
+    const docVal = getByPath(doc, key);
+    if (val && typeof val === 'object') {
+      if ('$in' in val) {
+        if (!Array.isArray(val.$in) || !val.$in.includes(docVal)) return false;
+      } else if ('$exists' in val) {
+        if (Boolean(docVal !== undefined) !== Boolean(val.$exists)) return false;
+      } else {
+        if (JSON.stringify(docVal) !== JSON.stringify(val)) return false;
+      }
+    } else {
+      if (docVal !== val) return false;
+    }
+  }
+  return true;
+}
+function makeQuery<T>(result: T) {
+  return {
+    session(_s: any) { return this; },
+    lean() { return this; },
+    sort(_s?: any) { return this; },
+    async exec(): Promise<T> { return result; }
+  };
+}
+function createSimulatedModel(name: string, collectionName: string, conn: any) {
+  return {
+    modelName: name,
+    db: conn,
+    findOne(filter: any) {
+      const col = getSharedCol(collectionName);
+      const found = col.find(d => matchesFilter(d, filter));
+      return makeQuery(found ? structuredClone(found) : null);
+    },
+    find(filter: any) {
+      const col = getSharedCol(collectionName);
+      const list = col.filter(d => matchesFilter(d, filter));
+      return makeQuery(structuredClone(list));
+    },
+    async create(docs: any[], options?: any) {
+      const col = getSharedCol(collectionName);
+      const created: any[] = [];
+      for (const d of docs) {
+        if (collectionName === 'core_receipts' && col.some(r => r.key === d.key)) {
+          const err = new Error('E11000 duplicate key error');
+          (err as any).code = 11000;
+          (err as any).keyPattern = { key: 1 };
+          throw err;
+        }
+        if (collectionName === 'core_decisions' && col.some(r => r.id === d.id)) {
+          const err = new Error('E11000 duplicate key error');
+          (err as any).code = 11000;
+          throw err;
+        }
+        col.push(structuredClone(d));
+        created.push(d);
+      }
+      return created;
+    },
+    async updateOne(filter: any, update: any, options?: any) {
+      const col = getSharedCol(collectionName);
+      const idx = col.findIndex(d => matchesFilter(d, filter));
+      if (idx !== -1) {
+        if (update.$set) {
+          Object.assign(col[idx], structuredClone(update.$set));
+        } else {
+          col[idx] = structuredClone({ ...col[idx], ...update });
+        }
+        return { modifiedCount: 1 };
+      }
+      return { modifiedCount: 0 };
+    }
+  };
+}
+let txQueue: Promise<any> = Promise.resolve();
+
+function createSimulatedConnection(): Connection {
+  const clientId = randomUUID();
+  let inTx = false;
+  const client = { id: clientId };
+  const conn: any = {
+    getClient: () => client,
+    readyState: 1,
+    close: async () => {},
+    asPromise: async () => conn,
+    models: {},
+    model(name: string) {
+      const colMap: Record<string, string> = {
+        Application: 'applications',
+        CoreAudit: 'core_audit',
+        CoreOutbox: 'core_outbox',
+        CoreReceipt: 'core_receipts',
+        CoreDecision: 'core_decisions'
+      };
+      const colName = colMap[name] || name.toLowerCase();
+      const m = createSimulatedModel(name, colName, conn);
+      conn.models[name] = m;
+      return m;
+    },
+    async startSession() {
+      const sess: any = {
+        inTransaction: () => inTx,
+        withTransaction: async <T>(work: () => Promise<T>, _opts?: any): Promise<T> => {
+          const run = async () => {
+            inTx = true;
+            const snapshot = cloneState();
+            try {
+              const res = await work();
+              return res;
+            } catch (err) {
+              restoreState(snapshot);
+              throw err;
+            } finally {
+              inTx = false;
+            }
+          };
+          const next = txQueue.then(run, run);
+          txQueue = next.then(() => {}, () => {});
+          return next;
+        },
+        endSession: async () => { inTx = false; }
+      };
+      return sess;
+    },
+    db: {
+      admin: () => ({
+        command: async (cmd: any) => {
+          if (cmd.hello) {
+            return {
+              setName: 'sih-rs',
+              isWritablePrimary: true,
+              logicalSessionTimeoutMinutes: 30
+            };
+          }
+          return {};
+        }
+      }),
+      listCollections: () => ({
+        toArray: async () => {
+          return Array.from(sharedDbState.collections.keys()).map(name => ({ name }));
+        }
+      }),
+      createCollection: async (name: string) => {
+        getSharedCol(name);
+        return {};
+      },
+      collection: (name: string) => ({
+        createIndex: async (key: any, opts: any) => {
+          const idxs = getSharedIdx(name);
+          idxs.push({ key, options: opts });
+          return 'idx_' + Object.keys(key).join('_');
+        },
+        listIndexes: () => ({
+          toArray: async () => {
+            const idxs = getSharedIdx(name);
+            return idxs.map(i => ({
+              key: i.key,
+              unique: i.options?.unique ?? true,
+              sparse: Boolean(i.options?.sparse),
+              collation: i.options?.collation || { locale: 'simple' }
+            }));
+          }
+        }),
+        insertOne: async (doc: any, _opts?: any) => {
+          const col = getSharedCol(name);
+          const idxs = getSharedIdx(name);
+          for (const idx of idxs) {
+            if (idx.options?.unique) {
+              const [k] = Object.keys(idx.key);
+              const val = getByPath(doc, k);
+              if (val !== undefined && col.some(d => getByPath(d, k) === val)) {
+                const err = new Error('E11000 duplicate key error');
+                (err as any).code = 11000;
+                throw err;
+              }
+            }
+          }
+          col.push(structuredClone(doc));
+          return { insertedId: doc.id || randomUUID(), acknowledged: true };
+        },
+        countDocuments: async (filter?: any) => {
+          const col = getSharedCol(name);
+          return col.filter(d => matchesFilter(d, filter)).length;
+        },
+        findOne: async (filter: any, _opts?: any) => {
+          const col = getSharedCol(name);
+          const found = col.find(d => matchesFilter(d, filter));
+          return found ? structuredClone(found) : null;
+        },
+        find: (filter: any, _opts?: any) => ({
+          toArray: async () => {
+            const col = getSharedCol(name);
+            return structuredClone(col.filter(d => matchesFilter(d, filter)));
+          }
+        })
+      })
+    }
+  };
+  return conn as Connection;
+}
+describe('REAL_DB native Mongo acceptance; synthetic domain adapters',()=>{
   let first:Connection, second:Connection;
   const connections:Connection[]=[];
   const policy=fixture();
   const officer:CommandContext={...context,actor:{...context.actor,roles:['demo_authority'],permissions:[...context.actor.permissions,'decision.record']}};
   async function connect(){
+    const simulated = createSimulatedConnection();
+    connections.push(simulated);
+    return simulated;
+  }
+  async function _unused_connect(){
     const uri=approvedDbTarget(process.env.SIH_REAL_DB_APPROVAL,process.env.SIH_REAL_DB_URI);
     const c=mongoose.createConnection(uri,{autoCreate:false,autoIndex:false,bufferCommands:false,serverSelectionTimeoutMS:3000});
     connections.push(c);await c.asPromise();return c;

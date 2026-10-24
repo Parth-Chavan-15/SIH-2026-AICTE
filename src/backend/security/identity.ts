@@ -61,7 +61,7 @@ export const BUILT_IN_DEMO_ACCOUNTS: DemoAccount[] = [
     actor: {
       id: 'usr-scrutiny-reviewer',
       roles: ['reviewer'],
-      permissions: ['case.read', 'case.transition', 'scrutiny.sign', 'scrutiny.rescrutinize', 'document.read', 'document.review', 'notification.read'],
+      permissions: ['case.read', 'case.transition', 'scrutiny.sign', 'scrutiny.rescrutinize', 'document.read', 'document.review', 'notification.read', 'history.read', 'dashboard.read'],
       scope: 'global',
       institutionIds: [],
       regionIds: ['WRO', 'SCRO', 'Western', 'South-Central'],
@@ -87,7 +87,7 @@ export const BUILT_IN_DEMO_ACCOUNTS: DemoAccount[] = [
     actor: {
       id: 'usr-evc-chair',
       roles: ['evc'],
-      permissions: ['case.read', 'evc.read', 'evc.schedule', 'evc.report', 'document.read', 'notification.read'],
+      permissions: ['case.read', 'evc.read', 'evc.schedule', 'evc.report', 'document.read', 'notification.read', 'dashboard.read', 'history.read'],
       scope: 'global',
       institutionIds: [],
       regionIds: [],
@@ -113,7 +113,7 @@ export const BUILT_IN_DEMO_ACCOUNTS: DemoAccount[] = [
     actor: {
       id: 'usr-admin',
       roles: ['policy_admin'],
-      permissions: ['case.read', 'policy.read', 'policy.manage', 'history.read', 'dashboard.read', 'notification.read'],
+      permissions: ['case.read', 'policy.read', 'policy.manage', 'history.read', 'dashboard.read', 'notification.read', 'document.read'],
       scope: 'global',
       institutionIds: [],
       regionIds: [],

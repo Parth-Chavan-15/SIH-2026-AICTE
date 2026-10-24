@@ -147,14 +147,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setLoading(true);
     try {
       const [apps, evcs, comps, docs, notifs, escs, audits, rules] = await Promise.all([
-        api.getApplications(role),
-        api.getEVCInspections(),
-        api.getComplianceItems(),
-        api.getExpiringDocuments(),
-        api.getNotifications(),
-        api.getEscalations(),
-        api.getAuditLog(),
-        api.getConfigRules(),
+        api.getApplications(role).catch(() => []),
+        api.getEVCInspections().catch(() => []),
+        api.getComplianceItems().catch(() => []),
+        api.getExpiringDocuments().catch(() => []),
+        api.getNotifications().catch(() => []),
+        api.getEscalations().catch(() => []),
+        api.getAuditLog().catch(() => []),
+        api.getConfigRules().catch(() => []),
       ]);
       setApplications(apps);
       setEvcInspections(evcs);
