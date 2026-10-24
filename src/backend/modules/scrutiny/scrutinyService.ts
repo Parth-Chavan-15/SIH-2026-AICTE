@@ -37,6 +37,25 @@ const initialFixtureSnapshot: ScrutinySnapshot = {
 snapshotsById.set(initialFixtureSnapshot.id, initialFixtureSnapshot);
 snapshotsByCaseId.set(initialFixtureSnapshot.applicationId, [initialFixtureSnapshot]);
 
+const giitsFixtureSnapshot: ScrutinySnapshot = {
+  id: '2-SOC1770029225',
+  applicationId: 'APP-2026-GIITS',
+  round: 1,
+  checklistVersion: 'v2026.1',
+  items: [
+    { itemId: 'C3', result: 'accepted', reason: '30-year registered land conversion & clear title deed verified by Scrutiny Committee', evidenceVersionIds: ['DOC-GIITS-C3'] },
+    { itemId: 'C4', result: 'accepted', reason: 'Municipal approved structural stability & occupancy certificate verified', evidenceVersionIds: ['DOC-GIITS-C4'] },
+    { itemId: 'D1', result: 'deficient', reason: 'Cadre ratio deficit: Professor shortfall in CSE/IT (2 required, 0 available)', evidenceVersionIds: ['DOC-GIITS-D1'] },
+    { itemId: 'D2', result: 'deficient', reason: 'Fire Safety NOC expires in 14 days (<60-day renewal submission threshold)', evidenceVersionIds: ['DOC-GIITS-D2'] }
+  ],
+  deficiencyItemIds: ['D1', 'D2'],
+  signedBy: 'SYN-ACTOR-RO',
+  signedAt: '2026-10-23T14:30:00.000Z'
+};
+snapshotsById.set(giitsFixtureSnapshot.id, giitsFixtureSnapshot);
+snapshotsByCaseId.set(giitsFixtureSnapshot.applicationId, [giitsFixtureSnapshot]);
+snapshotsByCaseId.set(initialFixtureSnapshot.applicationId, [initialFixtureSnapshot]);
+
 export function getOrCreateSnapshotForApplication(
   applicationId: ID,
   customDocuments?: Array<{ id?: string; name?: string; status?: string; category?: string }>

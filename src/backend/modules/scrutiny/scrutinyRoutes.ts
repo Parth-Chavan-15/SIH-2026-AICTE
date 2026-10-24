@@ -104,9 +104,9 @@ export function createScrutinyRouter(corePort?: CorePort): Router {
 
     const result = await rescrutinize(port, req.params.id, parsed.data);
     if (!result.success) {
-      const status = result.error.code === 'FORBIDDEN' || result.error.code === 'SCOPE_VIOLATION' ? 403
-        : result.error.code === 'VERSION_CONFLICT' ? 409
-        : result.error.code === 'NOT_FOUND' ? 404
+      const code = result.error.code as string;
+      const status = code === 'SCOPE_VIOLATION' || code === 'VERSION_CONFLICT' ? 409
+        : code === 'NOT_FOUND' ? 404
         : 400;
       return res.status(status).json(result);
     }

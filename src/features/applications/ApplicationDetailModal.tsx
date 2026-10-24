@@ -228,6 +228,25 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
 
           {/* Quick Action Trigger & Why This Route Button */}
           <div className="flex items-center gap-2">
+            <a
+              href={`/api/v1/cases/${application.id}/official-artifacts/scrutiny-giits-2026`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 transition-colors shadow-2xs"
+              title="Stream official 2026-27 AICTE Scrutiny Evaluation Report from vault"
+            >
+              <ExternalLink className="w-3.5 h-3.5 text-blue-600" />
+              <span>Vault Scrutiny PDF</span>
+            </a>
+            <a
+              href={`/api/v1/cases/${application.id}/export-proforma`}
+              download={`AICTE_Proforma_${application.applicationNumber}.txt`}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors shadow-2xs"
+              title="Export formatted AICTE 2026-27 Scrutiny Proforma"
+            >
+              <FileCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Export Proforma</span>
+            </a>
             <button
               onClick={() => setShowWhyRouteDrawer(!showWhyRouteDrawer)}
               className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors shadow-2xs"

@@ -62,7 +62,14 @@ app.use((req: any, res, next) => {
 });
 
 import apiRouter from './src/backend/routes/index.js';
-app.use('/api/v1', apiRouter);
+import { createCompanionApp } from './src/backend/companionApp.ts';
+if (process.env.MONGODB_URI) {
+  app.use('/api/v1', apiRouter);
+} else {
+  console.log('🏛️ Initializing AICTE PravahReg Companion Runtime with Canonical Fixtures (2026-27)...');
+  const companion = createCompanionApp();
+  app.use(companion.app);
+}
 
 // Realtime is closed until authenticated, scoped subscriptions have a reviewed adapter.
 io.use((_socket, next) => next(new Error('Realtime subscriptions unavailable')));

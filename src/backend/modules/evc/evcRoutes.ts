@@ -48,7 +48,7 @@ export function createEVCRouter(corePort?: CorePort): Router {
 
     const result = await createEVCTask(port, parsed.data.applicationId);
     if (!result.success) {
-      const status = result.error.code === 'PRECONDITION_FAILED' ? 412
+      const status = result.error.code === 'PRECONDITION_FAILED' || result.error.code === 'VERSION_CONFLICT' ? 409
         : result.error.code === 'NOT_FOUND' ? 404
         : 400;
       return res.status(status).json(result);
@@ -78,7 +78,7 @@ export function createEVCRouter(corePort?: CorePort): Router {
 
     if (!result.success) {
       const status = result.error.code === 'VERSION_CONFLICT' ? 409
-        : result.error.code === 'PRECONDITION_FAILED' ? 412
+        : result.error.code === 'PRECONDITION_FAILED' ? 409
         : result.error.code === 'NOT_FOUND' ? 404
         : 400;
       return res.status(status).json(result);
@@ -102,7 +102,7 @@ export function createEVCRouter(corePort?: CorePort): Router {
     const result = await submitEVCReport(req.params.id, parsed.data, port);
     if (!result.success) {
       const status = result.error.code === 'VERSION_CONFLICT' ? 409
-        : result.error.code === 'PRECONDITION_FAILED' ? 412
+        : result.error.code === 'PRECONDITION_FAILED' ? 409
         : result.error.code === 'NOT_FOUND' ? 404
         : 400;
       return res.status(status).json(result);
