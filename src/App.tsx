@@ -6,6 +6,8 @@ import { Sidebar, NavTab } from './components/layout/Sidebar';
 import { ToastContainer } from './components/common/ToastContainer';
 
 // Feature Views
+import { RegulatoryStudioView } from './features/regulatory/RegulatoryStudioView';
+import { GovernmentEndpointsView } from './features/regulatory/GovernmentEndpointsView';
 import { DashboardView } from './features/dashboard/DashboardView';
 import { ApplicationsListView } from './features/applications/ApplicationsListView';
 import { ApplicationDetailModal } from './features/applications/ApplicationDetailModal';
@@ -25,7 +27,7 @@ import { Search, X } from 'lucide-react';
 const MainLayout: React.FC = () => {
   const { selectedAppId, setSelectedAppId, applications } = useApp();
 
-  const [currentTab, setCurrentTab] = useState<NavTab>('overview');
+  const [currentTab, setCurrentTab] = useState<NavTab>('studio');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [showNewAppModal, setShowNewAppModal] = useState(false);
@@ -73,6 +75,7 @@ const MainLayout: React.FC = () => {
         onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
         onOpenNotifications={() => setCurrentTab('notifications')}
         onSearchClick={() => setShowSearchModal(true)}
+        onNavigateTab={(tab) => setCurrentTab(tab as NavTab)}
       />
 
       {/* Main Body Shell */}
@@ -90,9 +93,13 @@ const MainLayout: React.FC = () => {
         <main className="flex-1 overflow-y-auto flex flex-col" style={{ background: '#f0f2f7' }}>
           {/* View Container */}
           <div className="p-4 sm:p-8 flex-1 max-w-7xl w-full mx-auto">
+            {currentTab === 'studio' && <RegulatoryStudioView />}
+
+            {currentTab === 'endpoints' && <GovernmentEndpointsView />}
+
             {currentTab === 'overview' && (
               <DashboardView
-                onNavigateTab={(tab) => setCurrentTab(tab)}
+                onNavigateTab={(tab) => setCurrentTab(tab as NavTab)}
                 onOpenNewAppModal={() => setShowNewAppModal(true)}
                 onSelectApplication={(id) => setSelectedAppId(id)}
               />
@@ -199,29 +206,37 @@ const MainLayout: React.FC = () => {
                       }}
                       className="w-full text-left p-3 rounded-lg hover:bg-blue-50 flex items-center justify-between text-xs transition-all duration-150"
                     >
-                      <div className="min-w-0">
-                        <span className="font-mono font-bold text-slate-900 mr-2">
-                          {app.applicationNumber}
-                        </span>
-                        <span className="text-slate-700 font-medium">{app.institutionName}</span>
+                      <div>
+                        <div className="font-semibold text-slate-900">{app.institutionName}</div>
+                        <div className="text-[11px] text-slate-400 mt-0.5 font-mono">{app.applicationNumber}</div>
                       </div>
-                      <span className="text-[10px] text-slate-500 shrink-0 ml-2">{app.currentStage}</span>
+                      <div className="text-right">
+                        <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-700">
+                          {app.currentStage}
+                        </span>
+                        <div className="text-[10px] text-slate-400 mt-0.5">{app.region} Region</div>
+                      </div>
                     </button>
                   ))}
                 </div>
               )}
             </div>
+
+            <div className="p-2.5 bg-slate-50 border-t border-slate-100 text-[10px] text-slate-400 flex items-center justify-between px-4">
+              <span>Use ↑↓ to navigate</span>
+              <span>ESC to close</span>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Live Toast Container */}
+      {/* Global Toast Container */}
       <ToastContainer />
     </div>
   );
 };
 
-export default function App() {
+export function App() {
   return (
     <SessionGate>
       <AppProvider>
@@ -230,3 +245,5 @@ export default function App() {
     </SessionGate>
   );
 }
+
+export default App;

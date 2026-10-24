@@ -12,15 +12,15 @@ import {
   BarChart3,
   History,
   Sliders,
-  Users2,
   ChevronLeft,
   ChevronRight,
-  AlertCircle,
-  Building,
   Sparkles,
+  Globe2,
 } from 'lucide-react';
 
 export type NavTab =
+  | 'studio'
+  | 'endpoints'
   | 'overview'
   | 'applications'
   | 'workflow'
@@ -48,7 +48,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggle,
   isMobile,
 }) => {
-  const { role, applications, complianceItems, expiringDocs, notifications, escalations } = useApp();
+  const { role, applications, complianceItems, expiringDocs, notifications } = useApp();
 
   const overdueCount = applications.filter((a) => a.slaStatus === 'overdue').length;
   const expiringCount = expiringDocs.filter((d) => d.daysUntilExpiry <= 30).length;
@@ -61,14 +61,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
     id: NavTab;
     label: string;
     icon: any;
-    badge?: number;
+    badge?: number | string;
     badgeColor?: string;
     allowedRoles: string[];
     section?: string;
   }[] = [
     {
+      id: 'studio',
+      label: '8-Stage Master Flow',
+      icon: Sparkles,
+      badge: 'LIVE DEMO',
+      badgeColor: 'bg-amber-400 text-slate-950 font-bold',
+      allowedRoles: ['all'],
+      section: 'Flagship Demonstration',
+    },
+    {
+      id: 'endpoints',
+      label: '5 National Endpoints',
+      icon: Globe2,
+      badge: 'API SETU',
+      badgeColor: 'bg-emerald-400 text-slate-950 font-bold',
+      allowedRoles: ['all'],
+      section: 'Flagship Demonstration',
+    },
+    {
       id: 'overview',
-      label: 'Command Center',
+      label: 'Executive Command Center',
       icon: LayoutDashboard,
       allowedRoles: ['all'],
       section: 'Approval Operations',
@@ -92,7 +110,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'evc',
       label: 'EVC Inspection Queue',
       icon: CalendarCheck,
-      allowedRoles: ['regional_officer', 'bureau_officer', 'evc_committee', 'admin'],
+      allowedRoles: ['all'],
       section: 'Approval Operations',
     },
     {
@@ -119,14 +137,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: Clock,
       badge: overdueCount,
       badgeColor: 'bg-rose-500 text-white',
-      allowedRoles: ['regional_officer', 'bureau_officer', 'admin'],
+      allowedRoles: ['all'],
       section: 'Monitoring & Reports',
     },
     {
       id: 'reports',
-      label: '6-Category Reports & Siebel',
+      label: '6-Category Reports',
       icon: BarChart3,
-      allowedRoles: ['regional_officer', 'bureau_officer', 'admin'],
+      allowedRoles: ['all'],
       section: 'Monitoring & Reports',
     },
     {
@@ -142,24 +160,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'audit',
       label: 'Immutable Audit Trail',
       icon: History,
-      allowedRoles: ['regional_officer', 'bureau_officer', 'admin', 'evc_committee'],
+      allowedRoles: ['all'],
       section: 'System Governance',
     },
     {
       id: 'rules',
       label: 'Policy Registry & Rules',
       icon: Sliders,
-      allowedRoles: ['admin', 'bureau_officer'],
+      allowedRoles: ['all'],
       section: 'System Governance',
     },
   ];
 
-  // Group items by section
   const sections = Array.from(new Set(navItems.map((item) => item.section || 'General')));
 
   return (
     <>
-      {/* Mobile backdrop */}
       {isMobile && isOpen && (
         <div
           className="fixed inset-0 z-30 modal-backdrop"
@@ -179,17 +195,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
             : 'w-[68px] translate-x-0 static'
         }`}
         style={{
-          background: 'linear-gradient(180deg, #081E34 0%, #0A2540 40%, #0C2D4A 100%)',
-          borderRight: '1px solid rgba(255,255,255,0.04)',
-          boxShadow: '4px 0 24px -4px rgba(0,0,0,0.15)',
+          background: 'linear-gradient(180deg, #071A2E 0%, #0A2540 40%, #0B2C4C 100%)',
+          borderRight: '1px solid rgba(255,255,255,0.06)',
+          boxShadow: '4px 0 24px -4px rgba(0,0,0,0.2)',
         }}
       >
         {/* Sidebar Header Brand */}
         <div
-          className="h-[60px] px-4 flex items-center justify-between"
+          className="h-[64px] px-4 flex items-center justify-between"
           style={{
-            background: 'linear-gradient(180deg, rgba(4,16,29,0.6), transparent)',
-            borderBottom: '1px solid rgba(255,255,255,0.04)',
+            background: 'linear-gradient(180deg, rgba(4,16,29,0.7), transparent)',
+            borderBottom: '1px solid rgba(255,255,255,0.06)',
           }}
         >
           <div className="flex items-center gap-2.5 overflow-hidden">
@@ -205,10 +221,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {isOpen && (
               <div className="overflow-hidden anim-fade-in">
                 <span className="font-bold text-sm tracking-tight text-white block truncate">
-                  AICTE Portal
+                  AICTE CaseFlow
                 </span>
-                <span className="text-[10px] text-slate-500 block truncate">
-                  Workflow Engine v2.6
+                <span className="text-[10px] text-slate-400 block truncate font-mono">
+                  PravahReg Engine
                 </span>
               </div>
             )}
@@ -216,7 +232,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {!isMobile && (
             <button
               onClick={onToggle}
-              className="p-1.5 rounded-md text-slate-500 hover:text-white hover:bg-white/5 transition-all duration-200 active:scale-95"
+              className="p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
               aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
             >
               {isOpen ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
@@ -225,23 +241,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Navigation items scrollable list */}
-        <div className="flex-1 overflow-y-auto py-4 px-2 space-y-5">
+        <div className="flex-1 overflow-y-auto py-4 px-2.5 space-y-4">
           {sections.map((secName) => {
             const sectionItems = navItems.filter((i) => i.section === secName);
-            const visibleItems = sectionItems.filter(
-              (i) => i.allowedRoles.includes('all') || i.allowedRoles.includes(role)
-            );
-
-            if (visibleItems.length === 0) return null;
+            if (sectionItems.length === 0) return null;
 
             return (
-              <div key={secName} className="space-y-0.5">
+              <div key={secName} className="space-y-1">
                 {isOpen && (
-                  <p className="px-3 text-[9px] font-bold uppercase tracking-[0.1em] text-slate-500/70 mb-2">
+                  <p className="px-3 text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400/80 mb-1.5">
                     {secName}
                   </p>
                 )}
-                {visibleItems.map((item) => {
+                {sectionItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = currentTab === item.id;
 
@@ -253,27 +265,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         if (isMobile) onToggle();
                       }}
                       title={!isOpen ? item.label : undefined}
-                      className={`nav-item-transition w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium group ${
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
                         isActive
-                          ? 'active bg-white/[0.08] text-white font-semibold'
-                          : 'text-slate-400 hover:bg-white/[0.04] hover:text-slate-200'
+                          ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/25 ring-1 ring-blue-400/40'
+                          : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'
                       }`}
                     >
-                      <div className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-all duration-200 ${
-                        isActive
-                          ? 'bg-blue-600/90 text-white'
-                          : 'bg-transparent text-slate-500 group-hover:text-blue-300 group-hover:bg-white/[0.04]'
-                      }`}
-                      style={isActive ? { boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)' } : {}}
-                      >
+                      <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
+                        isActive ? 'text-white' : 'text-slate-400 group-hover:text-blue-300'
+                      }`}>
                         <Icon className="w-4 h-4" />
                       </div>
                       {isOpen && (
                         <span className="truncate flex-1 text-left">{item.label}</span>
                       )}
-                      {isOpen && item.badge !== undefined && item.badge > 0 && (
+                      {isOpen && item.badge !== undefined && (
                         <span
-                          className={`px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold min-w-[20px] text-center ${
+                          className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono min-w-[18px] text-center ${
                             item.badgeColor || 'bg-white/10 text-slate-300'
                           }`}
                         >
@@ -291,18 +299,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Sidebar Footer */}
         {isOpen && (
           <div
-            className="p-3 text-[11px] text-slate-500"
-            style={{
-              borderTop: '1px solid rgba(255,255,255,0.04)',
-              background: 'linear-gradient(180deg, transparent, rgba(4,16,29,0.4))',
-            }}
+            className="p-3.5 text-[11px] text-slate-400 border-t border-white/5 bg-slate-950/30"
           >
             <div className="flex items-center gap-2 mb-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 badge-breathe"></span>
-              <span className="font-medium text-slate-400 text-[10px]">NIC Gateway Connected</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span className="font-semibold text-slate-200 text-[11px]">NIC Gateway Connected</span>
             </div>
-            <p className="text-[10px] text-slate-600">
-              Role: <span className="text-slate-400 capitalize">{role.replace('_', ' ')}</span>
+            <p className="text-[10px] text-slate-500 font-mono">
+              WORM Cryptographic Chain: Active
             </p>
           </div>
         )}

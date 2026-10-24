@@ -76,6 +76,9 @@ interface AppContextType {
   resolveEscalation: (id: string, notes: string) => Promise<void>;
   updateConfigRule: (id: string, value: number | string) => Promise<void>;
   resetDemoData: () => void;
+  // Clock simulation
+  simulationTime: string;
+  triggerAdvanceClock: (days: number) => Promise<void>;
   // Toast
   toasts: ToastMessage[];
   addToast: (toast: Omit<ToastMessage, 'id'>) => void;
@@ -98,6 +101,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [simulationDays, setSimulationDays] = useState<number>(0);
+  const simulationTime = new Date(Date.now() + simulationDays * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  const handleAdvanceClock = async (days: number) => {
+    try {
+      await api.advanceClock(days);
+      setSimulationDays((prev) => prev + days);
+      await refreshData();
+      addToast({
+        type: 'info',
+        title: `Regulatory Clock Advanced (+${days}d)`,
+        message: `Advanced simulation date to ${new Date(Date.now() + (simulationDays + days) * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}. Timers evaluated and outbox synchronized.`,
+      });
+    } catch (err: any) {
+      addToast({
+        type: 'error',
+        title: 'Clock advance failed',
+        message: err.message || 'Unable to advance simulation clock',
+      });
+    }
+  };
 
   const addToast = (toast: Omit<ToastMessage, 'id'>) => {
     const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
@@ -413,6 +437,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         resolveEscalation: handleResolveEscalation,
         updateConfigRule: handleUpdateConfigRule,
         resetDemoData: handleResetDemoData,
+        simulationTime,
+        triggerAdvanceClock: handleAdvanceClock,
         toasts,
         addToast,
         removeToast,
