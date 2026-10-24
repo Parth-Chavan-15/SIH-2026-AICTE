@@ -1,14 +1,14 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
+import { getSession } from '../../services/session';
+import { REGULATORY_ROLES } from '../../features/auth/SessionGate';
 import {
-  LayoutDashboard,
   FolderKanban,
-  GitMerge,
-  Clock,
+  FileCheck,
   CalendarCheck,
   ShieldCheck,
   FileWarning,
-  BellRing,
+  Clock,
   BarChart3,
   History,
   Sliders,
@@ -16,26 +16,99 @@ import {
   ChevronRight,
   Sparkles,
   Globe2,
+  Lock,
+  Users,
+  MapPin,
+  Layers,
+  Award,
+  Building2,
+  Send,
+  FileText
 } from 'lucide-react';
 
-export type NavTab =
-  | 'studio'
-  | 'endpoints'
-  | 'overview'
-  | 'applications'
-  | 'workflow'
-  | 'evc'
-  | 'compliance'
-  | 'pendency'
-  | 'documents'
-  | 'notifications'
-  | 'reports'
-  | 'audit'
-  | 'rules';
+export type RolePortalId = 1 | 2 | 3 | 4 | 5 | 6;
+export type NavTab = string;
+
+export interface RoleNavItem {
+  id: string;
+  label: string;
+  icon: any;
+  badge?: string | number;
+  badgeColor?: string;
+}
+
+export const ROLE_NAV_ITEMS: Record<RolePortalId, { portalTitle: string; subtitle: string; items: RoleNavItem[] }> = {
+  1: {
+    portalTitle: 'Applicant Portal',
+    subtitle: 'COEP • Permanent ID 1-435789102',
+    items: [
+      { id: 'inst-apps', label: 'My Applications', icon: FolderKanban },
+      { id: 'inst-deficiencies', label: 'Deficiency Cure Window (Annex. 7)', icon: FileWarning, badge: 'D1, D2', badgeColor: 'bg-amber-400 text-slate-900 font-bold' },
+      { id: 'inst-renewals', label: 'Post-Approval Renewals', icon: ShieldCheck },
+      { id: 'inst-dossier', label: 'Statutory Dossier & EoA', icon: FileText },
+      { id: 'studio', label: '🏛️ 8-Stage Master Studio', icon: Sparkles, badge: 'FLAGSHIP', badgeColor: 'bg-blue-600 text-white font-bold' },
+    ]
+  },
+  2: {
+    portalTitle: 'Scrutiny Committee Cell',
+    subtitle: 'Desk Review • Roster 2-SOC1770029225',
+    items: [
+      { id: 'scrutiny-queue', label: 'Assigned Scrutiny Queue', icon: FolderKanban },
+      { id: 'scrutiny-eval', label: 'Checklist Review & Snapshot v1', icon: FileCheck },
+      { id: 'scrutiny-rescrutiny', label: 'Differential Re-Scrutiny (§1.8(g))', icon: Lock, badge: 'LOCKED C3', badgeColor: 'bg-amber-500 text-white font-bold' },
+      { id: 'scrutiny-committee', label: 'Expert Roster & Declarations', icon: Users },
+      { id: 'studio', label: '🏛️ 8-Stage Master Studio', icon: Sparkles, badge: 'FLAGSHIP', badgeColor: 'bg-blue-600 text-white font-bold' },
+    ]
+  },
+  3: {
+    portalTitle: 'EVC Committee Portal',
+    subtitle: 'Expert Visit & SAC Appellate Cell',
+    items: [
+      { id: 'evc-queue', label: 'Eligible EVC Queue', icon: CalendarCheck, badge: 'NBA SKIP', badgeColor: 'bg-emerald-500 text-white font-bold' },
+      { id: 'evc-inspect', label: 'GPS & Video Inspection Console', icon: MapPin },
+      { id: 'evc-sac', label: 'SAC / SHC Hearing Loops', icon: Layers },
+      { id: 'evc-reports', label: 'Signed Inspection Reports', icon: FileText },
+      { id: 'studio', label: '🏛️ 8-Stage Master Studio', icon: Sparkles, badge: 'FLAGSHIP', badgeColor: 'bg-blue-600 text-white font-bold' },
+    ]
+  },
+  4: {
+    portalTitle: 'Regional Office Desk (RO)',
+    subtitle: 'Western Region • Compliance Monitoring',
+    items: [
+      { id: 'ro-pendency', label: 'Regional Pendency & SLAs', icon: Clock, badge: '10d/15d', badgeColor: 'bg-rose-500 text-white font-bold' },
+      { id: 'ro-obligations', label: '4-Clock Post-Approval Timers', icon: ShieldCheck, badge: '3 ACTIVE', badgeColor: 'bg-amber-500 text-white font-bold' },
+      { id: 'ro-verify', label: 'Document Verification (5-State)', icon: FileCheck },
+      { id: 'ro-concurrence', label: '15-Day University & DTE NOC', icon: Building2 },
+      { id: 'studio', label: '🏛️ 8-Stage Master Studio', icon: Sparkles, badge: 'FLAGSHIP', badgeColor: 'bg-blue-600 text-white font-bold' },
+    ]
+  },
+  5: {
+    portalTitle: 'Competent Authority Chamber',
+    subtitle: 'Approval Bureau & Council Executive Committee',
+    items: [
+      { id: 'ca-dossiers', label: 'Cases Awaiting Approval', icon: FolderKanban },
+      { id: 'ca-decision', label: 'Statutory Decision Gate (EoA)', icon: Award, badge: 'HUMAN ONLY', badgeColor: 'bg-rose-600 text-white font-bold' },
+      { id: 'ca-gazette', label: 'Issued Approval Orders', icon: FileText },
+      { id: 'ca-dispatch', label: 'Siebel Write-Back & 6-Authority', icon: Send },
+      { id: 'studio', label: '🏛️ 8-Stage Master Studio', icon: Sparkles, badge: 'FLAGSHIP', badgeColor: 'bg-blue-600 text-white font-bold' },
+    ]
+  },
+  6: {
+    portalTitle: 'Central Policy Administration',
+    subtitle: 'Policy Engine & WORM Governance',
+    items: [
+      { id: 'admin-policy', label: 'Policy Registry & Pinned Rules', icon: Sliders },
+      { id: 'admin-worm', label: 'WORM HMAC-SHA256 Audit Trail', icon: History, badge: 'IMMUTABLE', badgeColor: 'bg-emerald-600 text-white font-bold' },
+      { id: 'admin-adapters', label: '5 National Ecosystem Endpoints', icon: Globe2 },
+      { id: 'admin-analytics', label: '6-Category Statutory Analytics', icon: BarChart3 },
+      { id: 'studio', label: '🏛️ 8-Stage Master Studio', icon: Sparkles, badge: 'FLAGSHIP', badgeColor: 'bg-blue-600 text-white font-bold' },
+    ]
+  }
+};
 
 interface SidebarProps {
-  currentTab: NavTab;
-  onSelectTab: (tab: NavTab) => void;
+  currentTab: string;
+  onSelectTab: (tab: string) => void;
   isOpen: boolean;
   onToggle: () => void;
   isMobile: boolean;
@@ -48,131 +121,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggle,
   isMobile,
 }) => {
-  const { role, applications, complianceItems, expiringDocs, notifications } = useApp();
+  const session = getSession();
+  const activeActor = session?.actor;
 
-  const overdueCount = applications.filter((a) => a.slaStatus === 'overdue').length;
-  const expiringCount = expiringDocs.filter((d) => d.daysUntilExpiry <= 30).length;
-  const pendingComplianceCount = complianceItems.filter(
-    (c) => c.status === 'Pending Evidence' || c.status === 'Overdue'
-  ).length;
-  const unreadNotifs = notifications.filter((n) => !n.isRead).length;
+  // Determine active role portal (1-6)
+  const roleNumber: RolePortalId = 
+    (activeActor?.id === 'usr-inst-coep' || activeActor?.roles?.includes('institution')) ? 1 :
+    (activeActor?.id === 'usr-scrutiny-reviewer' || activeActor?.roles?.includes('reviewer')) ? 2 :
+    (activeActor?.id === 'usr-evc-chair' || activeActor?.roles?.includes('evc')) ? 3 :
+    (activeActor?.id === 'usr-ro-western' || activeActor?.roles?.includes('regional_officer')) ? 4 :
+    (activeActor?.id === 'usr-bureau-hq' || activeActor?.roles?.includes('demo_authority') || activeActor?.roles?.includes('bureau_officer')) ? 5 :
+    6;
 
-  const navItems: {
-    id: NavTab;
-    label: string;
-    icon: any;
-    badge?: number | string;
-    badgeColor?: string;
-    allowedRoles: string[];
-    section?: string;
-  }[] = [
-    {
-      id: 'studio',
-      label: '8-Stage Master Flow',
-      icon: Sparkles,
-      badge: 'LIVE DEMO',
-      badgeColor: 'bg-amber-400 text-slate-950 font-bold',
-      allowedRoles: ['all'],
-      section: 'Flagship Demonstration',
-    },
-    {
-      id: 'endpoints',
-      label: '5 National Endpoints',
-      icon: Globe2,
-      badge: 'API SETU',
-      badgeColor: 'bg-emerald-400 text-slate-950 font-bold',
-      allowedRoles: ['all'],
-      section: 'Flagship Demonstration',
-    },
-    {
-      id: 'overview',
-      label: 'Executive Command Center',
-      icon: LayoutDashboard,
-      allowedRoles: ['all'],
-      section: 'Approval Operations',
-    },
-    {
-      id: 'applications',
-      label: 'Applications Pipeline',
-      icon: FolderKanban,
-      badge: applications.length,
-      allowedRoles: ['all'],
-      section: 'Approval Operations',
-    },
-    {
-      id: 'workflow',
-      label: 'Scrutiny & Stages',
-      icon: GitMerge,
-      allowedRoles: ['all'],
-      section: 'Approval Operations',
-    },
-    {
-      id: 'evc',
-      label: 'EVC Inspection Queue',
-      icon: CalendarCheck,
-      allowedRoles: ['all'],
-      section: 'Approval Operations',
-    },
-    {
-      id: 'compliance',
-      label: 'Post-Approval Compliance',
-      icon: ShieldCheck,
-      badge: pendingComplianceCount,
-      badgeColor: 'bg-amber-500 text-white',
-      allowedRoles: ['all'],
-      section: 'Compliance & Validity',
-    },
-    {
-      id: 'documents',
-      label: 'Document & Lease Validity',
-      icon: FileWarning,
-      badge: expiringCount,
-      badgeColor: 'bg-amber-500 text-white',
-      allowedRoles: ['all'],
-      section: 'Compliance & Validity',
-    },
-    {
-      id: 'pendency',
-      label: 'SLA Pendency & Alerts',
-      icon: Clock,
-      badge: overdueCount,
-      badgeColor: 'bg-rose-500 text-white',
-      allowedRoles: ['all'],
-      section: 'Monitoring & Reports',
-    },
-    {
-      id: 'reports',
-      label: '6-Category Reports',
-      icon: BarChart3,
-      allowedRoles: ['all'],
-      section: 'Monitoring & Reports',
-    },
-    {
-      id: 'notifications',
-      label: 'Outbox Reminders',
-      icon: BellRing,
-      badge: unreadNotifs,
-      badgeColor: 'bg-blue-600 text-white',
-      allowedRoles: ['all'],
-      section: 'Monitoring & Reports',
-    },
-    {
-      id: 'audit',
-      label: 'Immutable Audit Trail',
-      icon: History,
-      allowedRoles: ['all'],
-      section: 'System Governance',
-    },
-    {
-      id: 'rules',
-      label: 'Policy Registry & Rules',
-      icon: Sliders,
-      allowedRoles: ['all'],
-      section: 'System Governance',
-    },
-  ];
-
-  const sections = Array.from(new Set(navItems.map((item) => item.section || 'General')));
+  const currentPortal = ROLE_NAV_ITEMS[roleNumber] || ROLE_NAV_ITEMS[4];
 
   return (
     <>
@@ -200,9 +161,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           boxShadow: '4px 0 24px -4px rgba(0,0,0,0.2)',
         }}
       >
-        {/* Sidebar Header Brand */}
+        {/* Role Portal Header */}
         <div
-          className="h-[64px] px-4 flex items-center justify-between"
+          className="h-[60px] px-4 flex items-center justify-between"
           style={{
             background: 'linear-gradient(180deg, rgba(4,16,29,0.7), transparent)',
             borderBottom: '1px solid rgba(255,255,255,0.06)',
@@ -210,21 +171,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <div className="flex items-center gap-2.5 overflow-hidden">
             <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 font-black text-[10px] text-white"
-              style={{
-                background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
-                boxShadow: '0 2px 6px rgba(37, 99, 235, 0.3), inset 0 1px 0 rgba(255,255,255,0.15)',
-              }}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 font-black text-xs text-white shadow-sm ${
+                roleNumber === 1 ? 'bg-blue-600' :
+                roleNumber === 2 ? 'bg-amber-600' :
+                roleNumber === 3 ? 'bg-purple-600' :
+                roleNumber === 4 ? 'bg-emerald-600' :
+                roleNumber === 5 ? 'bg-rose-600' : 'bg-slate-700'
+              }`}
             >
-              GOV
+              #{roleNumber}
             </div>
             {isOpen && (
               <div className="overflow-hidden anim-fade-in">
-                <span className="font-bold text-sm tracking-tight text-white block truncate">
-                  AICTE CaseFlow
+                <span className="font-extrabold text-xs tracking-tight text-white block truncate">
+                  {currentPortal.portalTitle}
                 </span>
                 <span className="text-[10px] text-slate-400 block truncate font-mono">
-                  PravahReg Engine
+                  {currentPortal.subtitle}
                 </span>
               </div>
             )}
@@ -240,70 +203,60 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
 
-        {/* Navigation items scrollable list */}
-        <div className="flex-1 overflow-y-auto py-4 px-2.5 space-y-4">
-          {sections.map((secName) => {
-            const sectionItems = navItems.filter((i) => i.section === secName);
-            if (sectionItems.length === 0) return null;
+        {/* Dedicated Role Navigation Items */}
+        <div className="flex-1 overflow-y-auto py-4 px-2.5 space-y-1.5">
+          {isOpen && (
+            <p className="px-3 text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400/80 mb-2">
+              Role #{roleNumber} Workspace Tabs
+            </p>
+          )}
+
+          {currentPortal.items.map((item) => {
+            const Icon = item.icon;
+            const isActive = currentTab === item.id;
 
             return (
-              <div key={secName} className="space-y-1">
+              <button
+                key={item.id}
+                onClick={() => {
+                  onSelectTab(item.id);
+                  if (isMobile) onToggle();
+                }}
+                title={!isOpen ? item.label : undefined}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                  isActive
+                    ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/30 ring-1 ring-blue-400/40'
+                    : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'
+                }`}
+              >
+                <div className={`w-5 h-5 flex items-center justify-center shrink-0 ${
+                  isActive ? 'text-white' : 'text-slate-400 group-hover:text-blue-300'
+                }`}>
+                  <Icon className="w-4 h-4" />
+                </div>
                 {isOpen && (
-                  <p className="px-3 text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400/80 mb-1.5">
-                    {secName}
-                  </p>
+                  <span className="truncate flex-1 text-left">{item.label}</span>
                 )}
-                {sectionItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = currentTab === item.id;
-
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => {
-                        onSelectTab(item.id);
-                        if (isMobile) onToggle();
-                      }}
-                      title={!isOpen ? item.label : undefined}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
-                        isActive
-                          ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/25 ring-1 ring-blue-400/40'
-                          : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'
-                      }`}
-                    >
-                      <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
-                        isActive ? 'text-white' : 'text-slate-400 group-hover:text-blue-300'
-                      }`}>
-                        <Icon className="w-4 h-4" />
-                      </div>
-                      {isOpen && (
-                        <span className="truncate flex-1 text-left">{item.label}</span>
-                      )}
-                      {isOpen && item.badge !== undefined && (
-                        <span
-                          className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono min-w-[18px] text-center ${
-                            item.badgeColor || 'bg-white/10 text-slate-300'
-                          }`}
-                        >
-                          {item.badge}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+                {isOpen && item.badge !== undefined && (
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono min-w-[18px] text-center ${
+                      item.badgeColor || 'bg-white/10 text-slate-300'
+                    }`}
+                  >
+                    {item.badge}
+                  </span>
+                )}
+              </button>
             );
           })}
         </div>
 
         {/* Sidebar Footer */}
         {isOpen && (
-          <div
-            className="p-3.5 text-[11px] text-slate-400 border-t border-white/5 bg-slate-950/30"
-          >
+          <div className="p-3.5 text-[11px] text-slate-400 border-t border-white/5 bg-slate-950/40">
             <div className="flex items-center gap-2 mb-1">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span className="font-semibold text-slate-200 text-[11px]">NIC Gateway Connected</span>
+              <span className="font-semibold text-slate-200 text-[11px]">NIC Sovereign Gateway</span>
             </div>
             <p className="text-[10px] text-slate-500 font-mono">
               WORM Cryptographic Chain: Active

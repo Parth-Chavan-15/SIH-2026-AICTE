@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { SessionGate } from './features/auth/SessionGate';
+import { getSession } from './services/session';
 import { Navbar } from './components/layout/Navbar';
-import { Sidebar, NavTab } from './components/layout/Sidebar';
+import { Sidebar } from './components/layout/Sidebar';
 import { ToastContainer } from './components/common/ToastContainer';
 
 // Feature Views
@@ -26,13 +27,36 @@ import { Search, X } from 'lucide-react';
 
 const MainLayout: React.FC = () => {
   const { selectedAppId, setSelectedAppId, applications } = useApp();
+  const session = getSession();
+  const activeActor = session?.actor;
 
-  const [currentTab, setCurrentTab] = useState<NavTab>('studio');
+  // Determine active role portal (1-6)
+  const roleNumber: number = 
+    (activeActor?.id === 'usr-inst-coep' || activeActor?.roles?.includes('institution')) ? 1 :
+    (activeActor?.id === 'usr-scrutiny-reviewer' || activeActor?.roles?.includes('reviewer')) ? 2 :
+    (activeActor?.id === 'usr-evc-chair' || activeActor?.roles?.includes('evc')) ? 3 :
+    (activeActor?.id === 'usr-ro-western' || activeActor?.roles?.includes('regional_officer')) ? 4 :
+    (activeActor?.id === 'usr-bureau-hq' || activeActor?.roles?.includes('demo_authority') || activeActor?.roles?.includes('bureau_officer')) ? 5 :
+    6;
+
+  const defaultTab = 
+    roleNumber === 1 ? 'inst-apps' :
+    roleNumber === 2 ? 'scrutiny-queue' :
+    roleNumber === 3 ? 'evc-queue' :
+    roleNumber === 4 ? 'ro-pendency' :
+    roleNumber === 5 ? 'ca-dossiers' : 'admin-policy';
+
+  const [currentTab, setCurrentTab] = useState<string>(defaultTab);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [showNewAppModal, setShowNewAppModal] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Update default tab if active role changes
+  useEffect(() => {
+    setCurrentTab(defaultTab);
+  }, [activeActor?.id]);
 
   // Responsive window check
   useEffect(() => {
@@ -70,17 +94,17 @@ const MainLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col font-sans text-slate-800 antialiased" style={{ background: '#f0f2f7' }}>
-      {/* Top Government Navbar */}
+      {/* Top Government Navbar matching media_1792851811454_e4202197.png */}
       <Navbar
         onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
         onOpenNotifications={() => setCurrentTab('notifications')}
         onSearchClick={() => setShowSearchModal(true)}
-        onNavigateTab={(tab) => setCurrentTab(tab as NavTab)}
+        onNavigateTab={(tab) => setCurrentTab(tab)}
       />
 
       {/* Main Body Shell */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar */}
+        {/* Left Role-Specific Sidebar */}
         <Sidebar
           currentTab={currentTab}
           onSelectTab={(tab) => setCurrentTab(tab)}
@@ -91,54 +115,88 @@ const MainLayout: React.FC = () => {
 
         {/* Content Area */}
         <main className="flex-1 overflow-y-auto flex flex-col" style={{ background: '#f0f2f7' }}>
-          {/* View Container */}
           <div className="p-4 sm:p-8 flex-1 max-w-7xl w-full mx-auto">
+            {/* Global Flagship Demo Studio (Accessible across all roles) */}
             {currentTab === 'studio' && <RegulatoryStudioView />}
-
             {currentTab === 'endpoints' && <GovernmentEndpointsView />}
 
-            {currentTab === 'overview' && (
-              <DashboardView
-                onNavigateTab={(tab) => setCurrentTab(tab as NavTab)}
-                onOpenNewAppModal={() => setShowNewAppModal(true)}
-                onSelectApplication={(id) => setSelectedAppId(id)}
-              />
-            )}
-
-            {currentTab === 'applications' && (
+            {/* Role 1: Institution (Applicant) Pages */}
+            {currentTab === 'inst-apps' && (
               <ApplicationsListView
                 onSelectApplication={(id) => setSelectedAppId(id)}
                 onOpenNewAppModal={() => setShowNewAppModal(true)}
               />
             )}
-
-            {currentTab === 'workflow' && (
+            {currentTab === 'inst-deficiencies' && (
               <WorkflowView onSelectApplication={(id) => setSelectedAppId(id)} />
             )}
+            {currentTab === 'inst-renewals' && <ComplianceView />}
+            {currentTab === 'inst-dossier' && <DocumentExpiryView />}
 
-            {currentTab === 'evc' && (
+            {/* Role 2: Scrutiny Reviewer Pages */}
+            {currentTab === 'scrutiny-queue' && (
+              <ApplicationsListView
+                onSelectApplication={(id) => setSelectedAppId(id)}
+                onOpenNewAppModal={() => setShowNewAppModal(true)}
+              />
+            )}
+            {currentTab === 'scrutiny-eval' && (
+              <WorkflowView onSelectApplication={(id) => setSelectedAppId(id)} />
+            )}
+            {currentTab === 'scrutiny-rescrutiny' && (
+              <WorkflowView onSelectApplication={(id) => setSelectedAppId(id)} />
+            )}
+            {currentTab === 'scrutiny-committee' && <GovernmentEndpointsView />}
+
+            {/* Role 3: EVC Coordinator / Member Pages */}
+            {currentTab === 'evc-queue' && (
               <EVCView onSelectApplication={(id) => setSelectedAppId(id)} />
             )}
+            {currentTab === 'evc-inspect' && (
+              <EVCView onSelectApplication={(id) => setSelectedAppId(id)} />
+            )}
+            {currentTab === 'evc-sac' && (
+              <EVCView onSelectApplication={(id) => setSelectedAppId(id)} />
+            )}
+            {currentTab === 'evc-reports' && <ReportsView />}
 
-            {currentTab === 'compliance' && <ComplianceView />}
-
-            {currentTab === 'documents' && <DocumentExpiryView />}
-
-            {currentTab === 'pendency' && (
+            {/* Role 4: Regional / Bureau Officer Pages */}
+            {currentTab === 'ro-pendency' && (
               <PendencyView onSelectApplication={(id) => setSelectedAppId(id)} />
             )}
+            {currentTab === 'ro-obligations' && <ComplianceView />}
+            {currentTab === 'ro-verify' && <DocumentExpiryView />}
+            {currentTab === 'ro-concurrence' && <GovernmentEndpointsView />}
 
-            {currentTab === 'reports' && <ReportsView />}
+            {/* Role 5: Competent Authority Pages */}
+            {currentTab === 'ca-dossiers' && (
+              <ApplicationsListView
+                onSelectApplication={(id) => setSelectedAppId(id)}
+                onOpenNewAppModal={() => setShowNewAppModal(true)}
+              />
+            )}
+            {currentTab === 'ca-decision' && (
+              <DashboardView
+                onNavigateTab={(tab) => setCurrentTab(tab)}
+                onOpenNewAppModal={() => setShowNewAppModal(true)}
+                onSelectApplication={(id) => setSelectedAppId(id)}
+              />
+            )}
+            {currentTab === 'ca-gazette' && <ReportsView />}
+            {currentTab === 'ca-dispatch' && <GovernmentEndpointsView />}
 
+            {/* Role 6: System Policy Administrator Pages */}
+            {currentTab === 'admin-policy' && <ConfigRulesView />}
+            {currentTab === 'admin-worm' && (
+              <AuditView onSelectApplication={(id) => setSelectedAppId(id)} />
+            )}
+            {currentTab === 'admin-adapters' && <GovernmentEndpointsView />}
+            {currentTab === 'admin-analytics' && <ReportsView />}
+
+            {/* Auxiliary Universal Views */}
             {currentTab === 'notifications' && (
               <NotificationsView onSelectApplication={(id) => setSelectedAppId(id)} />
             )}
-
-            {currentTab === 'audit' && (
-              <AuditView onSelectApplication={(id) => setSelectedAppId(id)} />
-            )}
-
-            {currentTab === 'rules' && <ConfigRulesView />}
           </div>
         </main>
       </div>
