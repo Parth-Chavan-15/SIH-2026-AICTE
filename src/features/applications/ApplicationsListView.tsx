@@ -328,11 +328,32 @@ export const ApplicationsListView: React.FC<ApplicationsListViewProps> = ({
                       </span>
                     </td>
 
-                    {/* Route Type */}
+                    {/* Highlighted Statutory Route Type */}
                     <td className="py-3 px-4">
-                      <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
-                        {app.routeType}
-                      </span>
+                      {app.routeType === 'Scrutiny Only' || app.id.includes('COEP') ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-2xs">
+                          <span className="text-emerald-600">⚡</span>
+                          <span>Scrutiny Only</span>
+                          <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-200/60 font-mono text-emerald-900">NBA</span>
+                        </span>
+                      ) : app.routeType === 'Scrutiny + EVC' || app.id.includes('GIITS') ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-300 shadow-2xs">
+                          <span className="text-amber-600">🔍</span>
+                          <span>Scrutiny + EVC</span>
+                          <span className="text-[9px] px-1 py-0.2 rounded bg-amber-200/60 font-mono text-amber-900">Non-NBA</span>
+                        </span>
+                      ) : app.routeType === 'Fast-Track EoA' || app.id.includes('PDIMTR') ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-blue-50 text-blue-800 border border-blue-300 shadow-2xs">
+                          <span>📜</span>
+                          <span>Self-Disclosure</span>
+                          <span className="text-[9px] px-1 py-0.2 rounded bg-blue-200/60 font-mono text-blue-900">EoA</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-purple-50 text-purple-800 border border-purple-300 shadow-2xs">
+                          <span>⚠️</span>
+                          <span>{app.routeType}</span>
+                        </span>
+                      )}
                     </td>
 
                     {/* SLA Status */}

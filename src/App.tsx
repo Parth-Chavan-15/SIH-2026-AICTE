@@ -34,6 +34,14 @@ const MainLayout: React.FC = () => {
   const [sessionRevision, setSessionRevision] = useState(0);
 
   useEffect(() => {
+    document.title = 'NiyamSetu (नियमसेतु) — AICTE Regulatory Companion Platform | AY 2026–27';
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (const registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
     const handleSessionChange = () => setSessionRevision((r) => r + 1);
     window.addEventListener('sih:sessionchanged', handleSessionChange);
     return () => window.removeEventListener('sih:sessionchanged', handleSessionChange);
