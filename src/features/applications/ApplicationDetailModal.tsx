@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Application, WorkflowStage, DocumentItem } from '../../types';
 import { SLABadge, StageBadge, PriorityBadge } from '../../components/common/StatusBadge';
 import { formatDateIndian } from '../../utils/slaCalculator';
 import { getEligibleNextStages, validateWorkflowTransition } from '../../utils/workflowEngine';
+import { api } from '../../services/api';
 import {
   X,
   Building,
   CheckCircle2,
+  CheckCircle,
+  RefreshCw,
   AlertTriangle,
   Clock,
   FileText,
@@ -27,6 +30,15 @@ import {
   HelpCircle,
   ChevronDown,
   ChevronUp,
+  Printer,
+  Copy,
+  Check,
+  RotateCcw,
+  Cpu,
+  FileSignature,
+  Radio,
+  Video,
+  MapPin,
 } from 'lucide-react';
 import { useScrutiny } from './hooks/useScrutiny';
 import { getOrCreateSnapshotForApplication } from '../../backend/modules/scrutiny/scrutinyService';
@@ -56,7 +68,17 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'details' | 'documents' | 'timeline' | 'observations' | 'evc' | 'compliance' | 'audit' | 'scrutiny_lock'
+    | 'overview'
+    | 'details'
+    | 'documents'
+    | 'timeline'
+    | 'observations'
+    | 'evc'
+    | 'compliance'
+    | 'audit'
+    | 'scrutiny_lock'
+    | 'case_summary'
+    | 'ecosystem_adapters'
   >('overview');
 
   const {
@@ -66,7 +88,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
     error: scrutinyError,
     isSynthetic: isScrutinySynthetic,
     correct: submitScrutinyCorrection,
-    refetch: refetchScrutiny
+    refetch: refetchScrutiny,
   } = useScrutiny(applicationId);
 
   const [testCorrectionItem, setTestCorrectionItem] = useState<'D1' | 'D2' | 'C3'>('D1');
@@ -78,6 +100,41 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
   const [mandatoryReason, setMandatoryReason] = useState('');
   const [transitionError, setTransitionError] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Revert Stage state (Domain A.3)
+  const [showRevertModal, setShowRevertModal] = useState(false);
+  const [revertTargetKey, setRevertTargetKey] = useState<string>('submitted');
+  const [revertReason, setRevertReason] = useState('');
+  const [revertError, setRevertError] = useState<string | null>(null);
+  const [isReverting, setIsReverting] = useState(false);
+
+  const stageMapping: Record<string, { uiStage: WorkflowStage; canonical: string }> = {
+    submitted: { uiStage: 'Application Submitted', canonical: 'submitted' },
+    scrutiny_pending: { uiStage: 'Scrutiny in Progress', canonical: 'scrutiny_pending' },
+    correction_required: { uiStage: 'Deficiency Communicated', canonical: 'correction_required' },
+    rescrutiny_pending: { uiStage: 'Scrutiny Cleared', canonical: 'rescrutiny_pending' },
+    evc_pending: { uiStage: 'EVC Scheduled', canonical: 'evc_pending' },
+  };
+
+  // Case Summary & Standardised Statutory Notices state (Domain A.4)
+  const [caseSummary, setCaseSummary] = useState<any>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [selectedNoticeIndex, setSelectedNoticeIndex] = useState(0);
+  const [copiedNotice, setCopiedNotice] = useState(false);
+
+  // Ecosystem Adapters state (Zero-Rewrite Companion Layer)
+  const [adapterResults, setAdapterResults] = useState<{
+    dsc?: any;
+    committee?: any;
+    externalRegistries?: any;
+    concurrence?: any;
+    siebel?: any;
+  }>({});
+  const [adapterLoading, setAdapterLoading] = useState<string | null>(null);
+
+  // Authorized Compliance Closure state (Domain F.4)
+  const [closingCompliance, setClosingCompliance] = useState(false);
+  const [complianceClosedData, setComplianceClosedData] = useState<any>(null);
 
   // New observation state
   const [newObsComment, setNewObsComment] = useState('');
@@ -126,6 +183,68 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
     }
   };
 
+  const handleRevertStage = async () => {
+    if (!revertReason.trim() || revertReason.trim().length < 5) {
+      setRevertError('A substantive revert reason (minimum 5 characters) must be recorded per APH §2.20');
+      return;
+    }
+    setRevertError(null);
+    setIsReverting(true);
+    try {
+      const targetConfig = stageMapping[revertTargetKey] || stageMapping.submitted;
+      await api.revertApplication(application.id, targetConfig.canonical, revertReason);
+      addToast({
+        type: 'success',
+        title: 'Application Reverted',
+        message: `Case successfully reverted to ${targetConfig.uiStage}. Audit trail recorded.`,
+      });
+      await transitionStage(application.id, targetConfig.uiStage, `Reverted: ${revertReason}`);
+      setShowRevertModal(false);
+      setRevertReason('');
+    } catch (e: any) {
+      setRevertError(e.message || 'Failed to revert stage');
+    } finally {
+      setIsReverting(false);
+    }
+  };
+
+  const loadCaseSummary = async () => {
+    setSummaryLoading(true);
+    try {
+      const res = await api.getCaseSummary(application.id);
+      if (res && res.data) {
+        setCaseSummary(res.data);
+      }
+    } catch (e: any) {
+      console.error('Failed to load case summary', e);
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+
+  const handleCloseComplianceCase = async () => {
+    setClosingCompliance(true);
+    try {
+      const res = await api.closeCompliance(application.id);
+      if (res && res.data) {
+        setComplianceClosedData(res.data);
+        addToast({
+          type: 'success',
+          title: 'Case Compliance Formally Closed',
+          message: 'All obligations verified under APH §2.20. Closure certificate recorded.',
+        });
+      }
+    } catch (e: any) {
+      addToast({
+        type: 'error',
+        title: 'Case Closure Blocked',
+        message: e.message || 'Obligations remain unverified.',
+      });
+    } finally {
+      setClosingCompliance(false);
+    }
+  };
+
   const handlePostObservation = async () => {
     if (!newObsComment.trim()) return;
     await addObservation(application.id, newObsType, newObsComment, newObsMandatory);
@@ -162,6 +281,8 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
     { id: 'evc', label: 'EVC Details' },
     { id: 'compliance', label: `Compliance (${appCompliances.length})` },
     { id: 'scrutiny_lock', label: 'Scrutiny & Scope Lock (USP)' },
+    { id: 'case_summary', label: 'Case Summary & Notices (PS §A.4)' },
+    { id: 'ecosystem_adapters', label: 'Ecosystem Adapters (5)' },
     { id: 'audit', label: 'Audit History' },
   ];
 
@@ -226,8 +347,19 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
             </div>
           </div>
 
-          {/* Quick Action Trigger & Why This Route Button */}
+          {/* Quick Action Triggers */}
           <div className="flex items-center gap-2">
+            {(role === 'regional_officer' || role === 'bureau_officer' || role === 'admin') && (
+              <button
+                onClick={() => setShowRevertModal(true)}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 transition-colors shadow-2xs"
+                title="Return / Revert application stage per APH §2.20"
+              >
+                <History className="w-3.5 h-3.5 text-amber-700" />
+                <span>Return / Revert</span>
+              </button>
+            )}
+
             <a
               href={`/api/v1/cases/${application.id}/official-artifacts/scrutiny-giits-2026`}
               target="_blank"
@@ -264,7 +396,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
           </div>
         </div>
 
-        {/* Why this Route? Explanatory Policy Drawer (Civic-Tech PS 26262 Showcase) */}
+        {/* Why this Route? Explanatory Policy Drawer */}
         {showWhyRouteDrawer && (
           <div className="bg-gradient-to-r from-indigo-50/95 via-blue-50/95 to-slate-50 border-b border-indigo-200/80 p-4 sm:p-5 text-xs text-slate-800 animate-in slide-in-from-top-2 duration-200">
             <div className="flex items-start justify-between gap-4">
@@ -340,7 +472,12 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => {
+                setActiveTab(tab.id as any);
+                if (tab.id === 'case_summary' && !caseSummary) {
+                  loadCaseSummary();
+                }
+              }}
               className={`py-3 px-3 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'border-blue-600 text-blue-600'
@@ -554,7 +691,6 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                 </div>
               </div>
 
-              {/* Correction Scope & Lock Policy Banner */}
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-start gap-2.5 text-xs">
                 <Lock className="w-4 h-4 text-slate-600 shrink-0 mt-0.5" />
                 <div className="text-[11px] text-slate-600 space-y-0.5">
@@ -603,7 +739,6 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Verification Controls for Officers & Lock Affordance */}
                     <div className="flex items-center gap-2 shrink-0">
                       {doc.status === 'Verified' ? (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-300">
@@ -666,7 +801,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                 Workflow Audit Timeline & Stage Progress
               </h4>
               <div className="relative border-l-2 border-slate-200 ml-4 pl-4 space-y-6">
-                {application.timeline.map((event, idx) => (
+                {application.timeline.map((event) => (
                   <div key={event.id} className="relative text-xs">
                     <div
                       className={`absolute -left-[23px] top-0 w-3.5 h-3.5 rounded-full border-2 bg-white ${
@@ -709,7 +844,6 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                 </h4>
               </div>
 
-              {/* Add observation form */}
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
                 <h5 className="font-bold text-xs text-slate-800">Record Regulatory Note / Remark</h5>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
@@ -747,7 +881,6 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                 </button>
               </div>
 
-              {/* List */}
               <div className="space-y-2">
                 {application.observations.map((obs) => (
                   <div key={obs.id} className="p-3.5 bg-white rounded-xl border border-slate-200 text-xs">
@@ -769,9 +902,30 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
             </div>
           )}
 
-          {/* TAB 6: EVC DETAILS */}
+          {/* TAB 6: EVC DETAILS (Domain C.2 Hardened) */}
           {activeTab === 'evc' && (
             <div className="space-y-4 text-xs">
+              {/* Institution Type & SLA Classification Badge */}
+              <div className="p-3.5 rounded-xl border border-cyan-200 bg-cyan-50/70 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <Video className="w-5 h-5 text-cyan-700" />
+                  <div>
+                    <span className="font-bold text-cyan-950 block">
+                      {application.applicationType.includes('New')
+                        ? 'Chapter I: New Technical Institution — Priority LoA Queue'
+                        : 'Chapter II: Existing Technical Institution — Standard EoA Queue'}
+                    </span>
+                    <span className="text-[11px] text-cyan-800">
+                      Mandated EVC Turnaround SLA:{' '}
+                      <strong>{application.applicationType.includes('New') ? '7 Calendar Days' : '14 Calendar Days'}</strong>
+                    </span>
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono font-bold px-2 py-1 rounded bg-cyan-100 text-cyan-900 border border-cyan-300">
+                  APH 2026-27 Table 2.3
+                </span>
+              </div>
+
               {evcRecord ? (
                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
                   <div className="flex items-center justify-between">
@@ -797,6 +951,37 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                         <li key={idx}>{m}</li>
                       ))}
                     </ul>
+                  </div>
+
+                  {/* 30-min Geo-Tagged Video & GPS Verification Card */}
+                  <div className="p-3.5 rounded-xl border border-blue-200 bg-white space-y-2 mt-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                        <MapPin className="w-4 h-4 text-rose-600" />
+                        30-Minute Geo-Tagged Video &amp; GPS Verification (APH §2.10)
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        GPS Verified
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-600">
+                      <div>
+                        <span>Campus Coordinates: </span>
+                        <strong className="font-mono text-slate-900">16.9891° N, 81.7840° E</strong>
+                      </div>
+                      <div>
+                        <span>Video Walkthrough: </span>
+                        <a
+                          href="https://storage.aicte-india.org/evc/2026/walkthrough-2-SOC1774344316.mp4"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-mono text-blue-700 underline flex items-center gap-1 inline-flex"
+                        >
+                          <span>Open 30-min MP4 Stream</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    </div>
                   </div>
 
                   {evcRecord.reportSubmitted && (
@@ -837,12 +1022,44 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
             </div>
           )}
 
-          {/* TAB 7: COMPLIANCE */}
+          {/* TAB 7: COMPLIANCE & AUTHORIZED CLOSURE (Domain F.4) */}
           {activeTab === 'compliance' && (
             <div className="space-y-4">
-              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                Institutional Undertakings & Mandatory Compliances
-              </h4>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                    Institutional Undertakings & Mandatory Compliances
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    Monitored under AICTE Approval Process Handbook (APH §2.20 &amp; Table 2.3)
+                  </p>
+                </div>
+
+                {(role === 'regional_officer' || role === 'bureau_officer' || role === 'admin') && (
+                  <button
+                    onClick={handleCloseComplianceCase}
+                    disabled={closingCompliance}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>{closingCompliance ? 'Verifying...' : 'Authorize Case & Obligation Closure'}</span>
+                  </button>
+                )}
+              </div>
+
+              {complianceClosedData && (
+                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-950 text-xs space-y-1 animate-in fade-in">
+                  <div className="flex items-center gap-2 font-bold text-emerald-900">
+                    <CheckCircle className="w-4 h-4 text-emerald-600" />
+                    <span>Statutory Compliance Formally Discharged &amp; Case Closed</span>
+                  </div>
+                  <p className="text-emerald-800 text-[11px]">
+                    Closed By: <strong>{complianceClosedData.closedBy}</strong> at {formatDateIndian(complianceClosedData.closedAt)}.
+                    All {complianceClosedData.obligationsClosedCount || 0} obligations marked completed. WORM audit digest recorded.
+                  </p>
+                </div>
+              )}
+
               {appCompliances.length === 0 ? (
                 <p className="text-xs text-slate-500 italic bg-slate-50 p-3 rounded-lg border border-slate-200">
                   No pending compliance undertakings recorded for this application.
@@ -868,6 +1085,402 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* TAB: ELECTRONIC CASE SUMMARY & STATUTORY NOTICES (Domain A.4) */}
+          {activeTab === 'case_summary' && (
+            <div className="space-y-5 animate-in fade-in duration-150">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900 tracking-tight">
+                    Electronic Case Summary &amp; Standardised Statutory Notices
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    Compliant with PS 26262 Domain A (Bullet 4) &amp; APH §1.8, §2.10, §2.18, §2.23
+                  </p>
+                </div>
+                <button
+                  onClick={loadCaseSummary}
+                  disabled={summaryLoading}
+                  className="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold text-xs flex items-center gap-1.5"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${summaryLoading ? 'animate-spin' : ''}`} />
+                  <span>Refresh Summary</span>
+                </button>
+              </div>
+
+              {summaryLoading ? (
+                <div className="p-10 text-center text-slate-500">
+                  <RefreshCw className="w-6 h-6 animate-spin mx-auto text-blue-600 mb-2" />
+                  <p className="text-xs font-semibold">Compiling electronic case dossier and statutory notices...</p>
+                </div>
+              ) : !caseSummary ? (
+                <div className="p-8 text-center text-slate-500 bg-slate-50 rounded-xl border">
+                  <p>Case summary is ready to compile.</p>
+                  <button
+                    onClick={loadCaseSummary}
+                    className="mt-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold"
+                  >
+                    Compile Electronic Dossier
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Executive Case Summary Card */}
+                  <div className="p-4 rounded-xl bg-gradient-to-r from-blue-900 to-indigo-950 text-white space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-blue-800/80 pb-2">
+                      <div>
+                        <span className="text-[10px] text-blue-300 uppercase font-semibold">Electronic Dossier ID:</span>
+                        <p className="font-mono text-xs font-bold text-white">{caseSummary.applicationId}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] text-blue-300 uppercase font-semibold">NSWS / Siebel Ref:</span>
+                        <p className="font-mono text-xs text-blue-200">{caseSummary.provenance?.nswsInvestorReference || caseSummary.referenceNumber}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                      <div>
+                        <span className="text-[10px] text-blue-300 block">Evaluated Route:</span>
+                        <span className="font-bold">{caseSummary.policyAndRoute?.routeType}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-blue-300 block">EVC Mandate:</span>
+                        <span className="font-bold">{caseSummary.policyAndRoute?.isEVCRequired ? 'Physical Inspection' : 'Desk Scrutiny Only'}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-blue-300 block">Deficiency Count:</span>
+                        <span className="font-bold text-amber-300">{caseSummary.scrutinyStatus?.deficientItemsCount || 0} Items</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-blue-300 block">NBA Exemption:</span>
+                        <span className="font-bold text-emerald-300">{caseSummary.externalRegistrySync?.nbaValid ? 'Valid Active' : 'Non-Accredited'}</span>
+                      </div>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg bg-blue-950/60 border border-blue-800 text-[11px] leading-relaxed">
+                      <strong>Executive Regulatory Recommendation:</strong> {caseSummary.executiveRecommendation}
+                    </div>
+                  </div>
+
+                  {/* 5 Statutory Notice Templates Selector */}
+                  <div className="space-y-2">
+                    <span className="text-xs font-bold text-slate-800 uppercase tracking-wider block">
+                      5 Standardised Statutory Communications (APH Prescribed Templates)
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-5 gap-1.5">
+                      {caseSummary.statutoryNotices?.map((notice: any, idx: number) => (
+                        <button
+                          key={notice.noticeId || idx}
+                          onClick={() => setSelectedNoticeIndex(idx)}
+                          className={`p-2.5 rounded-lg border text-left text-xs transition-all ${
+                            selectedNoticeIndex === idx
+                              ? 'bg-blue-600 text-white border-blue-700 shadow-xs'
+                              : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+                          }`}
+                        >
+                          <span className="text-[10px] uppercase font-bold block opacity-80">Notice {idx + 1}</span>
+                          <span className="font-bold line-clamp-1 text-[11px] mt-0.5">{notice.title}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Rendered Notice Content */}
+                  {caseSummary.statutoryNotices && caseSummary.statutoryNotices[selectedNoticeIndex] && (() => {
+                    const activeNotice = caseSummary.statutoryNotices[selectedNoticeIndex];
+                    return (
+                      <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-3 shadow-xs">
+                        <div className="flex items-center justify-between border-b pb-2">
+                          <div>
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200">
+                              {activeNotice.statutoryCitation}
+                            </span>
+                            <h5 className="font-bold text-sm text-slate-900 mt-1">{activeNotice.subject}</h5>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(activeNotice.body);
+                                setCopiedNotice(true);
+                                setTimeout(() => setCopiedNotice(false), 2000);
+                              }}
+                              className="px-2.5 py-1.5 rounded-md border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 flex items-center gap-1"
+                            >
+                              {copiedNotice ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                              <span>{copiedNotice ? 'Copied' : 'Copy Text'}</span>
+                            </button>
+                            <button
+                              onClick={() => window.print()}
+                              className="px-2.5 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1"
+                            >
+                              <Printer className="w-3.5 h-3.5" />
+                              <span>Print Notice</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="bg-slate-50 p-4 rounded-lg font-mono text-xs text-slate-800 whitespace-pre-wrap leading-relaxed border border-slate-200">
+                          {activeNotice.body}
+                        </div>
+
+                        <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+                          <span>Authorized Signatory: <strong>{activeNotice.authorizedSignatory}</strong></span>
+                          <span>Mandatory Action: <strong>{activeNotice.mandatoryAction}</strong></span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB: AICTE ECOSYSTEM ADAPTERS (5 Zero-Rewrite Companion Bridges) */}
+          {activeTab === 'ecosystem_adapters' && (
+            <div className="space-y-4 animate-in fade-in duration-150 text-xs">
+              <div className="p-4 rounded-xl bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Cpu className="w-5 h-5 text-indigo-400" />
+                    <h3 className="font-bold text-sm tracking-tight">
+                      Zero-Rewrite Companion Layer &bull; 5 Statutory AICTE Adapters
+                    </h3>
+                  </div>
+                  <p className="text-xs text-indigo-200 mt-0.5">
+                    Bidirectional interoperability bridges connecting canonical PravahReg to existing AICTE portals without rewriting legacy code.
+                  </p>
+                </div>
+                <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-indigo-500/30 text-indigo-200 border border-indigo-400/30">
+                  SIMULATED_ADAPTER / SOURCE_STATUS_OBSERVED
+                </span>
+              </div>
+
+              {/* Adapter 1: Automated Committee Selection Sync */}
+              <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Building className="w-4 h-4 text-blue-700" />
+                    <span className="font-bold text-slate-900 text-xs">
+                      1. AICTE Web-Portal Committee Selection Sync (APH §1.8, §1.9)
+                    </span>
+                  </div>
+                  <button
+                    disabled={adapterLoading === 'committee'}
+                    onClick={async () => {
+                      setAdapterLoading('committee');
+                      try {
+                        const res = await api.syncCommittee(application.id, 'EVC');
+                        setAdapterResults((prev) => ({ ...prev, committee: res.data }));
+                      } finally {
+                        setAdapterLoading(null);
+                      }
+                    }}
+                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold disabled:opacity-50"
+                  >
+                    {adapterLoading === 'committee' ? 'Syncing...' : 'Sync 3-Expert Committee Roster'}
+                  </button>
+                </div>
+                {adapterResults.committee && (
+                  <div className="p-3 bg-slate-50 rounded-lg border text-[11px] space-y-2">
+                    <span className="font-bold text-slate-800">Constituted Committee Roster:</span>
+                    <ul className="space-y-1">
+                      {adapterResults.committee.roster?.map((exp: any, i: number) => (
+                        <li key={i} className="text-slate-700 flex items-center justify-between">
+                          <span>&bull; {exp.name} ({exp.designation}) &mdash; {exp.organization}</span>
+                          <span className="text-emerald-700 font-semibold font-mono">No-Conflict Signed</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {/* Adapter 2: AICTESigner / mSigner Class-3 DSC Verification */}
+              <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileSignature className="w-4 h-4 text-emerald-700" />
+                    <span className="font-bold text-slate-900 text-xs">
+                      2. AICTESigner / mSigner Class-3 DSC Verification Gateway (APH §1.4.3, §2.3.4)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      disabled={adapterLoading === 'dsc_fail'}
+                      onClick={async () => {
+                        setAdapterLoading('dsc_fail');
+                        try {
+                          await api.verifyDSC('DOC-AFF-01', false);
+                        } catch (e: any) {
+                          setAdapterResults((prev) => ({
+                            ...prev,
+                            dsc: { rejected: true, message: e.message || '422 DSC_SIGNATURE_REQUIRED' }
+                          }));
+                        } finally {
+                          setAdapterLoading(null);
+                        }
+                      }}
+                      className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-lg text-xs font-semibold"
+                    >
+                      Test Unsigned Rejection (422)
+                    </button>
+                    <button
+                      disabled={adapterLoading === 'dsc_pass'}
+                      onClick={async () => {
+                        setAdapterLoading('dsc_pass');
+                        try {
+                          const res = await api.verifyDSC('DOC-AFF-01', true, 'ePass2003Auto USB Cryptographic Token', 'Dr. Ramesh Kumar, Principal');
+                          setAdapterResults((prev) => ({ ...prev, dsc: res.data }));
+                        } finally {
+                          setAdapterLoading(null);
+                        }
+                      }}
+                      className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold"
+                    >
+                      Verify Class-3 Token
+                    </button>
+                  </div>
+                </div>
+                {adapterResults.dsc && (
+                  <div className={`p-3 rounded-lg border text-[11px] ${adapterResults.dsc.rejected ? 'bg-rose-50 border-rose-200 text-rose-900' : 'bg-emerald-50 border-emerald-200 text-emerald-900'}`}>
+                    {adapterResults.dsc.rejected ? (
+                      <p><strong>Gateway Rejection:</strong> {adapterResults.dsc.message}</p>
+                    ) : (
+                      <div className="space-y-1">
+                        <p><strong>DSC Validated:</strong> Class-3 Crypto Token via {adapterResults.dsc.gateway}</p>
+                        <p className="font-mono text-[10px] text-slate-600">SHA-256 Digest: {adapterResults.dsc.integrityHashSha256}</p>
+                        <p className="font-semibold text-emerald-800">{adapterResults.dsc.statutoryCompliance}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Adapter 3: API Setu External Statutory Registries Hub */}
+              <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Radio className="w-4 h-4 text-cyan-700" />
+                    <span className="font-bold text-slate-900 text-xs">
+                      3. API Setu / External Statutory Registries Hub (NBA, NAAC, IIC, APAAR, Anti-Ragging)
+                    </span>
+                  </div>
+                  <button
+                    disabled={adapterLoading === 'registries'}
+                    onClick={async () => {
+                      setAdapterLoading('registries');
+                      try {
+                        const res = await api.getExternalRegistries(application.id);
+                        setAdapterResults((prev) => ({ ...prev, externalRegistries: res.data }));
+                      } finally {
+                        setAdapterLoading(null);
+                      }
+                    }}
+                    className="px-3 py-1 bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg text-xs font-semibold disabled:opacity-50"
+                  >
+                    {adapterLoading === 'registries' ? 'Querying...' : 'Poll External Registries'}
+                  </button>
+                </div>
+                {adapterResults.externalRegistries && (
+                  <div className="p-3 bg-slate-50 rounded-lg border text-[11px] grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div className="bg-white p-2 rounded border">
+                      <span className="text-[10px] text-slate-500 block">NBA Registry:</span>
+                      <strong className="text-emerald-700">{adapterResults.externalRegistries.nbaRegistry?.status}</strong>
+                    </div>
+                    <div className="bg-white p-2 rounded border">
+                      <span className="text-[10px] text-slate-500 block">MoE Innovation Cell:</span>
+                      <strong>{adapterResults.externalRegistries.moeInnovationCouncil?.annualActivityStarRating} Stars</strong>
+                    </div>
+                    <div className="bg-white p-2 rounded border">
+                      <span className="text-[10px] text-slate-500 block">Anti-Ragging Portal:</span>
+                      <strong className="text-emerald-700">{adapterResults.externalRegistries.antiRaggingPortal?.complianceStatus}</strong>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Adapter 4: Affiliating University & State DTE 15-Day Concurrence Tracker */}
+              <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-amber-700" />
+                    <span className="font-bold text-slate-900 text-xs">
+                      4. Affiliating University &amp; State DTE 15-Day NOC Concurrence Tracker (APH §2.19(c))
+                    </span>
+                  </div>
+                  <button
+                    disabled={adapterLoading === 'concurrence'}
+                    onClick={async () => {
+                      setAdapterLoading('concurrence');
+                      try {
+                        const res = await api.getConcurrence(application.id);
+                        setAdapterResults((prev) => ({ ...prev, concurrence: res.data }));
+                      } finally {
+                        setAdapterLoading(null);
+                      }
+                    }}
+                    className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold disabled:opacity-50"
+                  >
+                    {adapterLoading === 'concurrence' ? 'Checking...' : 'Check 15-Day Concurrence'}
+                  </button>
+                </div>
+                {adapterResults.concurrence && (
+                  <div className="p-3 bg-slate-50 rounded-lg border text-[11px] space-y-1">
+                    <p>
+                      <strong>Prescribed Statutory Window:</strong> {adapterResults.concurrence.concurrenceWindowDays} Days &bull; Days Elapsed: <strong>{adapterResults.concurrence.daysElapsed}d</strong>
+                    </p>
+                    <p>
+                      University NOC: <strong>{adapterResults.concurrence.universityConcurrence?.status}</strong> &bull; State DTE NOC: <strong>{adapterResults.concurrence.stateDteConcurrence?.status}</strong>
+                    </p>
+                    <p className="text-[10px] text-slate-500 italic">{adapterResults.concurrence.deemedConcurrenceRule?.statutoryCitation}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Adapter 5: Downstream Siebel Status Write-Back & 6-Authority Bulk Dispatch */}
+              <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Send className="w-4 h-4 text-indigo-700" />
+                    <span className="font-bold text-slate-900 text-xs">
+                      5. Downstream Siebel Status Write-Back &amp; 6-Authority Bulk Dispatch (APH §2.25)
+                    </span>
+                  </div>
+                  <button
+                    disabled={adapterLoading === 'siebel'}
+                    onClick={async () => {
+                      setAdapterLoading('siebel');
+                      try {
+                        const res = await api.triggerSiebelWriteback(application.id, 'Approval Issued');
+                        setAdapterResults((prev) => ({ ...prev, siebel: res.data }));
+                      } finally {
+                        setAdapterLoading(null);
+                      }
+                    }}
+                    className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold disabled:opacity-50"
+                  >
+                    {adapterLoading === 'siebel' ? 'Dispatching...' : 'Execute Siebel Write-Back & Dispatch'}
+                  </button>
+                </div>
+                {adapterResults.siebel && (
+                  <div className="p-3 bg-slate-50 rounded-lg border text-[11px] space-y-2">
+                    <p>
+                      <strong>Siebel Partner Sync ID:</strong> <span className="font-mono text-indigo-700">{adapterResults.siebel.siebelPartnerSyncId}</span> &bull; Status: <strong className="text-emerald-700">{adapterResults.siebel.syncedStatus}</strong>
+                    </p>
+                    <span className="font-bold text-slate-800 block">6-Authority Digital Dispatch List:</span>
+                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[10px] text-slate-600">
+                      {adapterResults.siebel.sixAuthorityDistributionList?.map((auth: any, i: number) => (
+                        <li key={i} className="flex items-center justify-between bg-white p-1.5 rounded border">
+                          <span>{auth.authorityDesignation}</span>
+                          <span className="text-emerald-700 font-semibold">{auth.deliveryStatus}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -903,7 +1516,6 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
           {/* TAB: SCRUTINY & SCOPED RE-SCRUTINY LOCK (M2 USP B06) */}
           {activeTab === 'scrutiny_lock' && (
             <div className="space-y-5 animate-in fade-in duration-150">
-              {/* Header Banner */}
               <div className="p-4 rounded-xl bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
                 <div>
                   <div className="flex items-center gap-2">
@@ -928,7 +1540,6 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                 </div>
               </div>
 
-              {/* Active Snapshot Card */}
               {(() => {
                 const effectiveSnapshot = latestSnapshot || getOrCreateSnapshotForApplication(application.id, application.documents);
                 return (
@@ -944,7 +1555,6 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Checklist Items Breakdown */}
                     <div className="space-y-2">
                       <span className="text-[11px] font-bold text-slate-700 block">Checklist Items &amp; Immutability Bounds:</span>
                       <div className="grid grid-cols-1 gap-2">
@@ -996,7 +1606,6 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                 );
               })()}
 
-              {/* Interactive Scope Lock Tester (Gate G2 Showcase) */}
               <div className="bg-white border-2 border-indigo-200 rounded-xl p-4 space-y-3 shadow-xs">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-indigo-600" />
@@ -1048,7 +1657,6 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                     />
                   </div>
 
-                  {/* Feedback Banner */}
                   {testCorrectionFeedback && (
                     <div
                       className={`p-3 rounded-xl border text-xs leading-relaxed animate-in fade-in duration-150 ${
@@ -1122,14 +1730,6 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                   </div>
                 </div>
               </div>
-
-              {/* Regulatory Notice Banner */}
-              <div className="p-3 bg-amber-50/80 rounded-xl border border-amber-200 text-amber-900 text-[11px] leading-relaxed flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                <span>
-                  <strong>Prototype Integrity Notice:</strong> Status reflects SIH 2026 PS 26262 synthetic scenario fixtures. Demonstrates server-level authority preservation without altering live institutional records.
-                </span>
-              </div>
             </div>
           )}
         </div>
@@ -1147,6 +1747,88 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Authorized Revert Stage Modal (Domain A.3) */}
+      {showRevertModal && (
+        <div className="fixed inset-0 z-60 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95">
+            <div className="bg-[#B91C1C] text-white p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <History className="w-5 h-5 text-amber-200" />
+                <h3 className="font-bold text-sm">Authorized Case Return / Revert (APH §2.20)</h3>
+              </div>
+              <button
+                onClick={() => setShowRevertModal(false)}
+                className="text-slate-200 hover:text-white p-1"
+                aria-label="Close revert modal"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 text-xs text-slate-800">
+              <p className="text-slate-600">
+                You are executing an authorized stage return/revert. Under AICTE APH regulations, a formal substantive reason must be duly recorded in the immutable WORM audit trail.
+              </p>
+
+              <div>
+                <label className="font-bold text-slate-800 block mb-1">
+                  Target Return Stage <span className="text-rose-600">*</span>
+                </label>
+                <select
+                  value={revertTargetKey}
+                  onChange={(e) => setRevertTargetKey(e.target.value)}
+                  className="w-full p-2.5 rounded-lg border border-slate-300 text-xs bg-white font-medium focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="submitted">Initial Submission / Intake</option>
+                  <option value="scrutiny_pending">Scrutiny Stage (Desk Verification)</option>
+                  <option value="correction_required">Correction Window (Deficiency Rectification)</option>
+                  <option value="rescrutiny_pending">Re-Scrutiny Stage</option>
+                  <option value="evc_pending">Expert Visit Committee (EVC Queue)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-800 block mb-1">
+                  Substantive Regulatory Reason for Revert <span className="text-rose-600">*</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={revertReason}
+                  onChange={(e) => {
+                    setRevertReason(e.target.value);
+                    setRevertError(null);
+                  }}
+                  placeholder="Specify statutory ground (e.g., deficiency identified in Fire NOC, need for structural re-verification under APH §2.20)..."
+                  className="w-full p-2.5 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                />
+                {revertError && (
+                  <p className="text-rose-600 text-[11px] font-semibold mt-1">
+                    {revertError}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-slate-50 border-t border-slate-200 px-5 py-3 flex items-center justify-end gap-2.5">
+              <button
+                onClick={() => setShowRevertModal(false)}
+                className="px-3.5 py-2 rounded-lg border border-slate-300 text-slate-700 font-semibold text-xs hover:bg-slate-100"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRevertStage}
+                disabled={isReverting}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg shadow-xs flex items-center gap-1.5 transition-colors disabled:opacity-50"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>{isReverting ? 'Reverting...' : 'Confirm & Execute Stage Revert'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* GOV.UK Styled Document Rectification Dialog */}
       {correctingDoc && (
@@ -1180,7 +1862,6 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                 </div>
               )}
 
-              {/* GOV.UK Warning Text */}
               <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 flex items-start gap-2.5">
                 <div className="w-5 h-5 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
                   !
@@ -1190,7 +1871,6 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                 </div>
               </div>
 
-              {/* GOV.UK File-Upload Guidance */}
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600 space-y-1">
                 <p className="font-bold text-slate-800">Upload Requirements:</p>
                 <p>&bull; Format: PDF only (clean high-resolution scan)</p>

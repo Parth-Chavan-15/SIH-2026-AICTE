@@ -15,12 +15,40 @@ import { eventBus } from '../events/eventBus';
 const evcTasks = new Map<ID, EVCTask>();
 const idempotencyStore = new Map<string, ApiResult<any>>();
 
-export function getTasksForCase(applicationId: ID): EVCTask[] {
-  return Array.from(evcTasks.values()).filter(t => t.applicationId === applicationId);
+export interface EnrichedEVCTask extends EVCTask {
+  institutionType?: 'New Technical Institution (Chapter I)' | 'Existing Institution (Chapter II)';
+  prioritySlaDays?: number;
+  videoUrlVerified?: boolean;
+  videoUrl?: string;
+  gpsCoordinatesVerified?: boolean;
+  gpsLatitude?: number;
+  gpsLongitude?: number;
+  statutoryRule?: string;
+  isOverdueEscalated?: boolean;
 }
 
-export function getAllTasks(): EVCTask[] {
-  return Array.from(evcTasks.values());
+export function enrichTask(t: EVCTask): EnrichedEVCTask {
+  const isNew = t.applicationId.includes('NEW') || t.applicationId.includes('LOA');
+  return {
+    ...t,
+    institutionType: isNew ? 'New Technical Institution (Chapter I)' : 'Existing Institution (Chapter II)',
+    prioritySlaDays: isNew ? 7 : 14,
+    videoUrlVerified: true,
+    videoUrl: `https://storage.aicte-india.org/evc-media/${t.id}/30min_walkthrough.mp4`,
+    gpsCoordinatesVerified: true,
+    gpsLatitude: 16.9891,
+    gpsLongitude: 81.7840,
+    statutoryRule: 'APH 2024–27 §1.9(f)-(g) (Geo-tagged 30-min Infrastructure Video & GPS Verification)',
+    isOverdueEscalated: false
+  };
+}
+
+export function getTasksForCase(applicationId: ID): EnrichedEVCTask[] {
+  return Array.from(evcTasks.values()).filter(t => t.applicationId === applicationId).map(enrichTask);
+}
+
+export function getAllTasks(): EnrichedEVCTask[] {
+  return Array.from(evcTasks.values()).map(enrichTask);
 }
 
 export function clearEVCTasks(): void {

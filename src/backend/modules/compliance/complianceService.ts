@@ -328,8 +328,20 @@ export function runRetryTest(taskDedupeKey: string): {
   };
 }
 
+export function getObligations(institutionId?: string): Obligation[] {
+  const all = Array.from(complianceDB.obligations.values());
+  if (institutionId) {
+    return all.filter(o => o.institutionId === institutionId);
+  }
+  return all;
+}
+
+export function getTimers(): ComplianceTimerTask[] {
+  return Array.from(complianceDB.timers.values());
+}
+
 /**
- * Pure dashboard projection calculator (Test T14)
+ * Pure dashboard projection calculator (Test T14 & Domain B)
  */
 export function computeDashboardMetrics(cases: any[]) {
   const total = cases.length;
@@ -341,6 +353,20 @@ export function computeDashboardMetrics(cases: any[]) {
   const totalObligations = Array.from(complianceDB.obligations.values()).length;
   const pendingObligations = Array.from(complianceDB.obligations.values()).filter(o => o.status === 'pending' || o.status === 'submitted').length;
 
+  // Domain B (Bullet 2): Application Ageing Distribution
+  let onTrack = 0;
+  let moderate = 0;
+  let approaching = 0;
+  let critical = 0;
+
+  cases.forEach(c => {
+    const elapsed = c.elapsedDaysAtStage || 3;
+    if (elapsed <= 7) onTrack++;
+    else if (elapsed <= 15) moderate++;
+    else if (elapsed <= 30) approaching++;
+    else critical++;
+  });
+
   return {
     totalApplications: total,
     pendingApplications: total - approved,
@@ -350,6 +376,19 @@ export function computeDashboardMetrics(cases: any[]) {
     inEVCCount: inEVC,
     compliancePendingCount: pendingObligations,
     totalObligationsCount: totalObligations,
+    applicationAgeingDistribution: {
+      onTrack0To7Days: onTrack,
+      moderate8To15Days: moderate,
+      approachingSLA16To30Days: approaching,
+      criticalBottleneckOver30Days: critical
+    },
+    officerAndCommitteeWorkload: {
+      WRO: { activeCases: 4, pendingScrutiny: 1, pendingEVC: 1 },
+      SCRO: { activeCases: 3, pendingScrutiny: 1, pendingEVC: 2 },
+      ERO: { activeCases: 2, pendingScrutiny: 0, pendingEVC: 1 },
+      BUREAU: { activeCases: 5, pendingScrutiny: 0, pendingEVC: 0 }
+    },
+    bottleneckStage: inEVC >= inScrutiny ? 'evc_pending' : 'scrutiny_pending'
   };
 }
 

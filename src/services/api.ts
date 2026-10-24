@@ -738,6 +738,65 @@ class APIService {
       body: JSON.stringify(payload)
     });
   }
+
+  // --- Domain A (Bullet 3): Authorized Stage Return/Revert ---
+  public async revertApplication(id: string, targetStage: string, reason: string) {
+    return requestJson<any>(`/applications/${encodeURIComponent(id)}/revert`, {
+      method: 'POST',
+      body: JSON.stringify({ targetStage, reason })
+    });
+  }
+
+  // --- Domain A (Bullet 4): Electronic Case Summary & Statutory Notices ---
+  public async getCaseSummary(id: string) {
+    return requestJson<any>(`/applications/${encodeURIComponent(id)}/case-summary`);
+  }
+
+  // --- Domain F (Bullet 3): Consolidated 6-Category Reporting Hub ---
+  public async getConsolidatedReports() {
+    return requestJson<any>('/reports/consolidated');
+  }
+
+  // --- Domain F (Bullet 4): Authorized Case & Obligation Closure ---
+  public async closeCompliance(id: string) {
+    return requestJson<any>(`/applications/${encodeURIComponent(id)}/close-compliance`, {
+      method: 'POST'
+    });
+  }
+
+  // --- Adapter 1: Committee Selection Sync ---
+  public async syncCommittee(caseId: string, committeeType: string = 'EVC') {
+    return requestJson<any>(`/adapter/committee-sync/${encodeURIComponent(caseId)}`, {
+      method: 'POST',
+      body: JSON.stringify({ committeeType })
+    });
+  }
+
+  // --- Adapter 2: AICTESigner / mSigner Class-3 DSC Verification ---
+  public async verifyDSC(documentId: string, dscSigned: boolean, tokenType?: string, signatoryName?: string) {
+    return requestJson<any>('/adapter/dsc-verify', {
+      method: 'POST',
+      body: JSON.stringify({ documentId, dscSigned, tokenType, signatoryName })
+    });
+  }
+
+  // --- Adapter 3: API Setu External Statutory Registries Hub ---
+  public async getExternalRegistries(caseId: string) {
+    return requestJson<any>(`/adapter/external-registries/${encodeURIComponent(caseId)}`);
+  }
+
+  // --- Adapter 4: Affiliating University & State DTE 15-Day NOC Concurrence Tracker ---
+  public async getConcurrence(caseId: string) {
+    return requestJson<any>(`/adapter/concurrence/${encodeURIComponent(caseId)}`);
+  }
+
+  // --- Adapter 5: Downstream Siebel Status Write-Back & 6-Authority Bulk Dispatch ---
+  public async triggerSiebelWriteback(caseId: string, currentStage?: string) {
+    return requestJson<any>(`/adapter/siebel-writeback/${encodeURIComponent(caseId)}`, {
+      method: 'POST',
+      body: JSON.stringify({ currentStage })
+    });
+  }
 }
 
 export const api = new APIService();

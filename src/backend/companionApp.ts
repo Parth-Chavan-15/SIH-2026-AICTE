@@ -11,6 +11,7 @@ import { createScrutinyRouter } from './modules/scrutiny/scrutinyRoutes';
 import { createEVCRouter } from './modules/evc/evcRoutes';
 import { createStorageCorePort } from './modules/scrutiny/corePortAdapter';
 import { createAdapterRouter } from './routes/adapterRoutes';
+import { createWorkflowRouter } from './routes/workflowRoutes';
 import { createArtifactRouter } from './routes/artifactRoutes';
 import { getIdentity, type Identity } from './security/identity';
 import { authenticate } from './security/authorization';
@@ -72,8 +73,11 @@ export function createCompanionApp(options?: {
     return authMiddleware(req, res, next);
   });
 
-  // Upstream Adapter Bridge (Companion Ingestion)
+  // Upstream Adapter Bridge (Companion Ingestion & 5 Ecosystem Adapters)
   app.use('/api/v1', createAdapterRouter(storage));
+
+  // Companion Workflow & Reporting Engine (Revert, Case Summary, 6-Category Reports, Closure)
+  app.use('/api/v1', createWorkflowRouter(storage));
 
   // Member 2 Scrutiny & EVC Routes
   app.use('/api/v1', createScrutinyRouter(corePort));

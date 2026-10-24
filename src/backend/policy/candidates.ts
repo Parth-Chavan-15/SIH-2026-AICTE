@@ -263,11 +263,107 @@ export const POL_2027_DRAFT_AI_EXPANSION: PolicyRevision = {
   },
 };
 
+// Route 5: Only EVC -> Decision Gate (Restoration / Break-in-EoA / Shifting of Site per APH §2.16.1 & §2.17(e))
+export const POL_2026_ONLY_EVC_RESTORATION: PolicyRevision = {
+  id: 'POL-2026-ONLY-EVC-RESTORATION',
+  policyKey: 'POL-2026-ONLY-EVC-RESTORATION',
+  revision: 1,
+  category: 'restoration_or_shifting',
+  session: '2026-27',
+  status: 'approved',
+  effectiveFrom: '2026-01-01T00:00:00.000Z',
+  source: {
+    documentId: 'APH-2024-27',
+    title: 'AICTE Approval Process Handbook 2024-2027',
+    url: 'https://aicte.gov.in/downloads/aph/APH_2024-27_Handbook.pdf',
+    location: 'Chapter II, §§2.16.1(c)/(d), §2.17(e) & Table 2.3 (p. 30)',
+    sourceRevision: 'APH-2024-27-MAIN',
+    reviewState: 'reviewed',
+  },
+  conditions: {
+    format: 'm1-routing-v1',
+    programs: ['engineering'],
+    sessionMode: 'regular',
+    predicates: [
+      {
+        fact: 'siteVerificationRequired',
+        operator: 'eq',
+        value: true,
+        unit: 'none',
+        ambiguousValues: [],
+        explanation: 'Break-in-EoA restoration or campus site shifting mandates on-site physical infrastructure inspection by EVC only without prior desk scrutiny under APH §2.16.1(c) and §2.17(e).',
+      },
+    ],
+    stages: ['submitted', 'evc_pending', 'decision_pending'],
+    evcReason: 'On-site EVC inspection mandated to verify completed physical infrastructure, laboratories, and land stability at the designated site.',
+    requiresHearing: false,
+    unresolved: [],
+    verification: {
+      sourceRevision: 'APH-2024-27-MAIN',
+      sourceDigest: 'e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4',
+      authoredBy: 'usr-admin',
+      approvedBy: 'usr-bureau-hq',
+      verifiedAt: '2026-01-01T00:00:00.000Z',
+      applicabilityConfirmed: true,
+      precedenceConfirmed: true,
+    },
+  },
+};
+
+// Route 6: Scrutiny / EVC + SAC/SHC -> Re-EVC -> Decision Gate (Deficiency Hearing & Standing Appellate Committee Loop per GIITS 2-SOC1776333767 & APH §1.11 / §2.23.3 / §2.24)
+export const POL_2026_EVC_SAC_SHC_APPEAL: PolicyRevision = {
+  id: 'POL-2026-EVC-SAC-SHC-APPEAL',
+  policyKey: 'POL-2026-EVC-SAC-SHC-APPEAL',
+  revision: 1,
+  category: 'deficiency_appeal',
+  session: '2026-27',
+  status: 'approved',
+  effectiveFrom: '2026-01-01T00:00:00.000Z',
+  source: {
+    documentId: 'G02-ADDENDUM-2026-27',
+    title: 'AICTE Addendum 2026-27 Updated & APH Handbook',
+    url: 'https://aicte.gov.in/downloads/aph/Final%20Addendum%202026-27_Updated.pdf',
+    location: '2026-27 Addendum G02 p. 11 §2.23.3 & APH §§1.11, 2.24 & GIITS Case 2-SOC1776333767',
+    sourceRevision: 'AICTE-APH-2026-27-ERRATA-V1',
+    reviewState: 'reviewed',
+  },
+  conditions: {
+    format: 'm1-routing-v1',
+    programs: ['engineering'],
+    sessionMode: 'regular',
+    predicates: [
+      {
+        fact: 'standingAppealsHearingRequested',
+        operator: 'eq',
+        value: true,
+        unit: 'none',
+        ambiguousValues: [],
+        explanation: 'Contested EVC deficiencies referred to Standing Appellate Committee (SAC) / Standing Hearing Committee (SHC) for personal hearing and Re-EVC ordering under APH §1.11 & 2026-27 Addendum G02 p. 11 §2.23.3.',
+      },
+    ],
+    stages: ['submitted', 'scrutiny_pending', 'evc_pending', 'rescrutiny_pending', 'decision_pending'],
+    evcReason: 'Re-EVC ordered by SAC/SHC committee following oral hearing and compliance affidavit verification.',
+    requiresHearing: false,
+    unresolved: [],
+    verification: {
+      sourceRevision: 'AICTE-APH-2026-27-ERRATA-V1',
+      sourceDigest: 'f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5',
+      authoredBy: 'usr-admin',
+      approvedBy: 'usr-bureau-hq',
+      verifiedAt: '2026-01-01T00:00:00.000Z',
+      applicabilityConfirmed: true,
+      precedenceConfirmed: true,
+    },
+  },
+};
+
 export const APPROVED_2026_POLICIES: PolicyRevision[] = [
   POL_2026_INTAKE_NON_NBA,
   POL_2026_INTAKE_NBA,
   POL_2026_EOA_SELF_DISCLOSURE,
   POL_2026_SCRUTINY_ONLY_MOD,
+  POL_2026_ONLY_EVC_RESTORATION,
+  POL_2026_EVC_SAC_SHC_APPEAL,
   POL_2027_DRAFT_AI_EXPANSION,
 ];
 
