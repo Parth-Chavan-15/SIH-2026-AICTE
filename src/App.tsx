@@ -22,6 +22,7 @@ import { NotificationsView } from './features/notifications/NotificationsView';
 import { ReportsView } from './features/reports/ReportsView';
 import { AuditView } from './features/audit/AuditView';
 import { ConfigRulesView } from './features/admin/ConfigRulesView';
+import { ScrutinyEvaluationView } from './features/scrutiny/ScrutinyEvaluationView';
 
 import { Search, X } from 'lucide-react';
 
@@ -137,10 +138,16 @@ const MainLayout: React.FC = () => {
               />
             )}
             {currentTab === 'scrutiny-eval' && (
-              <WorkflowView onSelectApplication={(id) => setSelectedAppId(id)} />
+              <ScrutinyEvaluationView
+                mode="initial"
+                onSelectApplication={(id) => setSelectedAppId(id)}
+              />
             )}
             {currentTab === 'scrutiny-rescrutiny' && (
-              <WorkflowView onSelectApplication={(id) => setSelectedAppId(id)} />
+              <ScrutinyEvaluationView
+                mode="rescrutiny"
+                onSelectApplication={(id) => setSelectedAppId(id)}
+              />
             )}
             {currentTab === 'scrutiny-committee' && <GovernmentEndpointsView />}
 

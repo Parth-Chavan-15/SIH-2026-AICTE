@@ -223,6 +223,54 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
 
   const isInstitution = role === 'institution';
 
+  // Dynamic statutory vault artifact mapped to actual case & processing stage
+  const isPendingScrutiny = application.currentStage === 'Application Submitted' || application.currentStage === 'Draft';
+  const isGIITS = application.id.includes('GIITS') || application.institutionCode === 'INST-NORTH';
+  const isCOEP = application.id.includes('COEP') || application.institutionCode === 'INST-SOUTH';
+  const isPDIMTR = application.id.includes('PDIMTR') || application.institutionCode === 'INST-WEST';
+
+  const vaultArtifact = isPendingScrutiny
+    ? {
+        key: 'nsws-guide',
+        label: 'NSWS Ingestion Receipt',
+        title: 'Stream official NSWS application hand-off & registration receipt from vault'
+      }
+    : isGIITS
+    ? {
+        key: 'scrutiny-giits-2026',
+        label: 'GIITS Scrutiny Report (PDF)',
+        title: 'Stream real-world 2026-27 AICTE Scrutiny Evaluation Report (GIITS Visakhapatnam)'
+      }
+    : isCOEP
+    ? {
+        key: 'mcet-scrutiny',
+        label: 'Intake Evaluation Table (PDF)',
+        title: 'Stream real-world AICTE Scrutiny Evaluation Table (MCET Report)'
+      }
+    : isPDIMTR
+    ? (application.currentStage === 'Approval Issued'
+        ? {
+            key: 'conditional-eoa',
+            label: 'Conditional EoA Order (PDF)',
+            title: 'Stream real-world AICTE Conditional EoA Letter with 6-month compliance clause'
+          }
+        : {
+            key: 'deficiency-wro',
+            label: 'WRO Deficiency Notice (PDF)',
+            title: 'Stream real-world AICTE Western Region Deficiency Report'
+          })
+    : (application.currentStage === 'EVC Scheduled' || application.currentStage === 'EVC Inspection Completed')
+    ? {
+        key: 'evc-report-real',
+        label: 'EVC Inspection Report (PDF)',
+        title: 'Stream real-world AICTE Expert Visit Committee (EVC) Report'
+      }
+    : {
+        key: 'rescrutiny-report',
+        label: 'Scrutiny Report (PDF)',
+        title: 'Stream official AICTE Scrutiny Evaluation Report'
+      };
+
   const tabs = isInstitution
     ? [
         { id: 'overview', label: '📋 Application Status & Details' },
@@ -313,25 +361,38 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
               </button>
             )}
 
+            {/* Context-Aware Official Vault Artifact */}
             <a
-              href={`/api/v1/cases/${application.id}/official-artifacts/scrutiny-giits-2026`}
+              href={`/api/v1/cases/${application.id}/official-artifacts/${vaultArtifact.key}`}
               target="_blank"
               rel="noreferrer"
               className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 transition-colors shadow-2xs"
-              title="Stream official 2026-27 AICTE Scrutiny Evaluation Report from vault"
+              title={vaultArtifact.title}
             >
               <ExternalLink className="w-3.5 h-3.5 text-blue-600" />
-              <span>Vault Scrutiny PDF</span>
+              <span>{vaultArtifact.label}</span>
             </a>
-            <a
-              href={`/api/v1/cases/${application.id}/export-proforma`}
-              download={`AICTE_Proforma_${application.applicationNumber}.txt`}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors shadow-2xs"
-              title="Export formatted AICTE 2026-27 Scrutiny Proforma"
-            >
-              <FileCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Export Proforma</span>
-            </a>
+
+            {/* Context-Aware Scrutiny Evaluation Proforma */}
+            {isPendingScrutiny ? (
+              <span
+                className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-500 border border-slate-200 cursor-help"
+                title="Scrutiny Evaluation Proforma will be generated dynamically once the Desk Scrutiny Committee signs Snapshot v1."
+              >
+                <Clock className="w-3.5 h-3.5 text-slate-400" />
+                <span>Proforma: Pending Review</span>
+              </span>
+            ) : (
+              <a
+                href={`/api/v1/cases/${application.id}/export-proforma`}
+                download={`AICTE_Proforma_${application.applicationNumber}.txt`}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors shadow-2xs"
+                title="Export digitally stamped AICTE 2026-27 Scrutiny Evaluation Proforma"
+              >
+                <FileCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Export Signed Proforma</span>
+              </a>
+            )}
             <button
               onClick={() => setShowWhyRouteDrawer(!showWhyRouteDrawer)}
               className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors shadow-2xs"

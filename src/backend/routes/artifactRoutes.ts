@@ -130,7 +130,70 @@ export function createArtifactRouter(storage: CaseStorage, vaultDir?: string): R
         });
       }
 
-      const meta = app.facts || {};
+      const meta: any = app.facts || {};
+      const isGIITS = app.id.includes('GIITS') || app.institutionId === 'INST-NORTH';
+      const isCOEP = app.id.includes('COEP') || app.institutionId === 'INST-SOUTH';
+      const isPDIMTR = app.id.includes('PDIMTR') || app.institutionId === 'INST-WEST';
+      const isPending = app.state === 'submitted';
+
+      let complianceAuditSection = '';
+      if (isPending) {
+        complianceAuditSection = [
+          'Item C3 : Land Conversion / Registered Title Deed (30-Year Lease Minimum)',
+          '          Status: PENDING SCRUTINY COMMITTEE VERIFICATION',
+          'Item C4 : Building Occupancy & Municipal Approved Structural Stability Certificate',
+          '          Status: PENDING SCRUTINY COMMITTEE VERIFICATION',
+          'Item D1 : Faculty Cadre Ratio (1:2:6 Cadre & 1:20 Teacher-Student Ratio)',
+          '          Status: PENDING SCRUTINY COMMITTEE VERIFICATION',
+          'Item D2 : Fire Safety NOC (1-Year Validity with 60-Day Advance Renewal Rule)',
+          '          Status: PENDING SCRUTINY COMMITTEE VERIFICATION',
+          '',
+          'Committee Action: Case is in Initial Scrutiny Queue awaiting Expert Declaration and Snapshot v1 sign-off.'
+        ].join('\n');
+      } else if (isCOEP) {
+        complianceAuditSection = [
+          'Item C3 : Land Conversion / Registered Title Deed (30-Year Lease Minimum)',
+          '          Status: ACCEPTED (Clear title verified by Legal Officer)',
+          'Item C4 : Building Occupancy & Municipal Approved Structural Stability Certificate',
+          '          Status: ACCEPTED (Registered Architect Endorsement verified)',
+          'Item D1 : Faculty Cadre Ratio (1:2:6 Cadre & 1:20 Teacher-Student Ratio)',
+          '          Status: ACCEPTED (NBA Accredited Tier-1 Cadre Ratios verified)',
+          'Item D2 : Fire Safety NOC (1-Year Validity with 60-Day Advance Renewal Rule)',
+          '          Status: ACCEPTED (Valid through 2027-10-24)',
+          '',
+          'Committee Finding: ALL PARAMETERS ACCEPTED. NBA Accreditation Verified.',
+          'Statutory Action  : EVC EXEMPTED / BYPASSED per APH 2026-27 Errata G02 p. 42.'
+        ].join('\n');
+      } else if (isPDIMTR) {
+        complianceAuditSection = [
+          'Item C3 : Land Conversion / Registered Title Deed (30-Year Lease Minimum)',
+          '          Status: ACCEPTED WITH STATUTORY CONDITION (Lease expires 2026-11-05; 30-Day Renewal Trigger Active)',
+          'Item C4 : Building Occupancy & Municipal Approved Structural Stability Certificate',
+          '          Status: ACCEPTED (Occupancy verified)',
+          'Item D1 : Faculty Cadre Ratio (1:2:6 Cadre & 1:20 Teacher-Student Ratio)',
+          '          Status: CONDITIONAL ACCEPTANCE (6-Month Rectification Undertaking per UBDTCE clause)',
+          'Item D2 : Fire Safety NOC (1-Year Validity with 60-Day Advance Renewal Rule)',
+          '          Status: ACCEPTED WITH STATUTORY CONDITION (Expires 2026-11-24; Advance Renewal Active)',
+          '',
+          'Committee Finding: Post-Approval Statutory Undertakings Spawned.',
+          'Statutory Action  : CONDITIONAL EXTENSION OF APPROVAL (EoA) ISSUED WITH TIME-BOUND UNDERTAKINGS.'
+        ].join('\n');
+      } else {
+        complianceAuditSection = [
+          'Item C3 : Land Conversion / Registered Title Deed (30-Year Lease Minimum)',
+          '          Status: ACCEPTED & IMMUTABLE (Clear title verified by Legal Officer)',
+          'Item C4 : Building Occupancy & Municipal Approved Structural Stability Certificate',
+          '          Status: ACCEPTED & IMMUTABLE (Registered Architect Endorsement verified)',
+          'Item D1 : Faculty Cadre Ratio (1:2:6 Cadre & 1:20 Teacher-Student Ratio)',
+          '          Status: DEFICIENT (2 Professor cadre deficit in CS & IT departments per GIITS 2-SOC1770029225)',
+          'Item D2 : Fire Safety NOC (1-Year Validity with 60-Day Advance Renewal Rule)',
+          '          Status: DEFICIENT (NOC expires in 14 days; renewal application submitted)',
+          '',
+          'Committee Finding: DEFICIENCIES COMMUNICATED UNDER APH §1.8(g) & ANNEXURE 7.',
+          'Scope Lock Rule   : Only Items D1 & D2 editable in Re-Scrutiny. Items C3 & C4 are LOCKED IMMUTABLE.'
+        ].join('\n');
+      }
+
       const proformaText = [
         '========================================================================================',
         '                      ALL INDIA COUNCIL FOR TECHNICAL EDUCATION                         ',
@@ -159,19 +222,12 @@ export function createArtifactRouter(storage: CaseStorage, vaultDir?: string): R
         '2023-2024  | 480               | 465              | 96.8%       | NIL                   ',
         '2024-2025  | 480               | 472              | 98.3%       | NIL                   ',
         '2025-2026  | 480               | 475              | 98.9%       | Professor (1 Deficit) ',
-        '2026-2027  | 540 (Proposed)    | PENDING APPROVAL | --          | Scrutiny Evaluated    ',
+        `2026-2027  | ${meta.proposedIntake || 540} (Proposed)    | PENDING APPROVAL | --          | Scrutiny Evaluated    `,
         '',
         '----------------------------------------------------------------------------------------',
         '                MANDATORY REGULATORY COMPLIANCES & DEFICIENCY AUDIT                      ',
         '----------------------------------------------------------------------------------------',
-        'Item C3 : Land Conversion / Registered Title Deed (30-Year Lease Minimum)               ',
-        '          Status: ACCEPTED (Clear title verified by Legal Officer)                       ',
-        'Item C4 : Building Occupancy & Municipal Approved Structural Stability Certificate      ',
-        '          Status: ACCEPTED (Registered Architect Endorsement verified)                  ',
-        'Item D1 : Faculty Cadre Ratio (1:2:6 Cadre & 1:20 Teacher-Student Ratio)                ',
-        '          Status: DEFICIENT (2 Professor cadre deficit in CS & IT departments)          ',
-        'Item D2 : Fire Safety NOC (1-Year Validity with 60-Day Advance Renewal Rule)            ',
-        '          Status: DEFICIENT (NOC expires in 14 days; renewal application submitted)    ',
+        complianceAuditSection,
         '',
         '----------------------------------------------------------------------------------------',
         '                      WORM AUDIT VERIFICATION & IMMUTABILITY TRAIL                      ',
