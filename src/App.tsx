@@ -116,10 +116,6 @@ const MainLayout: React.FC = () => {
         {/* Content Area */}
         <main className="flex-1 overflow-y-auto flex flex-col" style={{ background: '#f0f2f7' }}>
           <div className="p-4 sm:p-8 flex-1 max-w-7xl w-full mx-auto">
-            {/* Global Flagship Demo Studio (Accessible across all roles) */}
-            {currentTab === 'studio' && <RegulatoryStudioView />}
-            {currentTab === 'endpoints' && <GovernmentEndpointsView />}
-
             {/* Role 1: Institution (Applicant) Pages */}
             {currentTab === 'inst-apps' && (
               <ApplicationsListView
@@ -163,6 +159,9 @@ const MainLayout: React.FC = () => {
             {/* Role 4: Regional / Bureau Officer Pages */}
             {currentTab === 'ro-pendency' && (
               <PendencyView onSelectApplication={(id) => setSelectedAppId(id)} />
+            )}
+            {currentTab === 'ro-schedule' && (
+              <EVCView onSelectApplication={(id) => setSelectedAppId(id)} />
             )}
             {currentTab === 'ro-obligations' && <ComplianceView />}
             {currentTab === 'ro-verify' && <DocumentExpiryView />}

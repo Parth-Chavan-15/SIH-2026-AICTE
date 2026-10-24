@@ -174,17 +174,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           )}
         </div>
 
-        {/* Right: Operational Tools, 8-Stage Studio, Clock Pill & Clean Sign Out */}
+        {/* Right: Operational Tools, Clock Pill & Clean Sign Out */}
         <div className="flex items-center gap-2.5">
-          {/* Flagship Demonstration Shortcut Button */}
-          <button
-            onClick={() => onNavigateTab?.('studio')}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-600/30 hover:bg-blue-600/50 text-blue-200 text-xs font-semibold border border-blue-400/30 transition-colors"
-            title="Open Master 8-Stage Demonstration Studio"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span className="hidden sm:inline">8-Stage Flow</span>
-          </button>
 
           {/* Compact Regulatory Timers Simulation Dropdown */}
           <div className="relative">
