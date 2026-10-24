@@ -8,7 +8,6 @@ import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import mongoose from 'mongoose';
-import swaggerUi from 'swagger-ui-express';
 
 dotenv.config();
 
@@ -48,11 +47,29 @@ app.use((req, res, next) => {
   next();
 });
 
-// No implicit database target, auto-seed, collection creation or index migration.
-// Configure only an approved database; readiness stays 503 until prerequisites exist.
+// Database & Companion Layer Selection
+// Default to authoritative in-memory Companion Layer with Canonical Fixtures (AY 2026-27).
+// Gracefully falls back if external MongoDB is offline or unconfigured.
+import apiRouter from './src/backend/routes/index.js';
+import { createCompanionApp } from './src/backend/companionApp.ts';
+
+let mongoConnected = false;
 if (process.env.MONGODB_URI) {
-  mongoose.connect(process.env.MONGODB_URI, { autoCreate: false, autoIndex: false, bufferCommands: false, serverSelectionTimeoutMS: 3000 })
-    .catch(() => console.warn('Authoritative storage unavailable'));
+  try {
+    await mongoose.connect(process.env.MONGODB_URI, {
+      autoCreate: false,
+      autoIndex: false,
+      bufferCommands: false,
+      serverSelectionTimeoutMS: 1500,
+    });
+    mongoConnected = mongoose.connection.readyState === 1;
+    if (mongoConnected) {
+      console.log('📦 Connected to MongoDB backend store.');
+    }
+  } catch {
+    console.log('ℹ️ External MongoDB not reachable. Running in Canonical In-Memory Companion Mode.');
+    mongoConnected = false;
+  }
 }
 
 // Attach io instance to request
@@ -61,9 +78,7 @@ app.use((req: any, res, next) => {
   next();
 });
 
-import apiRouter from './src/backend/routes/index.js';
-import { createCompanionApp } from './src/backend/companionApp.ts';
-if (process.env.MONGODB_URI) {
+if (mongoConnected) {
   app.use('/api/v1', apiRouter);
 } else {
   console.log('🏛️ Initializing AICTE PravahReg Companion Runtime with Canonical Fixtures (2026-27)...');
@@ -73,11 +88,8 @@ if (process.env.MONGODB_URI) {
 
 // Realtime is closed until authenticated, scoped subscriptions have a reviewed adapter.
 io.use((_socket, next) => next(new Error('Realtime subscriptions unavailable')));
-// Socket.IO connection handler
 io.on('connection', (socket) => {
   console.log('🔌 Socket connected:', socket.id);
-
-
   socket.on('disconnect', () => {
     console.log('🔌 Socket disconnected:', socket.id);
   });

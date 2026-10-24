@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { login, logout, restoreSession, getSessionRevision, getSession } from '../../services/session';
 import { api } from '../../services/api';
+import { Lock, Mail, Shield, CheckCircle2, UserCheck, KeyRound, AlertTriangle } from 'lucide-react';
 
 export const DEMO_PERSONAS = [
   {
@@ -8,48 +9,48 @@ export const DEMO_PERSONAS = [
     name: 'Dr. D. N. Sonawane',
     institution: 'COEP Technological University',
     roleLabel: 'Institution Signatory',
-    color: 'border-blue-300 bg-blue-50/80 hover:bg-blue-100 text-blue-900',
-    tag: 'College A-D Owner'
+    tag: 'College A–D Owner',
+    description: 'Manages applications for COEP, GIITS, PDIMTR, and EVIT within assigned jurisdiction.'
   },
   {
     email: 'principal@vjti.ac.in',
     name: 'Dr. Sachin Kore',
     institution: 'VJTI Autonomous Institute',
     roleLabel: 'Institution Signatory',
-    color: 'border-indigo-300 bg-indigo-50/80 hover:bg-indigo-100 text-indigo-900',
-    tag: 'College E (Cross-Tenant Target)'
+    tag: 'College E (Cross-Tenant)',
+    description: 'Tenant-isolated institution account strictly restricted to VJTI cases.'
   },
   {
     email: 'ro.western@aicte.gov.in',
     name: 'Dr. R. K. Soni',
-    institution: 'AICTE Western Regional Office',
+    institution: 'AICTE Western / South-Central Regional Office',
     roleLabel: 'Regional Officer / Reviewer',
-    color: 'border-amber-300 bg-amber-50/80 hover:bg-amber-100 text-amber-900',
-    tag: 'Scrutiny & Re-Scrutiny Signatory'
+    tag: 'Scrutiny & Re-Scrutiny Signatory',
+    description: 'Authorized for desk scrutiny evaluations, deficiency returns, and evidence verification.'
   },
   {
     email: 'evc.chair@aicte.gov.in',
     name: 'Prof. S. Velmurugan / Dr. B. B. Ahuja',
     institution: 'Expert Visit Committee Panel',
     roleLabel: 'EVC Committee Chairman',
-    color: 'border-purple-300 bg-purple-50/80 hover:bg-purple-100 text-purple-900',
-    tag: 'On-Site Inspection Proforma'
+    tag: 'On-Site Inspection Proforma',
+    description: 'Conducts physical/virtual inspections, GPS verification, and submits EVC reports.'
   },
   {
     email: 'bureau.approval@aicte.gov.in',
     name: 'Dr. Mamta R. Agarwal',
-    institution: 'Approval Bureau & Council EC',
+    institution: 'Approval Bureau & Council Executive Committee',
     roleLabel: 'Advisor-I (Competent Authority)',
-    color: 'border-emerald-300 bg-emerald-50/80 hover:bg-emerald-100 text-emerald-900',
-    tag: 'Decision Gate (decision.record)'
+    tag: 'Decision Gate (decision.record)',
+    description: 'Statutory decision authority for issuing Letters of Approval (LoA/EoA) and Speaking Orders.'
   },
   {
     email: 'admin@aicte.gov.in',
     name: 'Policy Administrator',
     institution: 'AICTE Headquarters (New Delhi)',
     roleLabel: 'Central System Admin',
-    color: 'border-rose-300 bg-rose-50/80 hover:bg-rose-100 text-rose-900',
-    tag: 'Policy Admin (No Decision T07)'
+    tag: 'Central Policy Admin',
+    description: 'Platform administrator with access to handbook policy rules and immutable WORM audit logs.'
   }
 ];
 
@@ -57,8 +58,8 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
   const [generation, setGeneration] = useState(getSessionRevision);
   const [ready, setReady] = useState(false);
   const [checking, setChecking] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('ro.western@aicte.gov.in');
+  const [password, setPassword] = useState('password123');
   const [error, setError] = useState('');
   const [logoutFailed, setLogoutFailed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -104,25 +105,6 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const quickSwitchRole = async (targetEmail: string) => {
-    setBusy(true);
-    setError('');
-    setClockFeedback(null);
-    try {
-      try {
-        await logout();
-      } catch {
-        /* ignore stale session logout */
-      }
-      await login({ email: targetEmail, password: 'password123' });
-      setReady(true);
-    } catch (err: any) {
-      setError(err?.message || 'Quick role switch failed');
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const handleAdvanceClock = async (days: number) => {
     setBusy(true);
     try {
@@ -152,6 +134,12 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const handleFillCredentials = (accountEmail: string) => {
+    setEmail(accountEmail);
+    setPassword('password123');
+    setError('');
+  };
+
   if (checking) return <p role="status" className="p-8 text-center text-slate-600 font-medium">Checking demonstration session…</p>;
 
   const currentActor = getSession()?.actor;
@@ -170,9 +158,8 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
   if (ready) {
     return (
       <div className="min-h-screen bg-slate-100 flex flex-col font-sans">
-        {/* Top Ecosystem Header (National PravahReg Companion Layer) */}
+        {/* National PravahReg Companion Layer Control Banner */}
         <header className="bg-[#0A2540] text-white border-b border-slate-700/80 shadow-md">
-          {/* Main Top Brand Bar */}
           <div className="px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-orange-500/20 border border-orange-400/40 flex items-center justify-center font-bold text-orange-400 text-sm">
@@ -242,8 +229,8 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            {/* Active User Pill & Sign Out */}
-            <div className="flex items-center gap-2">
+            {/* Authenticated User Profile & Sign Out */}
+            <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
                 <span className="text-xs font-bold text-white block">
                   {currentPersona?.name || currentActor?.id}
@@ -255,38 +242,11 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
               <button
                 disabled={busy}
                 onClick={signOut}
-                className="px-2.5 py-1 rounded bg-slate-800 hover:bg-rose-900/60 text-slate-200 hover:text-white text-xs border border-slate-700 transition-colors disabled:opacity-50"
+                className="px-3 py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600/40 text-rose-200 hover:text-white text-xs font-semibold border border-rose-500/30 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                title="Sign out of current authenticated session"
               >
-                Sign out
+                <span>Sign out</span>
               </button>
-            </div>
-          </div>
-
-          {/* 1-Click Role Switcher Bar */}
-          <div className="bg-[#06182a] px-4 py-1.5 border-t border-slate-800/80 flex items-center gap-2 overflow-x-auto scrollbar-none text-xs">
-            <span className="text-[11px] uppercase tracking-wider text-slate-400 font-bold shrink-0">
-              1-Click Role:
-            </span>
-            <div className="flex items-center gap-1.5 flex-nowrap">
-              {DEMO_PERSONAS.map((p) => {
-                const isActive = p.email === currentPersona?.email;
-                return (
-                  <button
-                    key={p.email}
-                    type="button"
-                    disabled={busy || isActive}
-                    onClick={() => quickSwitchRole(p.email)}
-                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold transition-all shrink-0 border ${
-                      isActive
-                        ? 'bg-blue-600 text-white border-blue-400 ring-2 ring-blue-400/40 font-bold'
-                        : 'bg-slate-800/90 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
-                    } disabled:cursor-default`}
-                    title={`${p.name} - ${p.institution} (${p.roleLabel})`}
-                  >
-                    {p.name.split(' ')[0]} ({p.tag.split(' ')[0]})
-                  </button>
-                );
-              })}
             </div>
           </div>
 
@@ -303,11 +263,6 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
               </button>
             </div>
           )}
-          {error && (
-            <div role="alert" className="bg-rose-950/90 border-t border-rose-800 px-4 py-1.5 text-xs text-rose-200">
-              {error}
-            </div>
-          )}
         </header>
 
         {/* Content Body */}
@@ -319,22 +274,22 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <main className="min-h-screen bg-slate-900 flex flex-col justify-center items-center p-4 sm:p-6 text-slate-800">
+    <main className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 sm:p-6 text-slate-800">
       <div className="w-full max-w-4xl space-y-6">
         {/* Banner Header */}
         <div className="text-center space-y-2 text-white">
-          <div className="inline-flex p-3 rounded-2xl bg-orange-500/20 border border-orange-400/40 text-2xl mb-1">
+          <div className="inline-flex p-3 rounded-2xl bg-orange-500/20 border border-orange-400/40 text-3xl mb-1 shadow-lg">
             🏛️
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            AICTE Regulation Bureau &bull; PravahReg Companion Layer
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+            AICTE Regulation Bureau &bull; PravahReg
           </h1>
           <p className="text-slate-300 text-xs sm:text-sm max-w-xl mx-auto">
             Smart India Hackathon 2026 (Problem Statement 26262) &bull; Academic Year 2026–27
           </p>
           <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-blue-500/20 text-blue-300 border border-blue-400/30">
-              APH 2024–27 + 2026-27 Errata
+              APH 2024–27 &amp; 2026-27 Errata
             </span>
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
               Zero-Trust Scope Isolation
@@ -345,56 +300,24 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* 1-Click Persona Cards Grid (Quick Login) */}
-        <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-            <div>
-              <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-                1-Click Jury &amp; Demonstration Personas
-              </h2>
-              <p className="text-xs text-slate-500">
-                Click any persona below to authenticate instantly with server-verified credentials.
-              </p>
-            </div>
-            <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600">
-              6 Built-In Roles
-            </span>
-          </div>
+        {/* Formal Authentication Card */}
+        <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+          <div className="p-6 sm:p-8 grid grid-cols-1 md:grid-cols-12 gap-8">
+            
+            {/* Left: Sign In Form */}
+            <div className="md:col-span-6 space-y-5">
+              <div>
+                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-blue-600" />
+                  <span>Portal Authentication</span>
+                </h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  Enter your official AICTE or institutional credentials to access the regulatory companion layer.
+                </p>
+              </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {DEMO_PERSONAS.map((p) => (
-              <button
-                key={p.email}
-                type="button"
-                disabled={busy}
-                onClick={() => quickSwitchRole(p.email)}
-                className={`p-3.5 rounded-xl border text-left transition-all shadow-xs hover:shadow-md flex flex-col justify-between ${p.color} disabled:opacity-50`}
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-1 mb-1">
-                    <span className="font-bold text-xs truncate">{p.name}</span>
-                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/80 border border-current font-bold uppercase">
-                      {p.tag}
-                    </span>
-                  </div>
-                  <p className="text-[11px] opacity-80 line-clamp-1">{p.institution}</p>
-                </div>
-                <div className="mt-3 pt-2 border-t border-current/20 flex items-center justify-between text-[10px]">
-                  <span className="font-semibold">{p.roleLabel}</span>
-                  <span className="underline font-mono">Login &rarr;</span>
-                </div>
-              </button>
-            ))}
-          </div>
-
-          {/* Fallback Manual Form */}
-          <div className="pt-4 border-t border-slate-200">
-            <details className="text-xs text-slate-600">
-              <summary className="cursor-pointer font-semibold text-slate-700 hover:text-slate-900">
-                Or sign in manually with email &amp; password
-              </summary>
               <form
-                className="mt-3 space-y-3 max-w-md"
+                className="space-y-4"
                 onSubmit={async (e) => {
                   e.preventDefault();
                   setBusy(true);
@@ -405,47 +328,125 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
                   } catch (err: any) {
                     setError(err instanceof Error ? err.message : 'Sign-in failed');
                   } finally {
-                    setPassword('');
                     setBusy(false);
                   }
                 }}
               >
-                <label className="block">
-                  <span className="text-[11px] font-semibold text-slate-700">Email Address</span>
-                  <input
-                    className="block w-full border border-slate-300 rounded-lg p-2 text-xs mt-1"
-                    type="email"
-                    autoComplete="username"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </label>
-                <label className="block">
-                  <span className="text-[11px] font-semibold text-slate-700">Password</span>
-                  <input
-                    className="block w-full border border-slate-300 rounded-lg p-2 text-xs mt-1"
-                    type="password"
-                    autoComplete="current-password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </label>
-                {error && <p role="alert" className="text-xs text-rose-600 font-semibold">{error}</p>}
-                {logoutFailed && (
-                  <button type="button" disabled={busy} onClick={signOut} className="text-xs text-rose-600 underline">
-                    Retry server sign-out
-                  </button>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Official Email Address <span className="text-rose-600">*</span>
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                    <input
+                      className="block w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
+                      type="email"
+                      autoComplete="username"
+                      required
+                      placeholder="e.g. ro.western@aicte.gov.in"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Password <span className="text-rose-600">*</span>
+                  </label>
+                  <div className="relative">
+                    <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                    <input
+                      className="block w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-colors"
+                      type="password"
+                      autoComplete="current-password"
+                      required
+                      placeholder="Enter password (default: password123)"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>{error}</span>
+                  </div>
                 )}
+
                 <button
-                  className="rounded-lg bg-blue-800 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-900 disabled:opacity-50"
+                  type="submit"
                   disabled={busy}
+                  className="w-full rounded-lg bg-[#0A2540] hover:bg-[#133863] text-white py-2.5 px-4 text-xs font-bold tracking-wide transition-all shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {busy ? 'Signing in…' : 'Sign in manually'}
+                  <Shield className="w-4 h-4 text-amber-400" />
+                  <span>{busy ? 'Authenticating with Council Server…' : 'Sign In to PravahReg Portal'}</span>
                 </button>
               </form>
-            </details>
+            </div>
+
+            {/* Right: Authorized Accounts Reference */}
+            <div className="md:col-span-6 bg-slate-50 rounded-xl p-4 border border-slate-200 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2 mb-3">
+                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <UserCheck className="w-4 h-4 text-blue-700" />
+                    Authorized Test Personas
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold">
+                    AY 2026–27
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 mb-3">
+                  Click <strong>"Use Account"</strong> to pre-fill credentials for that role. All test accounts share default password <code className="bg-slate-200 px-1 py-0.5 rounded font-mono text-slate-800">password123</code>.
+                </p>
+
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  {DEMO_PERSONAS.map((p) => {
+                    const isSelected = email === p.email;
+                    return (
+                      <div
+                        key={p.email}
+                        className={`p-2.5 rounded-lg border transition-all text-xs flex items-center justify-between gap-2 ${
+                          isSelected
+                            ? 'bg-blue-50/90 border-blue-400 shadow-2xs'
+                            : 'bg-white border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-slate-900 truncate">{p.name}</span>
+                            <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-slate-100 text-slate-600 font-semibold truncate">
+                              {p.tag}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 truncate">{p.roleLabel}</p>
+                          <p className="text-[10px] font-mono text-blue-700 truncate">{p.email}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleFillCredentials(p.email)}
+                          className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-colors shrink-0 ${
+                            isSelected
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                          }`}
+                        >
+                          {isSelected ? 'Selected' : 'Use Account'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="mt-3 pt-2 border-t border-slate-200 text-[10px] text-slate-400 flex items-center justify-between">
+                <span>Security: HttpOnly &bull; SameSite=Strict</span>
+                <span>WORM Audit Logging: Active</span>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
