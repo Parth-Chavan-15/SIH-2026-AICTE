@@ -48,6 +48,21 @@ export function createScrutinyRouter(corePort?: CorePort): Router {
         result: i.result || i.status || 'accepted'
       }));
     }
+    if (!req.body.idempotencyKey) {
+      req.body.idempotencyKey = `SIGN-${req.params.id}-${Date.now()}`;
+    }
+
+    try {
+      const app = await port.getApplication(req.params.id);
+      if (app && typeof app.version === 'number') {
+        req.body.expectedVersion = app.version;
+      }
+    } catch {}
+
+    if (typeof req.body.expectedVersion !== 'number') {
+      req.body.expectedVersion = 1;
+    }
+
     const parsed = SignScrutinyCommandSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(422).json({
@@ -58,13 +73,6 @@ export function createScrutinyRouter(corePort?: CorePort): Router {
         }
       });
     }
-
-    try {
-      const app = await port.getApplication(req.params.id);
-      if (app && app.version) {
-        parsed.data.expectedVersion = app.version;
-      }
-    } catch {}
 
     const result = await signScrutiny(port, req.params.id, parsed.data);
     if (!result.success) {
