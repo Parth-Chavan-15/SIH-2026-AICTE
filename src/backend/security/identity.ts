@@ -170,7 +170,7 @@ export function createIdentity(options: { accounts: DemoAccount[]; origin?: stri
   if (originUrl.protocol !== 'https:' && !(originUrl.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(originUrl.hostname))) {
     throw new Error('HTTPS or loopback demo origin required');
   }
-  const secure = options.secure ?? process.env.NODE_ENV === 'production';
+  const secure = options.secure ?? (process.env.NODE_ENV === 'production' && origin.startsWith('https://'));
   if (secure && !origin.startsWith('https://')) throw new Error('HTTPS origin required');
   const now = options.now ?? Date.now;
   const ttlMs = options.ttlMs ?? 15 * 60_000;
@@ -260,10 +260,11 @@ export function getIdentity(): Identity {
     } else {
       accounts = BUILT_IN_DEMO_ACCOUNTS;
     }
+    const configuredOrigin = process.env.CLIENT_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000';
     defaultIdentity = createIdentity({
       accounts,
-      origin: process.env.CLIENT_URL || 'http://localhost:3000',
-      secure: process.env.NODE_ENV === 'production',
+      origin: configuredOrigin,
+      secure: configuredOrigin.startsWith('https://'),
     });
   }
   return defaultIdentity;
