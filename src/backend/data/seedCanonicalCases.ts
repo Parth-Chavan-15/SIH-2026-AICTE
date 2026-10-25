@@ -195,68 +195,6 @@ export const CANONICAL_APPLICATIONS: Application[] = [
     createdAt: '2026-10-15T00:00:00.000Z',
     updatedAt: '2026-10-24T00:00:00.000Z'
   },
-  // College D: EVIT - Boundary Condition X=360 triggers policy_review_required
-  {
-    id: 'APP-2026-EVIT',
-    reference: '1-46222870004',
-    institutionId: 'INST-EAST',
-    regionId: 'Eastern',
-    category: 'intake_increase',
-    session: '2026-2027',
-    facts: {
-      institutionName: 'East Valley Institute of Technology (EVIT)',
-      permanentInstituteId: '1-9981234004',
-      program: 'Engineering & Technology',
-      proposedIntake: 360,
-      boundaryCase: true
-    },
-    state: 'policy_review_required',
-    route: {
-      session: '2026-2027',
-      category: 'intake_increase',
-      evaluatedFacts: { proposedIntake: 360 },
-      result: 'review_required',
-      stages: [],
-      reasons: ['Boundary condition X=360 is unexpressed in APH Errata Table 2.3'],
-      reviewReasons: ['Policy review required: APH 2026-27 Errata G02 leaves X=360 unexpressed'],
-      sources: [SRC_APH_2026_ERRATA]
-    },
-    version: 1,
-    stageEnteredAt: '2026-10-24T00:00:00.000Z',
-    createdAt: '2026-10-24T00:00:00.000Z',
-    updatedAt: '2026-10-24T00:00:00.000Z'
-  },
-  // College E: VJTI - Cross-Tenant Target owned exclusively by principal@vjti.ac.in
-  {
-    id: 'APP-2026-VJTI',
-    reference: '1-46222870005',
-    institutionId: 'INST-VJTI',
-    regionId: 'Western',
-    category: 'extension_of_approval',
-    session: '2026-2027',
-    facts: {
-      institutionName: 'Veermata Jijabai Technological Institute (VJTI)',
-      permanentInstituteId: '1-7770001122',
-      program: 'Engineering & Technology',
-      autonomous: true
-    },
-    policyRevisionId: 'POL_2026_EOA_SELF_DISCLOSURE',
-    state: 'submitted',
-    route: {
-      policyRevisionId: 'POL_2026_EOA_SELF_DISCLOSURE',
-      session: '2026-2027',
-      category: 'extension_of_approval',
-      evaluatedFacts: { autonomous: true },
-      result: 'selected',
-      stages: ['submitted', 'scrutiny_pending', 'decision_pending'],
-      reasons: ['Autonomous Institute Extension of Approval'],
-      sources: [SRC_APH_2024_27]
-    },
-    version: 1,
-    stageEnteredAt: '2026-10-24T00:00:00.000Z',
-    createdAt: '2026-10-24T00:00:00.000Z',
-    updatedAt: '2026-10-24T00:00:00.000Z'
-  },
   // College 4: Apex Institute - Scrutiny + EVC + SAC/SHC Hearing Loop (APH §1.11 / §2.23.3 / GIITS precedent 2-SOC1776333767)
   {
     id: 'APP-2026-APEX',

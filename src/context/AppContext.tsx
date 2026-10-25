@@ -50,7 +50,8 @@ interface AppContextType {
     appId: string,
     docId: string,
     status: 'Verified' | 'Rejected' | 'Pending Verification',
-    reason?: string
+    reason?: string,
+    silent?: boolean
   ) => Promise<void>;
   scheduleEVC: (
     appId: string,
@@ -251,18 +252,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     appId: string,
     docId: string,
     status: 'Verified' | 'Rejected' | 'Pending Verification',
-    reason?: string
+    reason?: string,
+    silent?: boolean
   ) => {
     try {
       await api.verifyDocument(appId, docId, status, user, reason);
       await refreshData();
-      addToast({
-        type: status === 'Verified' ? 'success' : 'warning',
-        title: `Document ${status}`,
-        message: reason || `Updated document verification status`,
-      });
+      if (!silent) {
+        addToast({
+          type: status === 'Verified' ? 'success' : 'warning',
+          title: status === 'Verified' ? 'Document Verified' : 'Deficiency Noted',
+          message: reason || `Updated document verification status`,
+        });
+      }
     } catch (e: any) {
-      addToast({ type: 'error', title: 'Verification Failed', message: e.message });
+      if (!silent) {
+        addToast({ type: 'error', title: 'Verification Note', message: e.message });
+      }
     }
   };
 

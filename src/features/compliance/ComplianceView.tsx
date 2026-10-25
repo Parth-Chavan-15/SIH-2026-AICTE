@@ -61,12 +61,7 @@ export const ComplianceView: React.FC = () => {
       if (actorId === 'usr-inst-giits' || email === 'principal@giits.ac.in') {
         return item.institutionName.includes('GIITS') || item.institutionName.includes('Gonna');
       }
-      if (actorId === 'usr-inst-evit' || email === 'principal@evit.ac.in') {
-        return item.institutionName.includes('EVIT') || item.institutionName.includes('East Valley');
-      }
-      if (actorId === 'usr-inst-vjti' || email === 'principal@vjti.ac.in') {
-        return item.institutionName.includes('VJTI');
-      }
+      
       return true;
     });
   }, [complianceItems, isInstitution, actor]);

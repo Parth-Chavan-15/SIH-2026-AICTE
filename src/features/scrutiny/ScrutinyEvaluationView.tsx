@@ -34,11 +34,11 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
 }) => {
   const { applications, transitionStage, verifyDocument, addToast } = useApp();
 
-  // Reviewable cases (COEP, GIITS, PDIMTR, VJTI)
+  // Reviewable cases (COEP, GIITS, PDIMTR, Apex, BATU)
   const [selectedCaseId, setSelectedCaseId] = useState<string>(
     mode === 'rescrutiny'
-      ? applications.find((a) => a.id.includes('GIITS'))?.id || applications[0]?.id || ''
-      : applications.find((a) => a.id.includes('COEP') || a.id.includes('VJTI'))?.id || applications[0]?.id || ''
+      ? applications.find((a) => a.id.includes('GIITS') || a.id.includes('APEX'))?.id || applications[0]?.id || ''
+      : applications.find((a) => a.id.includes('COEP'))?.id || applications[0]?.id || ''
   );
 
   const currentApp = applications.find((a) => a.id === selectedCaseId) || applications[0];
@@ -201,13 +201,13 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
     if (result.success) {
       setSignedSuccess(result.data);
 
-      // Dynamically update document states according to the scrutiny evaluation
+      // Dynamically update document states according to the scrutiny evaluation (silent to prevent toast spam)
       for (const item of checklistItems) {
         const docId = `DOC-${item.itemId}`;
         if (item.status === 'accepted') {
-          await verifyDocument(currentApp.id, docId, 'Verified', item.remark).catch(() => {});
+          await verifyDocument(currentApp.id, docId, 'Verified', item.remark, true).catch(() => {});
         } else {
-          await verifyDocument(currentApp.id, docId, 'Rejected', item.remark).catch(() => {});
+          await verifyDocument(currentApp.id, docId, 'Rejected', item.remark, true).catch(() => {});
         }
       }
 
@@ -250,7 +250,7 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
 
     await signSnapshot('2026-27-v1', itemsPayload);
     for (const item of acceptedItems) {
-      await verifyDocument(currentApp.id, `DOC-${item.itemId}`, 'Verified', item.remark).catch(() => {});
+      await verifyDocument(currentApp.id, `DOC-${item.itemId}`, 'Verified', item.remark, true).catch(() => {});
     }
     await transitionStage(currentApp.id, 'Scrutiny Cleared', 'Scrutiny fully accepted and cleared by Desk Scrutiny Committee.');
     addToast({
@@ -285,9 +285,9 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
     for (const item of flaggedItems) {
       const docId = `DOC-${item.itemId}`;
       if (item.status === 'accepted') {
-        await verifyDocument(currentApp.id, docId, 'Verified', item.remark).catch(() => {});
+        await verifyDocument(currentApp.id, docId, 'Verified', item.remark, true).catch(() => {});
       } else {
-        await verifyDocument(currentApp.id, docId, 'Rejected', item.remark).catch(() => {});
+        await verifyDocument(currentApp.id, docId, 'Rejected', item.remark, true).catch(() => {});
       }
     }
     await transitionStage(currentApp.id, 'Deficiency Communicated', 'Deficiencies flagged in Faculty Cadre / Fire NOC per APH §1.8.');

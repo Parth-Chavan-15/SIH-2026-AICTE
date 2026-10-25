@@ -42,7 +42,7 @@ export const ToastContainer: React.FC = () => {
 
   return (
     <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-w-md w-full pointer-events-none px-4 sm:px-0">
-      {toasts.map((toast) => {
+      {toasts.slice(-3).map((toast) => {
         const style = getToastStyle(toast.type);
 
         return (

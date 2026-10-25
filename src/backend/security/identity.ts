@@ -68,32 +68,6 @@ export const BUILT_IN_DEMO_ACCOUNTS: DemoAccount[] = [
     },
   },
   {
-    email: 'principal@evit.ac.in',
-    passwordHash: DEMO_PW_HASH,
-    active: true,
-    actor: {
-      id: 'usr-inst-evit',
-      roles: ['institution'],
-      permissions: ['case.read', 'case.create', 'document.read', 'document.submit', 'scrutiny.correct', 'notification.read'],
-      scope: 'scoped',
-      institutionIds: ['INST-EAST'],
-      regionIds: ['ERO', 'Eastern'],
-    },
-  },
-  {
-    email: 'principal@vjti.ac.in',
-    passwordHash: DEMO_PW_HASH,
-    active: true,
-    actor: {
-      id: 'usr-inst-vjti',
-      roles: ['institution'],
-      permissions: ['case.read', 'case.create', 'document.read', 'document.submit', 'scrutiny.correct', 'notification.read'],
-      scope: 'scoped',
-      institutionIds: ['INST-VJTI'],
-      regionIds: ['WRO', 'Western'],
-    },
-  },
-  {
     email: 'principal@apex.ac.in',
     passwordHash: DEMO_PW_HASH,
     active: true,

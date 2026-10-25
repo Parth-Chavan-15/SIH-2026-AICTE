@@ -23,7 +23,8 @@ import {
   Award,
   Building2,
   Send,
-  FileText
+  FileText,
+  Bell
 } from 'lucide-react';
 
 export type RolePortalId = 1 | 2 | 3 | 4 | 5 | 6;
@@ -45,6 +46,7 @@ export const ROLE_NAV_ITEMS: Record<RolePortalId, { portalTitle: string; subtitl
       { id: 'inst-apps', label: 'My Applications', icon: FolderKanban },
       { id: 'inst-deficiencies', label: 'Deficiency Cure Window (Annex. 7)', icon: FileWarning, badge: 'D1, D2', badgeColor: 'bg-amber-400 text-slate-900 font-bold' },
       { id: 'inst-renewals', label: 'Post-Approval Obligations', icon: ShieldCheck, badge: '3 ACTIVE', badgeColor: 'bg-emerald-500 text-white font-bold' },
+      { id: 'notifications', label: 'Statutory Alerts & Notices', icon: Bell },
     ]
   },
   2: {
@@ -55,6 +57,7 @@ export const ROLE_NAV_ITEMS: Record<RolePortalId, { portalTitle: string; subtitl
       { id: 'scrutiny-rescrutiny', label: 'Differential Re-Scrutiny (§1.8(g))', icon: Lock, badge: 'LOCKED C3', badgeColor: 'bg-amber-500 text-white font-bold' },
       { id: 'scrutiny-committee', label: 'Expert Roster & Declarations', icon: Users },
       { id: 'scrutiny-queue', label: 'All Assigned Cases', icon: FolderKanban },
+      { id: 'notifications', label: 'Scrutiny SLA Watches', icon: Bell },
     ]
   },
   3: {
@@ -63,15 +66,17 @@ export const ROLE_NAV_ITEMS: Record<RolePortalId, { portalTitle: string; subtitl
     items: [
       { id: 'evc-inspect', label: 'Panel Inspections & Scoring', icon: MapPin, badge: 'NBA SKIP', badgeColor: 'bg-emerald-500 text-white font-bold' },
       { id: 'evc-reports', label: 'Signed Inspection Reports (APH §1.9)', icon: FileText },
+      { id: 'notifications', label: 'EVC Visit Reminders', icon: Bell },
     ]
   },
   4: {
     portalTitle: 'Regional Office Desk (RO)',
     subtitle: 'Western Region • Compliance Monitoring',
     items: [
-      { id: 'ro-pendency', label: 'Stage-Ageing Command Center & SLAs', icon: Clock, badge: '10d/15d', badgeColor: 'bg-rose-500 text-white font-bold' },
+      { id: 'ro-pendency', label: 'Consolidated Dashboard & SLAs', icon: Clock, badge: '10d/15d', badgeColor: 'bg-rose-500 text-white font-bold' },
       { id: 'ro-schedule', label: 'Committee Allocation & Timetable', icon: Users, badge: 'AICTE SYNC', badgeColor: 'bg-blue-600 text-white font-bold' },
       { id: 'ro-obligations', label: 'Post-Approval 4-Clock Timers', icon: ShieldCheck, badge: '3 ACTIVE', badgeColor: 'bg-amber-500 text-white font-bold' },
+      { id: 'notifications', label: 'Automated Alerts & Escalations', icon: Bell, badge: 'ALERTS', badgeColor: 'bg-amber-500 text-slate-900 font-bold' },
     ]
   },
   5: {
@@ -81,6 +86,7 @@ export const ROLE_NAV_ITEMS: Record<RolePortalId, { portalTitle: string; subtitl
       { id: 'ca-decision', label: 'Statutory Decision Gate (APH §1.10)', icon: Award, badge: 'HUMAN ONLY', badgeColor: 'bg-rose-600 text-white font-bold' },
       { id: 'ca-dossiers', label: 'All Cases Awaiting Approval', icon: FolderKanban },
       { id: 'ca-dispatch', label: 'Siebel Write-Back & Ecosystem Dispatch', icon: Send },
+      { id: 'notifications', label: 'Overdue Cases & Escalations', icon: Bell, badge: 'CRITICAL', badgeColor: 'bg-rose-600 text-white font-bold' },
     ]
   },
   6: {
@@ -91,6 +97,7 @@ export const ROLE_NAV_ITEMS: Record<RolePortalId, { portalTitle: string; subtitl
       { id: 'admin-worm', label: 'WORM HMAC-SHA256 Audit Trail', icon: History, badge: 'IMMUTABLE', badgeColor: 'bg-emerald-600 text-white font-bold' },
       { id: 'admin-adapters', label: '5 National Ecosystem Endpoints', icon: Globe2 },
       { id: 'admin-analytics', label: 'Consolidated Statutory Analytics', icon: BarChart3 },
+      { id: 'notifications', label: 'System Alert Logs & Audits', icon: Bell },
     ]
   }
 };
@@ -181,8 +188,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     (activeActor?.id === 'usr-inst-pdimtr' || (activeActor as any)?.email === 'principal@pdimtr.ac.in') ? 'PDIMTR • ID 1-109704178' :
                     (activeActor?.id === 'usr-inst-apex' || (activeActor as any)?.email === 'principal@apex.ac.in') ? 'Apex • ID 1-33104928' :
                     (activeActor?.id === 'usr-inst-batu' || (activeActor as any)?.email === 'principal@batu.ac.in') ? 'BATU Lonere • ID 1-19201481' :
-                    (activeActor?.id === 'usr-inst-evit' || (activeActor as any)?.email === 'principal@evit.ac.in') ? 'EVIT • ID 1-462228700' :
-                    (activeActor?.id === 'usr-inst-vjti' || (activeActor as any)?.email === 'principal@vjti.ac.in') ? 'VJTI • ID 1-436575682' :
                     'COEP • ID 1-435789102'
                   ) : currentPortal.subtitle}
                 </span>

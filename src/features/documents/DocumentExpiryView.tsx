@@ -54,12 +54,7 @@ export const DocumentExpiryView: React.FC = () => {
       if (actorId === 'usr-inst-giits' || email === 'principal@giits.ac.in') {
         return doc.institutionName.includes('GIITS') || doc.institutionName.includes('Gonna');
       }
-      if (actorId === 'usr-inst-evit' || email === 'principal@evit.ac.in') {
-        return doc.institutionName.includes('EVIT') || doc.institutionName.includes('East Valley');
-      }
-      if (actorId === 'usr-inst-vjti' || email === 'principal@vjti.ac.in') {
-        return doc.institutionName.includes('VJTI');
-      }
+      
       return true;
     });
   }, [expiringDocs, isInstitution, actor]);
