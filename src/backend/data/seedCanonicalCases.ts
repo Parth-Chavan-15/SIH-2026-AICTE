@@ -58,20 +58,6 @@ export const CANONICAL_INSTITUTIONS: Institution[] = [
     status: 'active'
   },
   {
-    id: 'INST-EAST',
-    permanentId: '1-9981234004',
-    name: 'East Valley Institute of Technology (EVIT)',
-    regionId: 'Eastern',
-    status: 'active'
-  },
-  {
-    id: 'INST-VJTI',
-    permanentId: '1-7770001122',
-    name: 'Veermata Jijabai Technological Institute (VJTI)',
-    regionId: 'Western',
-    status: 'active'
-  },
-  {
     id: 'INST-APEX',
     permanentId: '1-33104928',
     name: 'Apex Institute of Technology & Management',

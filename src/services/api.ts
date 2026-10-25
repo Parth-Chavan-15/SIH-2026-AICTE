@@ -278,8 +278,8 @@ class APIService {
       name: (actor?.id === 'SYN-ACTOR-COEP' || actor?.id === 'usr-inst-coep') ? 'COEP Technological University, Pune'
         : (actor?.id === 'usr-inst-giits') ? 'Gonna Institute of IT & Sciences (GIITS)'
         : (actor?.id === 'usr-inst-pdimtr') ? 'Prerna / Univ BDT College (PDIMTR)'
-        : (actor?.id === 'usr-inst-evit') ? 'East Valley Institute of Technology (EVIT)'
-        : (actor?.id === 'SYN-ACTOR-VJTI' || actor?.id === 'usr-inst-vjti') ? 'Veermata Jijabai Technological Institute (VJTI)'
+        : (actor?.id === 'usr-inst-apex') ? 'Apex Institute of Technology & Management'
+        : (actor?.id === 'usr-inst-batu') ? 'Dr. Babasaheb Ambedkar Technological University (BATU Lonere)'
         : (actor?.id === 'usr-scrutiny-reviewer') ? 'Scrutiny Reviewer (Committee)'
         : (actor?.id === 'SYN-ACTOR-RO' || actor?.id === 'usr-ro-western') ? 'Regional / Bureau Officer (RO / RB)'
         : (actor?.id === 'SYN-ACTOR-EVC' || actor?.id === 'usr-evc-chair') ? 'EVC Coordinator / Member'
@@ -637,23 +637,80 @@ class APIService {
     return;
   }
 
-  // --- Notifications / Alerts (Wired to /alerts) ---
+  // --- Notifications / Alerts (Wired to /alerts with Canonical Fallbacks) ---
   public async getNotifications(): Promise<NotificationItem[]> {
+    const defaultAlerts: NotificationItem[] = [
+      {
+        id: 'NOTIF-PDIMTR-01',
+        title: '30-Year Registered Lease Deed Expiry Countdown',
+        message: 'Prerna / Univ BDT College (PDIMTR) registered lease deed expires within 30 days. Form-6 renewal undertaking and valid lease deed registration required under APH Table 1.',
+        timestamp: '2026-10-24T08:00:00.000Z',
+        isRead: false,
+        category: 'Document Expiry',
+        severity: 'critical',
+        applicationId: 'APP-2026-PDIMTR'
+      },
+      {
+        id: 'NOTIF-GIITS-02',
+        title: 'Faculty Cadre Ratio Deficiency Flagged (§1.8)',
+        message: 'GIITS Visakhapatnam deficiency cure window open. Cadre ratio deficit (1:2.4 vs 1:2.0) requires additional Associate Professor appointment proof within 15 days.',
+        timestamp: '2026-10-23T12:00:00.000Z',
+        isRead: false,
+        category: 'Workflow',
+        severity: 'warning',
+        applicationId: 'APP-2026-GIITS'
+      },
+      {
+        id: 'NOTIF-BATU-03',
+        title: 'EVC Campus Physical Inspection Mandate Queued',
+        message: 'BATU Lonere Restoration/Site Shifting application queued for 3-member Expert Visit Committee. Geo-tagged coordinates and 30-min walkthrough required.',
+        timestamp: '2026-10-24T09:00:00.000Z',
+        isRead: false,
+        category: 'EVC',
+        severity: 'warning',
+        applicationId: 'APP-2026-BATU'
+      },
+      {
+        id: 'NOTIF-APEX-04',
+        title: 'Standing Appellate Committee (SAC) Hearing Listed',
+        message: 'Apex Institute of Technology appeal listed before SAC for hearing under APH §1.11. Institution representative summoned with original land revenue records.',
+        timestamp: '2026-10-22T10:00:00.000Z',
+        isRead: false,
+        category: 'Escalation',
+        severity: 'info',
+        applicationId: 'APP-2026-APEX'
+      },
+      {
+        id: 'NOTIF-COEP-05',
+        title: 'Scrutiny Cleared under NBA Tier-1 Fast-Track',
+        message: 'COEP Pune application APP-2026-COEP cleared desk scrutiny with 100% verified compliance. EVC waived under APH 2026-27 Errata p. 42; ready for Council approval.',
+        timestamp: '2026-10-24T07:30:00.000Z',
+        isRead: false,
+        category: 'Compliance',
+        severity: 'info',
+        applicationId: 'APP-2026-COEP'
+      }
+    ];
+
     try {
       const res = await requestJson<any>('/alerts');
       const list = res.data || [];
-      return list.map((a: any) => ({
-        id: a.id,
-        title: a.title,
-        message: a.message,
-        timestamp: a.timestamp,
-        isRead: false,
-        category: 'Document Expiry',
-        severity: (a.severity as any) || 'warning',
-        applicationId: 'APP-2026-PDIMTR'
-      }));
+      if (list.length > 0) {
+        const liveAlerts = list.map((a: any) => ({
+          id: a.id,
+          title: a.title,
+          message: a.message,
+          timestamp: a.timestamp,
+          isRead: false,
+          category: a.category || 'Document Expiry',
+          severity: (a.severity as any) || 'warning',
+          applicationId: a.applicationId || 'APP-2026-PDIMTR'
+        }));
+        return [...liveAlerts, ...defaultAlerts.filter(d => !liveAlerts.some((l: any) => l.title === d.title))];
+      }
+      return defaultAlerts;
     } catch {
-      return [];
+      return defaultAlerts;
     }
   }
 
@@ -669,17 +726,43 @@ class APIService {
   public async getEscalations(): Promise<EscalationRecord[]> {
     return [
       {
-        id: 'ESC-01',
-        applicationId: 'APP-2026-EVIT',
-        applicationNumber: '1-46222870004',
-        institutionName: 'East Valley Institute of Technology (EVIT)',
-        region: 'Eastern',
-        currentStage: 'Executive Committee Approval',
-        escalationReason: 'APH 2026-27 Errata boundary X=360 is unexpressed; requires Council Policy Review',
-        previousAuthority: 'System Automation Engine',
-        escalatedTo: 'National Approval Bureau (Dr. Mamta R. Agarwal)',
-        escalationTimestamp: '2026-10-24T00:00:00.000Z',
+        id: 'ESC-GIITS-01',
+        applicationId: 'APP-2026-GIITS',
+        applicationNumber: '1-46258917694',
+        institutionName: 'Gonna Institute of Information Technology and Sciences (GIITS)',
+        region: 'South-Central',
+        currentStage: 'Deficiency Communicated',
+        escalationReason: 'Faculty Cadre Ratio deficit (1:2.4) deficiency cure pending > 10 days; approaching 15-day statutory cure deadline under APH §1.8',
+        previousAuthority: 'Desk Scrutiny Committee Cell',
+        escalatedTo: 'Regional Officer (South-Central Region)',
+        escalationTimestamp: '2026-10-23T14:30:00.000Z',
         status: 'Escalated - Action Required'
+      },
+      {
+        id: 'ESC-BATU-02',
+        applicationId: 'APP-2026-BATU',
+        applicationNumber: '1-19201481001',
+        institutionName: 'Dr. Babasaheb Ambedkar Technological University (BATU Lonere)',
+        region: 'Western',
+        currentStage: 'EVC Scheduled',
+        escalationReason: 'Physical EVC inspection mandate unfulfilled for 12 days; approaching 14-day SLA deadline per APH §2.16.1',
+        previousAuthority: 'Regional Office Operations Desk',
+        escalatedTo: 'EVC Inspection Committee Cell (Dr. R. K. Soni, EVC Chair)',
+        escalationTimestamp: '2026-10-24T09:15:00.000Z',
+        status: 'Escalated - Action Required'
+      },
+      {
+        id: 'ESC-PDIMTR-03',
+        applicationId: 'APP-2026-PDIMTR',
+        applicationNumber: '1-10970417855',
+        institutionName: 'Prerna / Univ BDT College of Engineering (PDIMTR)',
+        region: 'Western',
+        currentStage: 'Approval Issued',
+        escalationReason: '30-Year Registered Lease deed validity expires in 30 days; time-bound undertaking renewal pending under APH Table 1',
+        previousAuthority: 'Compliance & Undertakings Engine',
+        escalatedTo: 'Competent Authority Chamber (Member Secretary, AICTE)',
+        escalationTimestamp: '2026-10-24T11:00:00.000Z',
+        status: 'Under Investigation'
       }
     ];
   }

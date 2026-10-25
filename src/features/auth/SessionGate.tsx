@@ -40,8 +40,6 @@ export const DEMO_COLLEGES = [
   { id: 'pdimtr', name: 'Prerna / Univ BDT College (PDIMTR)', email: 'principal@pdimtr.ac.in', code: '1-109704178', tag: 'Route 3: Fast-Track EoA [Self-Disclosure & Lease]' },
   { id: 'apex', name: 'Apex Institute of Technology & Management', email: 'principal@apex.ac.in', code: '1-331049280', tag: 'Route 4: EVC + SAC/SHC [Appellate Hearing]' },
   { id: 'batu', name: 'Dr. Babasaheb Ambedkar Tech Univ (BATU)', email: 'principal@batu.ac.in', code: '1-192014810', tag: 'Route 5: Only EVC [§2.16.1 Restoration / Shifting]' },
-  { id: 'evit', name: 'East Valley Institute of Tech (EVIT)', email: 'principal@evit.ac.in', code: '1-462228700', tag: 'Boundary Evaluation ($X=360$)' },
-  { id: 'vjti', name: 'Veermata Jijabai Tech Inst (VJTI)', email: 'principal@vjti.ac.in', code: '1-436575682', tag: 'Tenant Isolated Testing' },
 ];
 
 export const REGULATORY_ROLES: RegulatoryRole[] = [

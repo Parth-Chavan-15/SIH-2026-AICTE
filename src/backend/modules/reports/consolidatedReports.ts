@@ -171,7 +171,8 @@ export function compileElectronicCaseSummary(
   const isGIITS = app.id.includes('GIITS') || app.institutionId.includes('NORTH');
   const isCOEP = app.id.includes('COEP') || app.institutionId.includes('SOUTH');
   const isPDIMTR = app.id.includes('PDIMTR') || app.institutionId.includes('WEST');
-  const isEVIT = app.id.includes('EVIT') || app.institutionId.includes('EAST');
+  const isApex = app.id.includes('APEX') || app.institutionId.includes('APEX');
+  const isBATU = app.id.includes('BATU') || app.institutionId.includes('BATU');
 
   // Exact real-world names from AICTE vault dossiers
   const institutionName = isGIITS
@@ -180,12 +181,12 @@ export function compileElectronicCaseSummary(
     ? 'College of Engineering Pune (COEP Technological University)'
     : isPDIMTR
     ? 'University BDT College of Engineering (UBDTCE), Davangere'
-    : isEVIT
-    ? 'East Valley Institute of Technology (EVIT)'
-    : 'Veermata Jijabai Technological Institute (VJTI)';
+    : isApex
+    ? 'Apex Institute of Technology & Management'
+    : 'Dr. Babasaheb Ambedkar Technological University (BATU Lonere)';
 
-  const permanentId = isGIITS ? '1-6055691' : isCOEP ? '1-1437622971' : isPDIMTR ? '1-447718433' : isEVIT ? '1-9981234004' : '1-7770001122';
-  const nswsRef = isGIITS ? 'NSWS-2026-SCRO-101' : isCOEP ? 'NSWS-2026-WRO-202' : isPDIMTR ? 'NSWS-2026-WRO-303' : isEVIT ? 'NSWS-2026-ERO-404' : 'NSWS-2026-WRO-505';
+  const permanentId = isGIITS ? '1-6055691' : isCOEP ? '1-1437622971' : isPDIMTR ? '1-447718433' : isApex ? '1-33104928' : '1-19201481';
+  const nswsRef = isGIITS ? 'NSWS-2026-SCRO-101' : isCOEP ? 'NSWS-2026-WRO-202' : isPDIMTR ? 'NSWS-2026-WRO-303' : isApex ? 'NSWS-2026-NRO-404' : 'NSWS-2026-WRO-505';
 
   const routeStages = app.route?.stages || ['submitted', 'scrutiny_pending', 'decision_pending'];
   const isEVCRequired = routeStages.includes('evc_pending');
@@ -330,11 +331,13 @@ export function compileElectronicCaseSummary(
       dueAt: o.dueAt,
       status: o.status
     })),
-    executiveRecommendation: isEVIT
-      ? 'REFERRED_FOR_POLICY_REVIEW (Boundary Intake X=360 Unexpressed in Errata Table 2.3)'
+    executiveRecommendation: isApex
+      ? 'REFERRED_TO_SAC (Standing Appellate Committee Hearing Listed under APH §1.11)'
       : isCOEP
       ? 'RECOMMENDED_FOR_IMMEDIATE_GRANT (NBA Fast-Track Desk Scrutiny Clearance)'
-      : 'RECOMMENDED_WITH_CONDITIONAL_UNDERTAKING (6-Month Faculty & 30-Year Lease Tracking per UBDTCE Precedent)',
+      : isBATU
+      ? 'QUEUED_FOR_EVC (Physical Campus Verification Mandate under APH §2.16.1)'
+      : 'RECOMMENDED_WITH_CONDITIONAL_UNDERTAKING (6-Month Faculty & 30-Year Lease Tracking per Table 1)',
     statutoryNotices
   };
 }
@@ -368,8 +371,10 @@ export function compileConsolidatedReports(
       ? 'College of Engineering Pune (COEP Tech Univ)'
       : a.id === 'APP-2026-PDIMTR'
       ? 'University BDT College of Engineering (UBDTCE Davangere)'
-      : a.id === 'APP-2026-EVIT'
-      ? 'East Valley Institute of Technology (EVIT)'
+      : a.id === 'APP-2026-APEX'
+      ? 'Apex Institute of Technology & Management'
+      : a.id === 'APP-2026-BATU'
+      ? 'Dr. Babasaheb Ambedkar Technological University (BATU Lonere)'
       : a.id.replace('APP-2026-', '');
 
     return {
@@ -491,11 +496,19 @@ export function compileConsolidatedReports(
       ],
       overdueAndEscalations: [
         {
-          caseId: 'APP-2026-EVIT',
-          institutionName: 'East Valley Institute of Technology (EVIT)',
-          escalatedTo: 'National Approval Bureau (Dr. Mamta R. Agarwal)',
-          reason: 'APH 2026-27 Errata boundary X=360 is unexpressed in published regulations; requires Council Policy Review',
-          escalatedAt: '2026-10-24T00:00:00.000Z',
+          caseId: 'APP-2026-GIITS',
+          institutionName: 'Gonna Institute of Information Technology and Sciences (GIITS)',
+          escalatedTo: 'Regional Officer (South-Central Region)',
+          reason: 'Faculty Cadre Ratio deficit (1:2.4) deficiency cure pending > 10 days; approaching statutory deadline under APH §1.8',
+          escalatedAt: '2026-10-23T14:30:00.000Z',
+          priority: 'High'
+        },
+        {
+          caseId: 'APP-2026-BATU',
+          institutionName: 'Dr. Babasaheb Ambedkar Technological University (BATU Lonere)',
+          escalatedTo: 'EVC Inspection Committee Cell (Dr. R. K. Soni, EVC Chair)',
+          reason: 'Physical EVC inspection mandate unfulfilled for 12 days; approaching 14-day SLA deadline per APH §2.16.1',
+          escalatedAt: '2026-10-24T09:15:00.000Z',
           priority: 'High'
         }
       ],

@@ -89,7 +89,7 @@ export const BUILT_IN_DEMO_ACCOUNTS: DemoAccount[] = [
       roles: ['institution'],
       permissions: ['case.read', 'case.create', 'document.read', 'document.submit', 'scrutiny.correct', 'notification.read'],
       scope: 'scoped',
-      institutionIds: ['INST-BATU', 'INST-VJTI'],
+      institutionIds: ['INST-BATU'],
       regionIds: ['WRO', 'Western'],
     },
   },

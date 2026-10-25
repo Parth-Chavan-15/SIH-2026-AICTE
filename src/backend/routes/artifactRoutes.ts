@@ -42,18 +42,18 @@ function generateDynamicIntakeEvaluationHtml(app: any, actor: any): string {
   const isGIITS = app.id.includes('GIITS') || app.institutionId === 'INST-NORTH';
   const isCOEP = app.id.includes('COEP') || app.institutionId === 'INST-SOUTH';
   const isPDIMTR = app.id.includes('PDIMTR') || app.institutionId === 'INST-WEST';
-  const isEVIT = app.id.includes('EVIT') || app.institutionId === 'INST-EAST';
-  const isVJTI = app.id.includes('VJTI') || app.institutionId === 'INST-VJTI';
+  const isApex = app.id.includes('APEX') || app.institutionId === 'INST-APEX';
+  const isBATU = app.id.includes('BATU') || app.institutionId === 'INST-BATU';
 
   const instName = meta.institutionName ||
     (isCOEP ? 'College of Engineering Pune (COEP Technological University)'
       : isGIITS ? 'Gonna Institute of Information Technology and Sciences (GIITS), Visakhapatnam'
       : isPDIMTR ? 'Prerna / Univ BDT College of Engineering (PDIMTR)'
-      : isEVIT ? 'East Valley Institute of Technology (EVIT)'
-      : isVJTI ? 'Veermata Jijabai Technological Institute (VJTI)'
+      : isApex ? 'Apex Institute of Technology & Management'
+      : isBATU ? 'Dr. Babasaheb Ambedkar Technological University (BATU Lonere)'
       : 'Technical Campus');
 
-  const pid = meta.permanentInstituteId || (isCOEP ? '1-1437622971' : isGIITS ? '1-6055691' : isPDIMTR ? '1-447718433' : '1-9981234004');
+  const pid = meta.permanentInstituteId || (isCOEP ? '1-1437622971' : isGIITS ? '1-6055691' : isPDIMTR ? '1-447718433' : isApex ? '1-33104928' : '1-19201481');
   const program = meta.program || (isPDIMTR ? 'Management / MBA' : 'Engineering & Technology');
   const course = meta.course || (isCOEP ? 'Mechanical Engineering' : isGIITS ? 'Computer Science & Engineering' : isPDIMTR ? 'Master of Business Administration' : 'Core Engineering');
   const currentIntake = meta.currentIntake || (isCOEP ? 120 : isGIITS ? 180 : 120);

@@ -58,12 +58,6 @@ export const WorkflowView: React.FC<WorkflowViewProps> = ({ onSelectApplication 
       if (actorId === 'usr-inst-pdimtr' || email === 'principal@pdimtr.ac.in') {
         return app.id.includes('PDIMTR') || app.institutionCode === 'INST-WEST';
       }
-      if (actorId === 'usr-inst-evit' || email === 'principal@evit.ac.in') {
-        return app.id.includes('EVIT') || app.institutionCode === 'INST-EAST';
-      }
-      if (actorId === 'usr-inst-vjti' || actorId === 'SYN-ACTOR-VJTI' || email === 'principal@vjti.ac.in') {
-        return app.id.includes('VJTI') || app.institutionCode === 'INST-VJTI';
-      }
       if (actor?.institutionIds && actor.institutionIds.length > 0) {
         return actor.institutionIds.includes(app.institutionCode);
       }

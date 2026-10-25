@@ -399,7 +399,41 @@ export function seedComplianceDB(obligations?: Obligation[]): void {
   complianceDB.obligations.clear();
   complianceDB.documents.clear();
   complianceDB.timers.clear();
-  complianceDB.deliveredAlerts.clear();
+  complianceDB.deliveredAlerts.set('ALERT-PDIMTR-LEASE', {
+    id: 'ALT-PDIMTR-01',
+    dedupeKey: 'ALERT-PDIMTR-LEASE',
+    title: '30-Year Registered Lease Deed Expiry Countdown',
+    message: 'Prerna / Univ BDT College (PDIMTR) registered lease deed expires within 30 days. Form-6 renewal undertaking and valid lease deed registration required under APH Table 1.',
+    timestamp: '2026-10-24T08:00:00.000Z'
+  });
+  complianceDB.deliveredAlerts.set('ALERT-GIITS-CADRE', {
+    id: 'ALT-GIITS-02',
+    dedupeKey: 'ALERT-GIITS-CADRE',
+    title: 'Faculty Cadre Ratio Deficiency Flagged (§1.8)',
+    message: 'GIITS Visakhapatnam deficiency cure window open. Cadre ratio deficit (1:2.4 vs 1:2.0) requires additional Associate Professor appointment proof within 15 days.',
+    timestamp: '2026-10-23T12:00:00.000Z'
+  });
+  complianceDB.deliveredAlerts.set('ALERT-BATU-EVC', {
+    id: 'ALT-BATU-03',
+    dedupeKey: 'ALERT-BATU-EVC',
+    title: 'EVC Campus Physical Inspection Mandate Queued',
+    message: 'BATU Lonere Restoration/Site Shifting application queued for 3-member Expert Visit Committee. Geo-tagged coordinates and 30-min walkthrough required.',
+    timestamp: '2026-10-24T09:00:00.000Z'
+  });
+  complianceDB.deliveredAlerts.set('ALERT-APEX-SAC', {
+    id: 'ALT-APEX-04',
+    dedupeKey: 'ALERT-APEX-SAC',
+    title: 'Standing Appellate Committee (SAC) Hearing Listed',
+    message: 'Apex Institute of Technology appeal listed before SAC for hearing under APH §1.11. Institution representative summoned with original land revenue records.',
+    timestamp: '2026-10-22T10:00:00.000Z'
+  });
+  complianceDB.deliveredAlerts.set('ALERT-COEP-SCRUTINY', {
+    id: 'ALT-COEP-05',
+    dedupeKey: 'ALERT-COEP-SCRUTINY',
+    title: 'Scrutiny Cleared under NBA Tier-1 Fast-Track',
+    message: 'COEP Pune application APP-2026-COEP cleared desk scrutiny with 100% verified compliance. EVC waived under APH 2026-27 Errata p. 42; ready for Council approval.',
+    timestamp: '2026-10-24T07:30:00.000Z'
+  });
   complianceDB.simulatedClockTimestamp = Date.parse('2026-10-24T00:00:00.000Z');
 
   if (obligations && obligations.length > 0) {
