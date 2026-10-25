@@ -107,6 +107,8 @@ app.use((err: any, req: any, res: any, next: any) => {
   res.status(status).json({ success: false, error: { code, message: 'Request could not be processed' } });
 });
 
-httpServer.listen(Number(PORT), '127.0.0.1', () => {
-  console.log(`🚀 AICTE Backend & Dev Server running on port ${PORT}`);
+const HOST = process.env.HOST || (process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1');
+
+httpServer.listen(Number(PORT), HOST, () => {
+  console.log(`🚀 AICTE NiyamSetu Server running on http://${HOST}:${PORT}`);
 });
