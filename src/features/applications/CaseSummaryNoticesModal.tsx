@@ -18,18 +18,68 @@ export const CaseSummaryNoticesModal: React.FC<CaseSummaryNoticesModalProps> = (
   application,
   onClose,
 }) => {
-  const [activeTab, setActiveTab] = useState<NoticeType>('SCRUTINY_SCHEDULE_INTIMATION');
-  const [copied, setCopied] = useState(false);
-
   const isCOEP = application.id.includes('COEP') || application.institutionCode === 'INST-SOUTH';
   const isGIITS = application.id.includes('GIITS') || application.institutionCode === 'INST-NORTH';
   const isPDIMTR = application.id.includes('PDIMTR') || application.institutionCode === 'INST-WEST';
+  const isApex = application.id.includes('APEX') || application.institutionCode === 'INST-APEX';
+  const isBATU = application.id.includes('BATU') || application.institutionCode === 'INST-BATU';
+
+  // Automatically select the scenario-specific primary statutory notice
+  const initialActiveTab: NoticeType = isGIITS 
+    ? 'PORTAL_DEFICIENCY_COMMUNICATION'
+    : isPDIMTR 
+    ? 'CONDITIONAL_EOA_UNDERTAKING'
+    : isApex 
+    ? 'SPEAKING_ORDER_OR_LOD'
+    : isBATU 
+    ? 'EVC_INSPECTION_INTIMATION'
+    : 'SCRUTINY_SCHEDULE_INTIMATION';
+
+  const [activeTab, setActiveTab] = useState<NoticeType>(initialActiveTab);
+  const [copied, setCopied] = useState(false);
 
   const todayStr = new Date().toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
   });
+
+  // Scenario-specific notice status and eligibility
+  const NOTICE_STATUS: Record<NoticeType, { state: 'ACTIVE' | 'ISSUED' | 'WAIVED' | 'NOT_APPLICABLE' | 'PENDING'; badgeText: string; badgeColor: string; reason: string }> = {
+    SCRUTINY_SCHEDULE_INTIMATION: isBATU 
+      ? { state: 'WAIVED', badgeText: 'Waived (§2.16.1)', badgeColor: 'bg-slate-100 text-slate-700 border-slate-300', reason: 'Restoration / Site Shifting waives preliminary desk scrutiny and routes straight to physical EVC.' }
+      : { state: 'ISSUED', badgeText: 'Issued', badgeColor: 'bg-emerald-50 text-emerald-800 border-emerald-300', reason: 'Desk Scrutiny intimation notice served to institution.' },
+    
+    PORTAL_DEFICIENCY_COMMUNICATION: isGIITS
+      ? { state: 'ACTIVE', badgeText: 'Active Notice (D1, D2)', badgeColor: 'bg-amber-100 text-amber-900 border-amber-300 font-extrabold ring-1 ring-amber-400', reason: 'Faculty cadre deficit (1:2.4) flagged. 15-day cure window open under Annexure 7.' }
+      : isApex
+      ? { state: 'ISSUED', badgeText: 'Issued', badgeColor: 'bg-amber-50 text-amber-800 border-amber-200', reason: 'Deficiency communication served.' }
+      : isCOEP
+      ? { state: 'NOT_APPLICABLE', badgeText: 'Clean (0 Deficits)', badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200', reason: 'Desk Scrutiny verified 100% compliance under NBA Tier-1 fast-track. Zero deficiencies observed.' }
+      : isPDIMTR
+      ? { state: 'NOT_APPLICABLE', badgeText: 'N/A (Self-Disclosure)', badgeColor: 'bg-slate-100 text-slate-600 border-slate-200', reason: 'Fast-Track EoA Self-Disclosure route.' }
+      : { state: 'NOT_APPLICABLE', badgeText: 'N/A (Waived Scrutiny)', badgeColor: 'bg-slate-100 text-slate-600 border-slate-200', reason: 'Direct EVC inspection route.' },
+
+    EVC_INSPECTION_INTIMATION: isCOEP
+      ? { state: 'WAIVED', badgeText: 'Waived (NBA)', badgeColor: 'bg-purple-100 text-purple-900 border-purple-300 font-bold', reason: 'Exempted per APH 2026–27 Errata p. 42 §2.6(c)(1): NBA Tier-1 accreditation exempts physical EVC.' }
+      : isBATU
+      ? { state: 'ACTIVE', badgeText: 'Active Notice', badgeColor: 'bg-blue-100 text-blue-900 border-blue-300 font-extrabold ring-1 ring-blue-400', reason: 'Physical campus inspection mandate queued for 3-member EVC panel.' }
+      : isGIITS
+      ? { state: 'PENDING', badgeText: 'Queued (Post-Cure)', badgeColor: 'bg-amber-50 text-amber-800 border-amber-200', reason: 'Scheduled upon successful verification of re-scrutiny cure.' }
+      : isApex
+      ? { state: 'ISSUED', badgeText: 'Conducted', badgeColor: 'bg-slate-100 text-slate-700 border-slate-200', reason: 'EVC physical verification completed.' }
+      : { state: 'NOT_APPLICABLE', badgeText: 'N/A (Fast-Track EoA)', badgeColor: 'bg-slate-100 text-slate-600 border-slate-200', reason: 'Not applicable for standard EoA renewal.' },
+
+    CONDITIONAL_EOA_UNDERTAKING: isPDIMTR
+      ? { state: 'ACTIVE', badgeText: 'Active Order (30-Yr Lease)', badgeColor: 'bg-emerald-100 text-emerald-900 border-emerald-300 font-extrabold ring-1 ring-emerald-400', reason: 'Conditional EoA sanctioned subject to time-bound Form-6 undertakings and 30-year lease deed renewal.' }
+      : isCOEP
+      ? { state: 'ISSUED', badgeText: 'Standard EoA', badgeColor: 'bg-emerald-50 text-emerald-800 border-emerald-200', reason: 'Unconditional Extension of Approval issued.' }
+      : { state: 'PENDING', badgeText: 'Pending Council EC', badgeColor: 'bg-slate-100 text-slate-600 border-slate-200', reason: 'Awaiting completion of scrutiny and inspection stages.' },
+
+    SPEAKING_ORDER_OR_LOD: isApex
+      ? { state: 'ACTIVE', badgeText: 'Active Order (SAC Appeal)', badgeColor: 'bg-rose-100 text-rose-900 border-rose-300 font-extrabold ring-1 ring-rose-400', reason: 'Formal Speaking Order issued under APH §1.11 granting 15-day appellate recourse before SAC.' }
+      : { state: 'NOT_APPLICABLE', badgeText: 'Not Applicable', badgeColor: 'bg-slate-100 text-slate-500 border-slate-200', reason: 'Quasi-judicial speaking orders are only formulated upon rejection or appeal referral.' }
+  };
 
   const NOTICES_CONFIG: Record<
     NoticeType,
@@ -177,35 +227,61 @@ export const CaseSummaryNoticesModal: React.FC<CaseSummaryNoticesModalProps> = (
           </div>
         </div>
 
-        {/* Section 2: 5 Standardised Notices Tabs */}
-        <div className="border-b border-slate-200 bg-white px-4 flex items-center gap-1 overflow-x-auto">
+        {/* Section 2: Scenario-Sensitive Communications Tabs */}
+        <div className="border-b border-slate-200 bg-white px-4 flex items-center gap-1.5 overflow-x-auto py-1">
           {(Object.keys(NOTICES_CONFIG) as NoticeType[]).map((key) => {
             const config = NOTICES_CONFIG[key];
+            const status = NOTICE_STATUS[key];
             const Icon = config.icon;
             const isActive = activeTab === key;
             return (
               <button
                 key={key}
                 onClick={() => setActiveTab(key)}
-                className={`py-3 px-3 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+                className={`py-2 px-3 text-xs font-semibold rounded-xl transition-all whitespace-nowrap flex items-center gap-2 border ${
                   isActive
-                    ? 'border-indigo-600 text-indigo-700 bg-indigo-50/50'
-                    : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    ? 'border-indigo-600 text-indigo-900 bg-indigo-50/80 shadow-xs'
+                    : 'border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                 }`}
               >
                 <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
-                <span>{config.shortLabel}</span>
+                <span className="font-bold">{config.shortLabel}</span>
+                <span className={`text-[9px] px-1.5 py-0.2 rounded-full border ${status.badgeColor}`}>
+                  {status.badgeText}
+                </span>
               </button>
             );
           })}
         </div>
 
-        {/* Section 3: Notice Viewer */}
+        {/* Section 3: Scenario Notice Viewer */}
         <div className="flex-1 overflow-y-auto p-5 bg-slate-50/50 space-y-4">
+          {/* Scenario Context Banner */}
+          <div className="p-3 rounded-xl bg-white border border-slate-200 text-xs flex items-center justify-between gap-3 shadow-2xs">
+            <div className="flex items-center gap-2">
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${NOTICE_STATUS[activeTab].badgeColor}`}>
+                {NOTICE_STATUS[activeTab].state === 'ACTIVE' ? '● CURRENT ACTIVE NOTICE' : NOTICE_STATUS[activeTab].state}
+              </span>
+              <span className="text-slate-700 font-medium">
+                {NOTICE_STATUS[activeTab].reason}
+              </span>
+            </div>
+            <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">
+              Rule Engine &bull; Domain A.4
+            </span>
+          </div>
+
           <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
               <div>
-                <h3 className="font-bold text-slate-900 text-sm">{currentNotice.title}</h3>
+                <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                  <span>{currentNotice.title}</span>
+                  {NOTICE_STATUS[activeTab].state === 'ACTIVE' && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 animate-pulse">
+                      ACTIVE FOR THIS CASE
+                    </span>
+                  )}
+                </h3>
                 <span className="text-[11px] text-indigo-700 font-mono font-medium">
                   {currentNotice.statutoryClause}
                 </span>
@@ -235,6 +311,35 @@ export const CaseSummaryNoticesModal: React.FC<CaseSummaryNoticesModalProps> = (
                 Mandatory Action: {currentNotice.actionRequired}
               </span>
             </div>
+
+            {/* If Waived or Not Applicable, show Statutory Exemption Certificate */}
+            {NOTICE_STATUS[activeTab].state === 'WAIVED' ? (
+              <div className="p-4 rounded-xl bg-purple-50 border border-purple-200 text-xs text-purple-950 space-y-2">
+                <div className="flex items-center gap-2 font-bold text-purple-900">
+                  <Award className="w-4 h-4 text-purple-600" />
+                  <span>CERTIFIED STATUTORY EXEMPTION RECORD (APH 2026–27)</span>
+                </div>
+                <p className="leading-relaxed">
+                  In accordance with Approval Process Handbook 2026–27 Errata p. 42 §2.6(c)(1), this stage is <strong>legally waived</strong> for {application.institutionName}. Valid Tier-1 NBA accreditation exempts the institution from physical campus inspection. No adverse intimation or physical visit notice is generated for this case.
+                </p>
+                <div className="p-2.5 rounded bg-white/80 border border-purple-200 font-mono text-[11px] text-purple-800">
+                  Statutory Rule: APH_ERRATA_2026_P42_NBA_EXEMPT &bull; Verified by Desk Scrutiny Committee
+                </div>
+              </div>
+            ) : NOTICE_STATUS[activeTab].state === 'NOT_APPLICABLE' ? (
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 space-y-2">
+                <div className="flex items-center gap-2 font-bold text-slate-900">
+                  <Shield className="w-4 h-4 text-slate-600" />
+                  <span>STATUTORY STANDING: NOT APPLICABLE FOR THIS CASE</span>
+                </div>
+                <p className="leading-relaxed text-slate-600">
+                  {NOTICE_STATUS[activeTab].reason}. Under the pinned regulatory policy ({application.routeType}), this communication form is not applicable to the institutional compliance state of {application.institutionName}.
+                </p>
+                <div className="p-2.5 rounded bg-white border border-slate-200 font-mono text-[11px] text-slate-500">
+                  Lifecycle Phase: {application.currentStage} &bull; Route: {application.routeType}
+                </div>
+              </div>
+            ) : null}
 
             {/* Formatted Letter Body */}
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 font-mono text-xs text-slate-800 whitespace-pre-wrap leading-relaxed max-h-72 overflow-y-auto">

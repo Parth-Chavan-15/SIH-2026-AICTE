@@ -302,11 +302,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   ) => {
     try {
       await api.submitEVCReport(evcId, summary, rec, infraScore, facultyScore, labsScore, user);
+      
+      // Auto-advance application to Executive Committee Approval
+      const matchedEvc = evcInspections.find((e) => e.id === evcId);
+      const targetAppId = matchedEvc?.applicationId || 'APP-2026-GIITS';
+      try {
+        await handleTransitionStage(
+          targetAppId,
+          'Executive Committee Approval',
+          `EVC Inspection completed. Panel Recommendation: ${rec} (Infra: ${infraScore}%, Faculty: ${facultyScore}%)`
+        );
+      } catch (err) {
+        console.warn('Auto transition after EVC report skipped or handled:', err);
+      }
+
       await refreshData();
       addToast({
         type: 'success',
         title: 'EVC Inspection Report Submitted',
-        message: `Recommendation: ${rec} (Infra: ${infraScore}%, Faculty: ${facultyScore}%)`,
+        message: `Recommendation: ${rec} (Infra: ${infraScore}%, Faculty: ${facultyScore}%). Case advanced to Council Approval Gate.`,
       });
     } catch (e: any) {
       addToast({ type: 'error', title: 'Submission Failed', message: e.message });

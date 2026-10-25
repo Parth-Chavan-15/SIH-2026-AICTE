@@ -32,8 +32,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   const activeActor = session?.actor;
   const [showClockPopover, setShowClockPopover] = useState(false);
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
-
   // Determine active regulatory role (1 to 6)
   const roleNumber: number =
     (activeActor?.id === 'usr-inst-coep' || activeActor?.id === 'usr-inst-giits' || activeActor?.id === 'usr-inst-pdimtr' || activeActor?.id === 'usr-inst-apex' || activeActor?.id === 'usr-inst-batu' || activeActor?.roles?.includes('institution')) ? 1 :
@@ -42,6 +40,23 @@ export const Navbar: React.FC<NavbarProps> = ({
     (activeActor?.id === 'usr-ro-western' || activeActor?.roles?.includes('regional_officer')) ? 4 :
     (activeActor?.id === 'usr-bureau-hq' || activeActor?.roles?.includes('demo_authority') || activeActor?.roles?.includes('bureau_officer')) ? 5 :
     6;
+
+  // Map college actor to their specific application ID for tenant-isolated notifications
+  const collegeAppId =
+    (activeActor?.id === 'usr-inst-coep' || (activeActor as any)?.email === 'principal@coep.ac.in') ? 'APP-2026-COEP'
+    : (activeActor?.id === 'usr-inst-giits' || (activeActor as any)?.email === 'principal@giits.ac.in') ? 'APP-2026-GIITS'
+    : (activeActor?.id === 'usr-inst-pdimtr' || (activeActor as any)?.email === 'principal@pdimtr.ac.in') ? 'APP-2026-PDIMTR'
+    : (activeActor?.id === 'usr-inst-apex' || (activeActor as any)?.email === 'principal@apex.ac.in') ? 'APP-2026-APEX'
+    : (activeActor?.id === 'usr-inst-batu' || (activeActor as any)?.email === 'principal@batu.ac.in') ? 'APP-2026-BATU'
+    : null;
+
+  // If Role 1 (Applicant), strictly isolate notifications to their college; Higher authorities see all
+  const unreadCount = notifications.filter((n) => {
+    if (roleNumber === 1 && collegeAppId) {
+      return !n.isRead && n.applicationId === collegeAppId;
+    }
+    return !n.isRead;
+  }).length;
 
   const activeRoleConfig = REGULATORY_ROLES.find(r => r.roleNumber === roleNumber) || REGULATORY_ROLES[3];
   const [switchingRole, setSwitchingRole] = useState(false);

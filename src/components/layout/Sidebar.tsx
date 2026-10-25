@@ -41,63 +41,63 @@ export interface RoleNavItem {
 export const ROLE_NAV_ITEMS: Record<RolePortalId, { portalTitle: string; subtitle: string; items: RoleNavItem[] }> = {
   1: {
     portalTitle: 'Applicant Portal',
-    subtitle: 'COEP • Permanent ID 1-435789102',
+    subtitle: 'Technical Institution Signatory Workspace',
     items: [
-      { id: 'inst-apps', label: 'My Applications', icon: FolderKanban },
-      { id: 'inst-deficiencies', label: 'Deficiency Cure Window (Annex. 7)', icon: FileWarning, badge: 'D1, D2', badgeColor: 'bg-amber-400 text-slate-900 font-bold' },
-      { id: 'inst-renewals', label: 'Post-Approval Obligations', icon: ShieldCheck, badge: '3 ACTIVE', badgeColor: 'bg-emerald-500 text-white font-bold' },
-      { id: 'notifications', label: 'Statutory Alerts & Notices', icon: Bell },
+      { id: 'inst-apps', label: '1. My Applications & Live Status', icon: FolderKanban },
+      { id: 'inst-deficiencies', label: '2. Deficiency Cure Window (Annex. 7)', icon: FileWarning, badge: 'D1, D2', badgeColor: 'bg-amber-400 text-slate-900 font-bold' },
+      { id: 'inst-renewals', label: '3. Post-Approval Obligations & Lease', icon: ShieldCheck, badge: '3 ACTIVE', badgeColor: 'bg-emerald-500 text-white font-bold' },
+      { id: 'notifications', label: '4. Statutory Alerts & Notices', icon: Bell },
     ]
   },
   2: {
     portalTitle: 'Scrutiny Committee Cell',
     subtitle: 'Desk Review • Roster 2-SOC1770029225',
     items: [
-      { id: 'scrutiny-eval', label: 'Checklist Review & Snapshot v1', icon: FileCheck },
-      { id: 'scrutiny-rescrutiny', label: 'Differential Re-Scrutiny (§1.8(g))', icon: Lock, badge: 'LOCKED C3', badgeColor: 'bg-amber-500 text-white font-bold' },
-      { id: 'scrutiny-committee', label: 'Expert Roster & Declarations', icon: Users },
-      { id: 'scrutiny-queue', label: 'All Assigned Cases', icon: FolderKanban },
-      { id: 'notifications', label: 'Scrutiny SLA Watches', icon: Bell },
+      { id: 'scrutiny-eval', label: '1. Checklist Review & Snapshot v1', icon: FileCheck },
+      { id: 'scrutiny-rescrutiny', label: '2. Differential Re-Scrutiny (§1.8(g))', icon: Lock, badge: 'LOCKED C3', badgeColor: 'bg-amber-500 text-white font-bold' },
+      { id: 'scrutiny-committee', label: '3. Expert Roster & Declarations', icon: Users },
+      { id: 'scrutiny-queue', label: '4. All Scrutiny Case Dossiers', icon: FolderKanban },
+      { id: 'notifications', label: '5. Scrutiny SLA Watches & Deadlines', icon: Bell },
     ]
   },
   3: {
     portalTitle: 'EVC Committee Portal',
     subtitle: 'Expert Visit & Inspection Panel',
     items: [
-      { id: 'evc-inspect', label: 'Panel Inspections & Scoring', icon: MapPin, badge: 'NBA SKIP', badgeColor: 'bg-emerald-500 text-white font-bold' },
-      { id: 'evc-reports', label: 'Signed Inspection Reports (APH §1.9)', icon: FileText },
-      { id: 'notifications', label: 'EVC Visit Reminders', icon: Bell },
+      { id: 'evc-inspect', label: '1. Campus Inspections & Telemetry', icon: MapPin, badge: 'NBA SKIP', badgeColor: 'bg-emerald-500 text-white font-bold' },
+      { id: 'evc-reports', label: '2. Signed Inspection Reports (§1.9)', icon: FileText },
+      { id: 'notifications', label: '3. EVC Inspection Reminders', icon: Bell },
     ]
   },
   4: {
     portalTitle: 'Regional Office Desk (RO)',
-    subtitle: 'Western Region • Compliance Monitoring',
+    subtitle: 'Regional Operations • Pendency Monitoring',
     items: [
-      { id: 'ro-pendency', label: 'Consolidated Dashboard & SLAs', icon: Clock, badge: '10d/15d', badgeColor: 'bg-rose-500 text-white font-bold' },
-      { id: 'ro-schedule', label: 'Committee Allocation & Timetable', icon: Users, badge: 'AICTE SYNC', badgeColor: 'bg-blue-600 text-white font-bold' },
-      { id: 'ro-obligations', label: 'Post-Approval 4-Clock Timers', icon: ShieldCheck, badge: '3 ACTIVE', badgeColor: 'bg-amber-500 text-white font-bold' },
-      { id: 'notifications', label: 'Automated Alerts & Escalations', icon: Bell, badge: 'ALERTS', badgeColor: 'bg-amber-500 text-slate-900 font-bold' },
+      { id: 'ro-pendency', label: '1. Consolidated Dashboard & SLAs', icon: Clock, badge: '10d/15d', badgeColor: 'bg-rose-500 text-white font-bold' },
+      { id: 'ro-schedule', label: '2. Committee Allocation & Timetable', icon: Users, badge: 'AICTE SYNC', badgeColor: 'bg-blue-600 text-white font-bold' },
+      { id: 'ro-obligations', label: '3. Post-Approval 4-Clock Timers', icon: ShieldCheck, badge: '3 ACTIVE', badgeColor: 'bg-amber-500 text-white font-bold' },
+      { id: 'notifications', label: '4. Automated Alerts & Escalations', icon: Bell, badge: 'ALERTS', badgeColor: 'bg-amber-500 text-slate-900 font-bold' },
     ]
   },
   5: {
     portalTitle: 'Competent Authority Chamber',
     subtitle: 'Approval Bureau & Council Executive Committee',
     items: [
-      { id: 'ca-decision', label: 'Statutory Decision Gate (APH §1.10)', icon: Award, badge: 'HUMAN ONLY', badgeColor: 'bg-rose-600 text-white font-bold' },
-      { id: 'ca-dossiers', label: 'All Cases Awaiting Approval', icon: FolderKanban },
-      { id: 'ca-dispatch', label: 'Siebel Write-Back & Ecosystem Dispatch', icon: Send },
-      { id: 'notifications', label: 'Overdue Cases & Escalations', icon: Bell, badge: 'CRITICAL', badgeColor: 'bg-rose-600 text-white font-bold' },
+      { id: 'ca-decision', label: '1. Statutory Decision Gate (APH §1.10)', icon: Award, badge: 'HUMAN ONLY', badgeColor: 'bg-rose-600 text-white font-bold' },
+      { id: 'ca-dossiers', label: '2. Electronic Case Dossiers Queue', icon: FolderKanban },
+      { id: 'ca-dispatch', label: '3. Siebel Write-Back & Ecosystem Dispatch', icon: Send },
+      { id: 'notifications', label: '4. Overdue Cases & Escalations', icon: Bell, badge: 'CRITICAL', badgeColor: 'bg-rose-600 text-white font-bold' },
     ]
   },
   6: {
     portalTitle: 'Central Policy Administration',
     subtitle: 'Policy Engine & WORM Governance',
     items: [
-      { id: 'admin-policy', label: 'Policy Registry & Pinned Rules', icon: Sliders },
-      { id: 'admin-worm', label: 'WORM HMAC-SHA256 Audit Trail', icon: History, badge: 'IMMUTABLE', badgeColor: 'bg-emerald-600 text-white font-bold' },
-      { id: 'admin-adapters', label: '5 National Ecosystem Endpoints', icon: Globe2 },
-      { id: 'admin-analytics', label: 'Consolidated Statutory Analytics', icon: BarChart3 },
-      { id: 'notifications', label: 'System Alert Logs & Audits', icon: Bell },
+      { id: 'admin-policy', label: '1. Policy Registry & Pinned Rules', icon: Sliders },
+      { id: 'admin-worm', label: '2. WORM HMAC-SHA256 Audit Trail', icon: History, badge: 'IMMUTABLE', badgeColor: 'bg-emerald-600 text-white font-bold' },
+      { id: 'admin-adapters', label: '3. 5 National Ecosystem Endpoints', icon: Globe2 },
+      { id: 'admin-analytics', label: '4. Consolidated Statutory Analytics', icon: BarChart3 },
+      { id: 'notifications', label: '5. System Alert Logs & Audits', icon: Bell },
     ]
   }
 };

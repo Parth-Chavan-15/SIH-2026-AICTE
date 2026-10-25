@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { NotificationItem, EscalationRecord } from '../../types';
 import { formatDateIndian } from '../../utils/slaCalculator';
+import { getSession } from '../../services/session';
 import {
   Bell,
   BellRing,
@@ -16,6 +17,7 @@ import {
   X,
   Search,
   AlertTriangle,
+  Building2,
 } from 'lucide-react';
 
 interface NotificationsViewProps {
@@ -33,18 +35,38 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
     resolveEscalation,
   } = useApp();
 
+  const session = getSession();
+  const activeActor = session?.actor;
+  const isInstitution = activeActor?.id?.startsWith('usr-inst-') || activeActor?.roles?.includes('institution');
+
+  const collegeAppId =
+    (activeActor?.id === 'usr-inst-coep' || (activeActor as any)?.email === 'principal@coep.ac.in') ? 'APP-2026-COEP'
+    : (activeActor?.id === 'usr-inst-giits' || (activeActor as any)?.email === 'principal@giits.ac.in') ? 'APP-2026-GIITS'
+    : (activeActor?.id === 'usr-inst-pdimtr' || (activeActor as any)?.email === 'principal@pdimtr.ac.in') ? 'APP-2026-PDIMTR'
+    : (activeActor?.id === 'usr-inst-apex' || (activeActor as any)?.email === 'principal@apex.ac.in') ? 'APP-2026-APEX'
+    : (activeActor?.id === 'usr-inst-batu' || (activeActor as any)?.email === 'principal@batu.ac.in') ? 'APP-2026-BATU'
+    : null;
+
   const [activeTab, setActiveTab] = useState<'notifications' | 'escalations'>('notifications');
   const [categoryFilter, setCategoryFilter] = useState('All');
+  const [institutionFilter, setInstitutionFilter] = useState('All');
 
   // Escalation resolution state
   const [resolvingEsc, setResolvingEsc] = useState<EscalationRecord | null>(null);
   const [resolutionNotes, setResolutionNotes] = useState('');
 
-  const filteredNotifications = notifications.filter(
-    (n) => categoryFilter === 'All' || n.category === categoryFilter
-  );
+  // Scoped notifications: colleges only see their alerts; higher authorities see all
+  const scopedNotifications = isInstitution && collegeAppId
+    ? notifications.filter((n) => n.applicationId === collegeAppId)
+    : notifications;
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const filteredNotifications = scopedNotifications.filter((n) => {
+    const matchesCategory = categoryFilter === 'All' || n.category === categoryFilter;
+    const matchesInst = institutionFilter === 'All' || n.applicationId === institutionFilter;
+    return matchesCategory && matchesInst;
+  });
+
+  const unreadCount = scopedNotifications.filter((n) => !n.isRead).length;
 
   const handleResolveEscalationSubmit = async () => {
     if (!resolvingEsc || !resolutionNotes.trim()) return;
@@ -93,6 +115,21 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
         </div>
       </div>
 
+      {/* Institutional Isolation Notice */}
+      {isInstitution && (
+        <div className="p-3.5 rounded-xl bg-blue-50/80 border border-blue-200 text-xs flex items-center gap-3 text-blue-950">
+          <Building2 className="w-5 h-5 text-blue-600 shrink-0" />
+          <div>
+            <span className="font-extrabold uppercase tracking-wider text-[11px] text-blue-900 block">
+              Tenant-Isolated Institutional Notice Board &bull; {collegeAppId}
+            </span>
+            <span className="text-slate-600">
+              Only statutory communications, deficiency notices, and expiry countdowns issued specifically for your college node are displayed here.
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* NOTIFICATIONS TAB */}
       {activeTab === 'notifications' && (
         <div className="space-y-4">
@@ -120,6 +157,32 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
                 </button>
               ))}
             </div>
+
+            {!isInstitution && (
+              <div className="flex items-center gap-1.5 border-l border-slate-200 pl-3">
+                <span className="text-[10px] uppercase font-bold text-slate-400">Filter College:</span>
+                {[
+                  { id: 'All', label: 'All' },
+                  { id: 'APP-2026-COEP', label: 'COEP' },
+                  { id: 'APP-2026-GIITS', label: 'GIITS' },
+                  { id: 'APP-2026-PDIMTR', label: 'PDIMTR' },
+                  { id: 'APP-2026-APEX', label: 'Apex' },
+                  { id: 'APP-2026-BATU', label: 'BATU' },
+                ].map((col) => (
+                  <button
+                    key={col.id}
+                    onClick={() => setInstitutionFilter(col.id)}
+                    className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-colors ${
+                      institutionFilter === col.id
+                        ? 'bg-slate-900 text-white'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {col.label}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {unreadCount > 0 && (
               <button

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getSession } from '../../services/session';
+import { getSession, login } from '../../services/session';
 import { useApp } from '../../context/AppContext';
 import {
   FileWarning,
@@ -21,7 +21,7 @@ interface InstitutionDeficiencyCureViewProps {
 export const InstitutionDeficiencyCureView: React.FC<InstitutionDeficiencyCureViewProps> = ({
   onSelectApplication,
 }) => {
-  const { applications, verifyDocument, addToast } = useApp();
+  const { applications, verifyDocument, addToast, transitionStage } = useApp();
   const session = getSession();
   const actor = session?.actor;
 
@@ -213,7 +213,7 @@ export const InstitutionDeficiencyCureView: React.FC<InstitutionDeficiencyCureVi
                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5 disabled:opacity-50"
                   >
                     <Upload className="w-3.5 h-3.5" />
-                    <span>{curingDocId === doc.id ? 'Submitting...' : 'Submit Rectification'}</span>
+                    <span>{curingDocId === doc.id ? 'Submitting to AICTE...' : 'Upload Cured Document & Resubmit'}</span>
                   </button>
                 </div>
               </div>

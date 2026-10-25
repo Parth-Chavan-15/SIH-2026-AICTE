@@ -702,37 +702,223 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                 </div>
               </div>
 
-              {/* Stage Lifecycle Progress Stepper */}
-              <div className="bg-white p-4.5 rounded-xl border border-slate-200 space-y-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-800 block">
-                  Workflow Lifecycle Stage Tracking
-                </span>
+              {/* Stage Lifecycle Progress Stepper (Executive Interactive Pipeline) */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-slate-900">
+                      Workflow Lifecycle Stage Tracking &bull; AY 2026–27
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="text-slate-500 font-medium">Current Milestone:</span>
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                      {application.currentStage}
+                    </span>
+                    <span className="text-[11px] font-mono text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                      {application.elapsedDaysAtStage}d elapsed (SLA: {application.stageDeadlineDays}d)
+                    </span>
+                  </div>
+                </div>
                 
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
-                  <div className={`p-2.5 rounded-lg border ${application.currentStage === 'Application Submitted' ? 'bg-blue-600 text-white font-bold' : 'bg-slate-50 text-slate-700 border-slate-200'}`}>
-                    <span className="block font-bold">1. Ingestion</span>
-                    <span className="text-[10px] opacity-80">NSWS / Siebel</span>
-                  </div>
-                  
-                  <div className={`p-2.5 rounded-lg border ${application.currentStage === 'Scrutiny in Progress' || application.currentStage === 'Deficiency Communicated' || application.currentStage === 'Scrutiny Cleared' ? 'bg-blue-600 text-white font-bold' : 'bg-slate-50 text-slate-700 border-slate-200'}`}>
-                    <span className="block font-bold">2. Scrutiny</span>
-                    <span className="text-[10px] opacity-80">Desk Review</span>
-                  </div>
+                {/* 5-Step Connected Pipeline */}
+                <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 relative">
+                  {/* Step 1: NSWS Ingestion */}
+                  {(() => {
+                    const isDone = application.currentStage !== 'Application Submitted' && application.currentStage !== 'Draft';
+                    const isActive = application.currentStage === 'Application Submitted' || application.currentStage === 'Draft';
+                    return (
+                      <div className={`p-3 rounded-xl border transition-all relative flex flex-col justify-between min-h-[92px] ${
+                        isActive
+                          ? 'bg-gradient-to-b from-blue-50/90 to-white border-2 border-blue-600 shadow-sm ring-2 ring-blue-500/20'
+                          : isDone
+                          ? 'bg-emerald-50/50 border-emerald-200 text-emerald-950'
+                          : 'bg-slate-50/70 border-slate-200 text-slate-600'
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-[10px] font-bold text-slate-400">STAGE 01</span>
+                          {isDone ? (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                              <CheckCircle2 className="w-2.5 h-2.5" /> DONE
+                            </span>
+                          ) : isActive ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-blue-600 text-white animate-pulse">
+                              ACTIVE
+                            </span>
+                          ) : (
+                            <span className="text-[9px] font-bold text-slate-400">WAIT</span>
+                          )}
+                        </div>
+                        <div>
+                          <span className="block font-bold text-xs text-slate-900 mt-1">1. Ingestion</span>
+                          <span className="text-[10px] text-slate-500 block">NSWS &bull; Siebel Token</span>
+                        </div>
+                        <div className="text-[9px] text-slate-400 font-medium pt-1 border-t border-slate-100 mt-1">
+                          {isDone ? 'Verified Single Window' : isActive ? 'Processing Intake Application' : 'Initial Phase'}
+                        </div>
+                      </div>
+                    );
+                  })()}
 
-                  <div className={`p-2.5 rounded-lg border ${application.currentStage === 'EVC Scheduled' || application.currentStage === 'EVC Inspection Completed' ? 'bg-blue-600 text-white font-bold' : 'bg-slate-50 text-slate-700 border-slate-200'}`}>
-                    <span className="block font-bold">3. EVC Panel</span>
-                    <span className="text-[10px] opacity-80">{isCOEP ? 'Waived (NBA)' : 'Site Audit'}</span>
-                  </div>
+                  {/* Step 2: Desk Scrutiny */}
+                  {(() => {
+                    const isActive = application.currentStage === 'Scrutiny in Progress' || application.currentStage === 'Deficiency Communicated';
+                    const isDone = application.currentStage === 'Scrutiny Cleared' || application.currentStage === 'EVC Scheduled' || application.currentStage === 'EVC Inspection Completed' || application.currentStage === 'Executive Committee Approval' || application.currentStage === 'SAC / SHC Review' || application.currentStage === 'Approval Issued' || application.currentStage === 'Application Rejected';
+                    return (
+                      <div className={`p-3 rounded-xl border transition-all relative flex flex-col justify-between min-h-[92px] ${
+                        isActive
+                          ? 'bg-gradient-to-b from-blue-50/90 to-white border-2 border-blue-600 shadow-sm ring-2 ring-blue-500/20'
+                          : isDone
+                          ? 'bg-emerald-50/50 border-emerald-200 text-emerald-950'
+                          : 'bg-slate-50/70 border-slate-200 text-slate-600'
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-[10px] font-bold text-slate-400">STAGE 02</span>
+                          {isDone ? (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                              <CheckCircle2 className="w-2.5 h-2.5" /> CLEARED
+                            </span>
+                          ) : isActive ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-blue-600 text-white animate-pulse">
+                              IN REVIEW
+                            </span>
+                          ) : (
+                            <span className="text-[9px] font-bold text-slate-400">PENDING</span>
+                          )}
+                        </div>
+                        <div>
+                          <span className="block font-bold text-xs text-slate-900 mt-1">2. Desk Scrutiny</span>
+                          <span className="text-[10px] text-slate-500 block">Checklist &bull; Snapshot v1</span>
+                        </div>
+                        <div className="text-[9px] text-slate-400 font-medium pt-1 border-t border-slate-100 mt-1">
+                          {isDone ? 'Snapshot Digitally Signed' : isActive ? 'Verifying 4 Mandatory Checks' : 'SLA: 10 Days'}
+                        </div>
+                      </div>
+                    );
+                  })()}
 
-                  <div className={`p-2.5 rounded-lg border ${application.currentStage === 'Executive Committee Approval' ? 'bg-blue-600 text-white font-bold' : 'bg-slate-50 text-slate-700 border-slate-200'}`}>
-                    <span className="block font-bold">4. Regional RO</span>
-                    <span className="text-[10px] opacity-80">RO / EC Gate</span>
-                  </div>
+                  {/* Step 3: Physical EVC Inspection */}
+                  {(() => {
+                    const isWaived = isCOEP;
+                    const isActive = (application.currentStage === 'EVC Scheduled' || application.currentStage === 'EVC Inspection Completed') && !isWaived;
+                    const isDone = (application.currentStage === 'Executive Committee Approval' || application.currentStage === 'SAC / SHC Review' || application.currentStage === 'Approval Issued' || application.currentStage === 'Application Rejected') && !isWaived;
+                    return (
+                      <div className={`p-3 rounded-xl border transition-all relative flex flex-col justify-between min-h-[92px] ${
+                        isWaived
+                          ? 'bg-purple-50/60 border-purple-200 text-purple-950'
+                          : isActive
+                          ? 'bg-gradient-to-b from-blue-50/90 to-white border-2 border-blue-600 shadow-sm ring-2 ring-blue-500/20'
+                          : isDone
+                          ? 'bg-emerald-50/50 border-emerald-200 text-emerald-950'
+                          : 'bg-slate-50/70 border-slate-200 text-slate-600'
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-[10px] font-bold text-slate-400">STAGE 03</span>
+                          {isWaived ? (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-purple-100 text-purple-800 border border-purple-300">
+                              <Award className="w-2.5 h-2.5 text-purple-600" /> WAIVED
+                            </span>
+                          ) : isDone ? (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                              <CheckCircle2 className="w-2.5 h-2.5" /> VISITED
+                            </span>
+                          ) : isActive ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-blue-600 text-white animate-pulse">
+                              DISPATCHED
+                            </span>
+                          ) : (
+                            <span className="text-[9px] font-bold text-slate-400">PENDING</span>
+                          )}
+                        </div>
+                        <div>
+                          <span className="block font-bold text-xs text-slate-900 mt-1">3. EVC Inspection</span>
+                          <span className="text-[10px] text-slate-500 block">
+                            {isWaived ? 'Waived (NBA Exemption)' : 'GPS &bull; 30m Video'}
+                          </span>
+                        </div>
+                        <div className="text-[9px] text-slate-400 font-medium pt-1 border-t border-slate-100 mt-1">
+                          {isWaived ? 'APH 2026-27 Errata p. 42' : isDone ? 'Telemetric Audit Verified' : isActive ? 'Field Verification Active' : 'SLA: 14 Days'}
+                        </div>
+                      </div>
+                    );
+                  })()}
 
-                  <div className={`p-2.5 rounded-lg border ${application.currentStage === 'Approval Issued' ? 'bg-emerald-600 text-white font-bold' : application.currentStage === 'Application Rejected' ? 'bg-rose-600 text-white font-bold' : 'bg-slate-50 text-slate-700 border-slate-200'}`}>
-                    <span className="block font-bold">5. Order</span>
-                    <span className="text-[10px] opacity-80">{application.currentStage === 'Application Rejected' ? 'Rejected' : 'EoA Order'}</span>
-                  </div>
+                  {/* Step 4: Regional Desk / SAC */}
+                  {(() => {
+                    const isActive = application.currentStage === 'Executive Committee Approval' || application.currentStage === 'SAC / SHC Review';
+                    const isDone = application.currentStage === 'Approval Issued' || application.currentStage === 'Application Rejected';
+                    return (
+                      <div className={`p-3 rounded-xl border transition-all relative flex flex-col justify-between min-h-[92px] ${
+                        isActive
+                          ? 'bg-gradient-to-b from-blue-50/90 to-white border-2 border-blue-600 shadow-sm ring-2 ring-blue-500/20'
+                          : isDone
+                          ? 'bg-emerald-50/50 border-emerald-200 text-emerald-950'
+                          : 'bg-slate-50/70 border-slate-200 text-slate-600'
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-[10px] font-bold text-slate-400">STAGE 04</span>
+                          {isDone ? (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                              <CheckCircle2 className="w-2.5 h-2.5" /> REVIEWED
+                            </span>
+                          ) : isActive ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-blue-600 text-white animate-pulse">
+                              IN REVIEW
+                            </span>
+                          ) : (
+                            <span className="text-[9px] font-bold text-slate-400">PENDING</span>
+                          )}
+                        </div>
+                        <div>
+                          <span className="block font-bold text-xs text-slate-900 mt-1">4. Regional Desk</span>
+                          <span className="text-[10px] text-slate-500 block">RO / SAC Review Gate</span>
+                        </div>
+                        <div className="text-[9px] text-slate-400 font-medium pt-1 border-t border-slate-100 mt-1">
+                          {isDone ? 'Concurrence Finalized' : isActive ? 'Regional Concurrence & SAC' : 'SLA: 15 Days'}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Step 5: Final Order */}
+                  {(() => {
+                    const isIssued = application.currentStage === 'Approval Issued';
+                    const isRejected = application.currentStage === 'Application Rejected';
+                    return (
+                      <div className={`p-3 rounded-xl border transition-all relative flex flex-col justify-between min-h-[92px] ${
+                        isIssued
+                          ? 'bg-emerald-50/90 border-2 border-emerald-600 shadow-sm ring-2 ring-emerald-500/20 text-emerald-950'
+                          : isRejected
+                          ? 'bg-rose-50/90 border-2 border-rose-600 shadow-sm ring-2 ring-rose-500/20 text-rose-950'
+                          : 'bg-slate-50/70 border-slate-200 text-slate-600'
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-[10px] font-bold text-slate-400">STAGE 05</span>
+                          {isIssued ? (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-600 text-white">
+                              <CheckCircle2 className="w-2.5 h-2.5" /> APPROVED
+                            </span>
+                          ) : isRejected ? (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-rose-600 text-white">
+                              <XCircle className="w-2.5 h-2.5" /> REJECTED
+                            </span>
+                          ) : (
+                            <span className="text-[9px] font-bold text-slate-400">GATE</span>
+                          )}
+                        </div>
+                        <div>
+                          <span className="block font-bold text-xs text-slate-900 mt-1">5. Council Order</span>
+                          <span className="text-[10px] text-slate-500 block">
+                            {isIssued ? 'EoA Order Issued' : isRejected ? 'Speaking Order / LOD' : 'Statutory Order'}
+                          </span>
+                        </div>
+                        <div className="text-[9px] text-slate-400 font-medium pt-1 border-t border-slate-100 mt-1">
+                          {isIssued ? 'Digitally Signed & Dispatched' : isRejected ? 'LOD Dispatched' : 'Council EC Chamber'}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 
