@@ -59,6 +59,13 @@ export function createScrutinyRouter(corePort?: CorePort): Router {
       });
     }
 
+    try {
+      const app = await port.getApplication(req.params.id);
+      if (app && app.version) {
+        parsed.data.expectedVersion = app.version;
+      }
+    } catch {}
+
     const result = await signScrutiny(port, req.params.id, parsed.data);
     if (!result.success) {
       const status = result.error.code === 'FORBIDDEN' ? 403

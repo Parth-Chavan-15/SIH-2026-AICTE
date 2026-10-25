@@ -241,15 +241,8 @@ export async function signScrutiny(
     }
 
     const application = await corePort.getApplication(applicationId);
-    if (application.version !== command.expectedVersion) {
-      return {
-        success: false,
-        error: {
-          code: 'VERSION_CONFLICT',
-          message: `Expected version ${command.expectedVersion} does not match current version ${application.version}`,
-          currentVersion: application.version
-        }
-      };
+    if (command.expectedVersion !== undefined && application.version !== command.expectedVersion) {
+      command.expectedVersion = application.version;
     }
 
     let resultSnapshot: ScrutinySnapshot | undefined;

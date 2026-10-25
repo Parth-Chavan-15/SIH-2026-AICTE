@@ -18,7 +18,9 @@ import {
   RefreshCw,
   Building,
   Clock,
-  ArrowRight
+  ArrowRight,
+  XCircle,
+  Check
 } from 'lucide-react';
 
 interface ScrutinyEvaluationViewProps {
@@ -228,6 +230,84 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
         message: (result as any).error?.message || 'Failed to sign scrutiny snapshot',
       });
     }
+  };
+
+  const handleAcceptAndClearScrutiny = async () => {
+    if (!currentApp) return;
+    const acceptedItems = checklistItems.map((item) => ({
+      ...item,
+      status: 'accepted' as const,
+      remark: 'All statutory parameters verified and accepted compliant with AICTE APH norms.',
+    }));
+    setChecklistItems(acceptedItems);
+    const itemsPayload = acceptedItems.map((i) => ({
+      itemId: i.itemId,
+      result: 'accepted' as const,
+      status: 'accepted' as const,
+      reason: i.remark,
+      evidenceVersionIds: [i.evidenceVersion],
+    }));
+
+    await signSnapshot('2026-27-v1', itemsPayload);
+    for (const item of acceptedItems) {
+      await verifyDocument(currentApp.id, `DOC-${item.itemId}`, 'Verified', item.remark).catch(() => {});
+    }
+    await transitionStage(currentApp.id, 'Scrutiny Cleared', 'Scrutiny fully accepted and cleared by Desk Scrutiny Committee.');
+    addToast({
+      type: 'success',
+      title: 'Scrutiny Accepted & Cleared',
+      message: 'All checklist items verified. Snapshot recorded and case advanced.',
+    });
+    refetchScrutiny();
+  };
+
+  const handleFlagDeficiencies = async () => {
+    if (!currentApp) return;
+    const flaggedItems = checklistItems.map((item) => {
+      if (item.itemId === 'D1' || item.itemId === 'D2') {
+        return {
+          ...item,
+          status: 'deficient' as const,
+          remark: item.itemId === 'D1' ? 'Faculty cadre ratio deficit flagged.' : 'Fire Safety NOC advance renewal required.',
+        };
+      }
+      return item;
+    });
+    setChecklistItems(flaggedItems);
+    const itemsPayload = flaggedItems.map((i) => ({
+      itemId: i.itemId,
+      result: i.status,
+      status: i.status,
+      reason: i.remark,
+      evidenceVersionIds: [i.evidenceVersion],
+    }));
+    await signSnapshot('2026-27-v1', itemsPayload);
+    for (const item of flaggedItems) {
+      const docId = `DOC-${item.itemId}`;
+      if (item.status === 'accepted') {
+        await verifyDocument(currentApp.id, docId, 'Verified', item.remark).catch(() => {});
+      } else {
+        await verifyDocument(currentApp.id, docId, 'Rejected', item.remark).catch(() => {});
+      }
+    }
+    await transitionStage(currentApp.id, 'Deficiency Communicated', 'Deficiencies flagged in Faculty Cadre / Fire NOC per APH §1.8.');
+    addToast({
+      type: 'warning',
+      title: 'Deficiencies Flagged & Communicated',
+      message: 'Snapshot signed with deficiencies. Rectification window opened.',
+    });
+    refetchScrutiny();
+  };
+
+  const handleRejectScrutiny = async () => {
+    if (!currentApp) return;
+    await transitionStage(currentApp.id, 'Application Rejected', 'Application rejected at scrutiny stage due to fatal regulatory non-compliance.');
+    addToast({
+      type: 'error',
+      title: 'Application Rejected',
+      message: 'Scrutiny rejection order stamped and case closed.',
+    });
+    refetchScrutiny();
   };
 
   // Live USP B06 Scope Lock Tamper Test
@@ -504,24 +584,57 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
               </div>
 
               {/* Snapshot v1 Signing Action Bar */}
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div>
                   <span className="font-bold text-slate-800 block text-xs">
-                    Ready to digitally sign Scrutiny Snapshot v1?
+                    Official Scrutiny Actions &amp; Digital Seal
                   </span>
                   <span className="text-[11px] text-slate-500">
-                    Signing will seal accepted items into immutable WORM storage. Any deficient items will trigger the Deficiency Cure Window (Annexure 7).
+                    Signing seals accepted items into immutable WORM storage. Select an authoritative regulatory action below:
                   </span>
                 </div>
 
-                <button
-                  onClick={handleSignSnapshot}
-                  disabled={scrutinyLoading}
-                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 shrink-0 disabled:opacity-50"
-                >
-                  <ShieldCheck className="w-4 h-4" />
-                  <span>{scrutinyLoading ? 'Signing Snapshot...' : 'Sign & Generate Scrutiny Snapshot v1'}</span>
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={handleAcceptAndClearScrutiny}
+                    disabled={scrutinyLoading}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                    title="Accept all parameters, sign snapshot v1, and advance application"
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                    <span>Accept &amp; Clear Scrutiny</span>
+                  </button>
+
+                  <button
+                    onClick={handleFlagDeficiencies}
+                    disabled={scrutinyLoading}
+                    className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                    title="Flag deficiencies in Faculty Cadre & Fire NOC, open rectification window"
+                  >
+                    <AlertTriangle className="w-4 h-4 text-slate-950" />
+                    <span>Flag Deficiencies</span>
+                  </button>
+
+                  <button
+                    onClick={handleSignSnapshot}
+                    disabled={scrutinyLoading}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                    title="Sign snapshot v1 with current toggle states"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>{scrutinyLoading ? 'Signing...' : 'Sign Snapshot v1'}</span>
+                  </button>
+
+                  <button
+                    onClick={handleRejectScrutiny}
+                    disabled={scrutinyLoading}
+                    className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                    title="Formally reject application due to regulatory non-compliance"
+                  >
+                    <XCircle className="w-4 h-4 text-rose-200" />
+                    <span>Reject</span>
+                  </button>
+                </div>
               </div>
 
               {/* Signed Success Banner */}
@@ -693,6 +806,14 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
                   >
                     <ArrowRight className="w-4 h-4" />
                     <span>Clear Re-Scrutiny &amp; Advance Case</span>
+                  </button>
+
+                  <button
+                    onClick={handleRejectScrutiny}
+                    className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5"
+                  >
+                    <XCircle className="w-4 h-4 text-rose-200" />
+                    <span>Reject Application</span>
                   </button>
                 </div>
 

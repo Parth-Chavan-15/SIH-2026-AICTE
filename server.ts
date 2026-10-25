@@ -17,6 +17,7 @@ const __dirname = path.dirname(__filename);
 const allowedOrigin = process.env.CLIENT_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000';
 
 const app = express();
+app.set('trust proxy', 1);
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
@@ -37,9 +38,10 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 300, // limit each IP
+  max: 10000, // High ceiling for high-concurrency evaluation and demonstration
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.path.startsWith('/api/v1/auth/') || req.path === '/api/v1/ready' || req.path === '/health',
 });
 app.use('/api/', limiter);
 

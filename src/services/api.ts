@@ -21,6 +21,8 @@ import type {
   UserProfile,
   UserRole,
   WorkflowStage,
+  WorkflowRouteType,
+  ApplicationType,
   DocumentItem,
   Observation,
   ApplicationTimelineEvent
@@ -188,7 +190,7 @@ export function mapCanonicalToUi(c: CanonicalApplication): Application {
     region,
     state: region === 'Western' ? 'Maharashtra' : region === 'South-Central' ? 'Andhra Pradesh' : region === 'Northern' ? 'Uttar Pradesh' : region === 'Eastern' ? 'West Bengal' : 'Delhi NCR',
     city: isGIITS ? 'Visakhapatnam' : isCOEP ? 'Pune' : isPDIMTR ? 'Davangere / Nagpur' : isAPEX ? 'Kanpur' : isBATU ? 'Lonere, Raigad' : isVJTI ? 'Mumbai' : 'Kolkata',
-    applicationType: c.category === 'intake_increase' ? 'Increase in Intake / Additional Course' : c.category === 'restoration_or_shifting' ? 'Restoration of Intake / Campus Shifting' : c.category === 'deficiency_appeal' ? 'Hearing & Standing Appellate Review' : 'Extension of Approval (EoA)',
+    applicationType: c.category === 'intake_increase' ? 'Increase in Intake / Additional Course' : c.category === 'restoration_or_shifting' ? 'Change of Site / Location' : 'Extension of Approval (EoA)',
     academicYear: c.session || '2026-27',
     program: (c.facts?.program as any) || 'Engineering & Technology',
     proposedIntake: Number(c.facts?.proposedIntake) || 240,
@@ -338,6 +340,22 @@ class APIService {
   }
 
   public async transitionStage(id: string, stage: WorkflowStage, _actor: UserProfile, reason?: string): Promise<Application> {
+    try {
+      const res = await requestJson<any>(`/applications/${encodeURIComponent(id)}/workflow-action`, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: stage === 'Approval Issued' ? 'approve' : stage === 'Application Rejected' ? 'reject' : stage === 'Deficiency Communicated' ? 'deficiency' : 'advance',
+          targetStage: stage,
+          reason: reason || `Updated to ${stage}`
+        })
+      });
+      if (res.data) {
+        return mapCanonicalToUi(res.data);
+      }
+    } catch (err) {
+      console.warn('workflow-action attempt fallback:', err);
+    }
+
     const action: CaseAction = stage === 'Scrutiny in Progress' ? 'start_scrutiny'
       : stage === 'Scrutiny Cleared' || stage === 'Deficiency Communicated' ? 'complete_scrutiny'
       : stage === 'EVC Inspection Completed' ? 'complete_evc'

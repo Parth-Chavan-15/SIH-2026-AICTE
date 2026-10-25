@@ -97,11 +97,11 @@ export const CompetentAuthorityDecisionView: React.FC<CompetentAuthorityDecision
     if (!activeCase) return;
     setIsSubmitting(true);
     try {
-      // 1. Transition case to Approval Issued
+      // 1. Transition case to Approval Issued or Application Rejected
       await transitionStage(
         activeCase.id,
-        'Approval Issued',
-        `Council Statutory Order: ${decisionMode === 'approve' ? 'Unconditional EoA' : 'Conditional EoA'}. ${decisionReason}`
+        decisionMode === 'reject' ? 'Application Rejected' : 'Approval Issued',
+        `Council Statutory Order: ${decisionMode === 'approve' ? 'Unconditional EoA' : decisionMode === 'conditional' ? 'Conditional EoA' : 'Rejected'}. ${decisionReason}`
       );
 
       // 2. Trigger simulated Siebel write-back

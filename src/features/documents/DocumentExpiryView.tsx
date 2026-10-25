@@ -40,10 +40,10 @@ export const DocumentExpiryView: React.FC = () => {
       const actorId = actor?.id || '';
       const email = (actor as any)?.email || '';
       if (actorId === 'usr-inst-apex' || email === 'principal@apex.ac.in') {
-        return app.id.includes('APEX') || app.id.includes('Apex') || app.institutionCode === 'INST-APEX';
+        return doc.institutionName.includes('APEX') || doc.institutionName.includes('Apex') || doc.institutionCode === 'INST-APEX';
       }
       if (actorId === 'usr-inst-batu' || email === 'principal@batu.ac.in') {
-        return app.id.includes('BATU') || app.institutionCode === 'INST-BATU';
+        return doc.institutionName.includes('BATU') || doc.institutionCode === 'INST-BATU';
       }
       if (actorId === 'usr-inst-pdimtr' || email === 'principal@pdimtr.ac.in') {
         return doc.institutionName.includes('PDIMTR') || doc.institutionName.includes('Prerna');

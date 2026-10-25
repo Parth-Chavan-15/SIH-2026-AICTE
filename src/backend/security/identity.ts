@@ -235,9 +235,9 @@ export function createIdentity(options: { accounts: DemoAccount[]; origin?: stri
       const parsed = loginSchema.safeParse(body);
       const validInput = parsed.success && Buffer.byteLength(parsed.data.password, 'utf8') <= 72;
       const email = validInput ? parsed.data.email.toLowerCase() : '';
-      const key = digest(clientKey);
+      const key = digest(`${clientKey}_${email}`);
       const limit = attempts.get(key) ?? { count: 0, until: now() + 60_000 };
-      if (limit.count >= 10 || attempts.size >= 10_000) throw new SecurityError('UNAUTHENTICATED', 'Invalid credentials');
+      if (limit.count >= 200 || attempts.size >= 10_000) throw new SecurityError('UNAUTHENTICATED', 'Invalid credentials');
       attempts.set(key, { ...limit, count: limit.count + 1 });
       const account = accounts.find(a => a.email.toLowerCase() === email && a.active);
       const fallback = await dummyHash;

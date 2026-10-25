@@ -170,16 +170,6 @@ export const ApplicationsListView: React.FC<ApplicationsListViewProps> = ({
             <Download className="w-3.5 h-3.5 text-slate-600" />
             <span>Export CSV ({filteredApps.length})</span>
           </button>
-
-          {role === 'institution' && (
-            <button
-              onClick={onOpenNewAppModal}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition-colors"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>New Application</span>
-            </button>
-          )}
         </div>
       </div>
 

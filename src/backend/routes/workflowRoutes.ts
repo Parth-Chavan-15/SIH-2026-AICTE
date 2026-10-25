@@ -15,6 +15,108 @@ import {
 
 export function createWorkflowRouter(storage: CaseStorage): Router {
   const router = Router();
+  // POST /api/v1/applications/:id/workflow-action - Authoritative stage update (Accept, Reject, Advance, Flag Deficiencies)
+  router.post('/applications/:id/workflow-action', async (req: Request, res: Response) => {
+    const actor = (req as any).actor as Actor;
+    const { action, targetStage, reason } = req.body;
+
+    const isAuthorized = actor && (
+      actor.permissions?.includes('case.transition') ||
+      actor.roles?.some((r: string) => ['regional_officer', 'bureau_officer', 'reviewer', 'demo_authority', 'officer', 'admin', 'policy_admin'].includes(r))
+    );
+
+    if (!isAuthorized) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'Actor lacks authority to execute regulatory workflow actions' }
+      });
+    }
+
+    try {
+      const updated = await storage.transaction(async (tx) => {
+        const app = await tx.get(actor, req.params.id);
+        if (!app) throw new Error('Case not found');
+
+        let nextState = app.state;
+        if (targetStage === 'Scrutiny Cleared') {
+          nextState = app.route?.stages?.includes('evc_pending') ? 'evc_pending' : 'decision_pending';
+        } else if (targetStage === 'EVC Scheduled') {
+          nextState = 'evc_pending';
+        } else if (targetStage === 'EVC Inspection Completed' || targetStage === 'SAC / SHC Review') {
+          nextState = 'decision_pending';
+        } else if (targetStage === 'Deficiency Communicated') {
+          nextState = 'rescrutiny_pending';
+        } else if (targetStage === 'Application Rejected' || action === 'reject') {
+          nextState = 'rejected';
+        } else if (targetStage === 'Approval Issued' || action === 'approve') {
+          nextState = 'approved';
+        } else if (action === 'accept') {
+          if (app.state === 'submitted' || app.state === 'scrutiny_pending') {
+            nextState = app.route?.stages?.includes('evc_pending') ? 'evc_pending' : 'decision_pending';
+          } else if (app.state === 'evc_pending') {
+            nextState = 'decision_pending';
+          } else if (app.state === 'decision_pending') {
+            nextState = 'approved';
+          } else {
+            nextState = 'approved';
+          }
+        } else if (action === 'deficiency') {
+          nextState = 'rescrutiny_pending';
+        } else if (action === 'evc') {
+          nextState = 'evc_pending';
+        } else if (action === 'scrutiny') {
+          nextState = 'scrutiny_pending';
+        } else if (action === 'decision') {
+          nextState = 'decision_pending';
+        } else if (targetStage) {
+          nextState = targetStage as any;
+        }
+
+        const now = new Date().toISOString();
+        const updatedApp = {
+          ...app,
+          state: nextState,
+          version: app.version + 1,
+          stageEnteredAt: now,
+          updatedAt: now
+        };
+
+        await tx.save(updatedApp, app.version);
+
+        if ((tx as any).audit) {
+          try {
+            await (tx as any).audit({
+              id: 'AUDIT-ACTION-' + Date.now(),
+              applicationId: app.id,
+              actorId: actor.id,
+              requestId: 'REQ-ACTION-' + Date.now(),
+              action: 'WORKFLOW_ACTION_' + (action || targetStage || 'ADVANCE').toUpperCase(),
+              occurredAt: now,
+              beforeState: app.state,
+              afterState: nextState,
+              caseVersion: updatedApp.version,
+              reason: reason || ('Stage updated to ' + nextState + ' by ' + actor.id),
+              evidenceVersionIds: []
+            });
+          } catch {}
+        }
+
+        return updatedApp;
+      });
+
+      return res.json({
+        success: true,
+        data: updated,
+        message: 'Application transitioned to ' + updated.state
+      });
+    } catch (err: any) {
+      return res.status(500).json({
+        success: false,
+        error: { code: 'OPERATION_FAILED', message: err.message || 'Workflow transition failed' }
+      });
+    }
+  });
+
 
   // POST /api/v1/applications/:id/revert - Authorized Return/Revert with recorded reason
   router.post('/applications/:id/revert', async (req: Request, res: Response) => {
