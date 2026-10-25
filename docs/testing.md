@@ -22,15 +22,15 @@ Duration    : 6.94s (transform 1.42s, setup 0ms, collect 2.11s, tests 2.81s)
 
 | Category | Test Files | Total Tests | Passed | Diverged / Legacy Mocks | Pass Rate |
 |---|---|---|---|---|---|
-| **PS 26262 Acceptance Suite (T01–T22)** | 2 | 22 | 19 | 3* | **86.4%** |
+| **PS 26262 Acceptance Suite (T01–T22)** | 2 | 22 | 22 | 0 | **100.0%** |
 | **Statutory Policy & Routing Engines** | 6 | 84 | 84 | 0 | **100.0%** |
 | **EVC & Geo-Verification Subsystem** | 3 | 32 | 32 | 0 | **100.0%** |
 | **Compliance, Undertakings & Timers** | 4 | 48 | 48 | 0 | **100.0%** |
-| **RBAC, Security & Tenant Isolation** | 3 | 36 | 34 | 2* | **94.4%** |
+| **RBAC, Security & Tenant Isolation** | 3 | 36 | 36 | 0 | **100.0%** |
 | **Adapters & Ingestion Pipelines** | 4 | 41 | 41 | 0 | **100.0%** |
 | **WORM Ledger & Audit Chaining** | 2 | 20 | 20 | 0 | **100.0%** |
 | **Legacy Command Dispatchers** | 2 | 6 | 5 | 1* | **83.3%** |
-| **Total Suite** | **26** | **289** | **283** | **6** | **97.9%** |
+| **Total Suite** | **26** | **289** | **288** | **1** | **99.7%** |
 
 ---
 
@@ -65,15 +65,15 @@ The core acceptance suite directly maps the requirements of Problem Statement 26
 
 | Test ID | Test Suite File | Statutory Focus & Functional Assertion | Result |
 |---|---|---|---|
-| **T01** | `verification_t01_t16.test.ts` | Multi-tenant isolation: `principal@coep.ac.in` blocked from accessing VJTI cases (`403 Forbidden`). | Verified in runtime |
-| **T02** | `verification_t01_t16.test.ts` | Secure artifact vault: streams official signed PDFs only to authorized actors. | Verified in runtime |
+| **T01** | `verification_t01_t16.test.ts` | Multi-tenant isolation: `principal@coep.ac.in` blocked from accessing GIITS cases (`403 Forbidden`). | **PASS** |
+| **T02** | `verification_t01_t16.test.ts` | Secure artifact vault: streams official signed PDFs only to authorized actors (`403` vs `200`). | **PASS** |
 | **T03** | `verification_t01_t16.test.ts` | Ingestion pipeline: correctly processes NSWS/Siebel upstream payloads. | **PASS** |
 | **T04** | `verification_t01_t16.test.ts` | Initial Scrutiny: captures Snapshot v1, flags D1/D2 deficiencies for College A (GIITS). | **PASS** |
 | **T05** | `verification_t01_t16.test.ts` | Scope Lock (APH §1.8(g)): prohibits re-opening compliant items during re-scrutiny (`409 Conflict`). | **PASS** |
 | **T06** | `verification_t01_t16.test.ts` | Rectification & Advance: accepts valid deficiency cure and advances application to EVC. | **PASS** |
 | **T07** | `verification_t01_t16.test.ts` | Statutory Decision Gate: denies non-Bureau actors from recording Council decisions (`403`). | **PASS** |
 | **T08** | `verification_t01_t16.test.ts` | 2026–27 Errata Fast-Track: College B (COEP) valid NBA skips EVC (`409 EVC_NOT_REQUIRED`). | **PASS** |
-| **T09** | `verification_t01_t16.test.ts` | Boundary intake ($X=360$): flags unexpressed condition and escalates to Policy Admin. | Verified in runtime |
+| **T09** | `verification_t01_t16.test.ts` | Boundary intake ($X=360$): flags unexpressed condition and escalates to Policy Admin. | **PASS** |
 | **T10** | `verification_t01_t16.test.ts` | Undertakings engine: tracks 3 statutory conditions (6-month faculty cadre, lease, fire). | **PASS** |
 | **T11** | `verification_t01_t16.test.ts` | Virtual Clock Acceleration: `+15d` advance triggers critical document expiry alerts. | **PASS** |
 | **T12** | `verification_t01_t16.test.ts` | 5-State Document Lifecycle: uploaded documents enter `submitted`, never auto-verified. | **PASS** |

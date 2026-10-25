@@ -51,11 +51,11 @@ export function createAdapterRouter(storage: CaseStorage): Router {
           upstreamReference: externalReference,
           ingestedAt: nowIso
         },
-        policyRevisionId: 'POL_2026_INTAKE_NON_NBA',
+        policyRevisionId: rawApp.policyRevisionId ?? (rawApp.route?.result === 'review_required' ? undefined : 'POL_2026_INTAKE_NON_NBA'),
         state: rawApp.state || 'submitted',
         version: rawApp.version || 1,
         route: rawApp.route || {
-          policyRevisionId: 'POL_2026_INTAKE_NON_NBA',
+          policyRevisionId: rawApp.policyRevisionId ?? (rawApp.route?.result === 'review_required' ? undefined : 'POL_2026_INTAKE_NON_NBA'),
           session,
           category,
           evaluatedFacts: {},
