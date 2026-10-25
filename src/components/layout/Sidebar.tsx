@@ -179,6 +179,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {roleNumber === 1 ? (
                     (activeActor?.id === 'usr-inst-giits' || (activeActor as any)?.email === 'principal@giits.ac.in') ? 'GIITS • ID 1-462589176' :
                     (activeActor?.id === 'usr-inst-pdimtr' || (activeActor as any)?.email === 'principal@pdimtr.ac.in') ? 'PDIMTR • ID 1-109704178' :
+                    (activeActor?.id === 'usr-inst-apex' || (activeActor as any)?.email === 'principal@apex.ac.in') ? 'Apex • ID 1-33104928' :
+                    (activeActor?.id === 'usr-inst-batu' || (activeActor as any)?.email === 'principal@batu.ac.in') ? 'BATU Lonere • ID 1-19201481' :
                     (activeActor?.id === 'usr-inst-evit' || (activeActor as any)?.email === 'principal@evit.ac.in') ? 'EVIT • ID 1-462228700' :
                     (activeActor?.id === 'usr-inst-vjti' || (activeActor as any)?.email === 'principal@vjti.ac.in') ? 'VJTI • ID 1-436575682' :
                     'COEP • ID 1-435789102'

@@ -93,7 +93,11 @@ export async function initMongoDatabase(uri?: string): Promise<MongoInitResult> 
         academicYear: c.session,
         program: String(c.facts?.program || 'Engineering & Technology'),
         proposedIntake: Number(c.facts?.proposedIntake || 180),
-        routeType: c.route.result === 'review_required' ? 'Policy review required' : c.route.stages.includes('evc_pending') ? 'Scrutiny + EVC' : 'Scrutiny Only',
+        routeType: c.id.includes('BATU') || c.category === 'restoration_or_shifting' ? 'Only EVC'
+          : c.id.includes('APEX') || c.category === 'deficiency_appeal' ? 'Scrutiny + EVC + SAC/SHC'
+          : c.id.includes('PDIMTR') || c.category === 'extension_of_approval' ? 'Fast-Track EoA'
+          : c.route.stages.includes('evc_pending') ? 'Scrutiny + EVC'
+          : 'Scrutiny Only',
         currentStage: c.state === 'submitted' ? 'Application Submitted'
           : c.state === 'scrutiny_pending' ? 'Scrutiny in Progress'
           : c.state === 'rescrutiny_pending' ? 'Deficiency Communicated'
@@ -135,6 +139,40 @@ export async function initMongoDatabase(uri?: string): Promise<MongoInitResult> 
       }
 
       seededCount = appDocs.length;
+    } else {
+      // Sync canonical cases to ensure all 5 statutory route cases are present with accurate routeType
+      const canonicalState = getCanonicalSeedState();
+      for (const c of (canonicalState.cases || [])) {
+        const routeType = c.id.includes('BATU') || c.category === 'restoration_or_shifting' ? 'Only EVC'
+          : c.id.includes('APEX') || c.category === 'deficiency_appeal' ? 'Scrutiny + EVC + SAC/SHC'
+          : c.id.includes('PDIMTR') || c.category === 'extension_of_approval' ? 'Fast-Track EoA'
+          : c.route.stages.includes('evc_pending') ? 'Scrutiny + EVC'
+          : 'Scrutiny Only';
+
+        await db.collection('applications').updateOne(
+          { 'caseData.id': c.id },
+          {
+            $set: {
+              caseData: c,
+              applicationNumber: c.reference,
+              institutionName: c.facts?.institutionName || c.institutionId,
+              institutionCode: c.institutionId,
+              region: c.regionId,
+              routeType,
+              academicYear: c.session,
+              applicationType: c.category
+            }
+          },
+          { upsert: true }
+        );
+      }
+      for (const inst of (canonicalState.institutions || [])) {
+        await db.collection('institutions').updateOne(
+          { id: inst.id },
+          { $set: inst },
+          { upsert: true }
+        );
+      }
     }
 
     return {

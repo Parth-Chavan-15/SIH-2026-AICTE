@@ -241,9 +241,11 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
 
   // Dynamic statutory vault artifact mapped to actual case & processing stage
   const isPendingScrutiny = application.currentStage === 'Application Submitted' || application.currentStage === 'Draft';
-  const isGIITS = application.id.includes('GIITS') || application.institutionCode === 'INST-NORTH';
-  const isCOEP = application.id.includes('COEP') || application.institutionCode === 'INST-SOUTH';
-  const isPDIMTR = application.id.includes('PDIMTR') || application.institutionCode === 'INST-WEST';
+  const isGIITS = application.id.includes('GIITS') || application.institutionCode === 'INST-NORTH' || application.routeType === 'Scrutiny + EVC';
+  const isCOEP = application.id.includes('COEP') || application.institutionCode === 'INST-SOUTH' || application.routeType === 'Scrutiny Only';
+  const isPDIMTR = application.id.includes('PDIMTR') || application.institutionCode === 'INST-WEST' || application.routeType === 'Fast-Track EoA';
+  const isAPEX = application.id.includes('APEX') || application.id.includes('Apex') || application.institutionCode === 'INST-APEX' || application.routeType === 'Scrutiny + EVC + SAC/SHC';
+  const isBATU = application.id.includes('BATU') || application.institutionCode === 'INST-BATU' || application.routeType === 'Only EVC';
 
   const vaultArtifact = isPendingScrutiny
     ? {
@@ -314,7 +316,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                 <span className="text-[10px] font-mono text-teal-300 uppercase tracking-wider">SELECTED ROUTE:</span>
                 <span className="text-white uppercase tracking-tight">{application.routeType}</span>
                 <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-black/40 text-teal-200 border border-teal-400/30">
-                  {isCOEP ? '⚡ NBA FAST-TRACK (EVC WAIVED)' : isGIITS ? '🔍 SCRUTINY + EVC' : isPDIMTR ? '📜 SELF-DISCLOSURE' : 'RULE-PINNED'}
+                  {isCOEP ? '⚡ NBA FAST-TRACK (EVC WAIVED)' : isGIITS ? '🔍 SCRUTINY + EVC' : isPDIMTR ? '📜 SELF-DISCLOSURE' : isAPEX ? '⚖️ EVC + SAC/SHC (APPELLATE)' : isBATU ? '🚁 ONLY EVC (§2.16.1)' : 'RULE-PINNED'}
                 </span>
               </div>
             </div>
@@ -550,19 +552,19 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                   </div>
                   <p className="text-[10px] text-slate-500 mt-1 font-normal">{isGIITS ? 'Non-NBA Intake Surge: EVC Mandatory §1.9' : 'Bypassed due to NBA status'}</p>
                 </div>
-                                <div className="p-2.5 rounded-xl border bg-white/80 border-slate-200 text-slate-500">
+                <div className={`p-2.5 rounded-xl border ${isAPEX ? 'bg-emerald-50 border-emerald-400 font-bold text-emerald-950 ring-1 ring-emerald-400' : 'bg-white/80 border-slate-200 text-slate-500'}`}>
                   <div className="flex items-center justify-between">
                     <span>Route 4: SAC / SHC</span>
-                    <span>⏳ APPELLATE</span>
+                    <span>{isAPEX ? '✅ ACTIVE (SAC)' : '⏳ APPELLATE'}</span>
                   </div>
                   <p className="text-[10px] text-slate-500 mt-1 font-normal">Standing Appellate hearing if aggrieved (§1.11)</p>
                 </div>
-                <div className={`p-2.5 rounded-xl border ${application.routeType === 'Only EVC' ? 'bg-emerald-50 border-emerald-400 font-bold text-emerald-950 ring-1 ring-emerald-400' : 'bg-white/80 border-slate-200 text-slate-500'}`}>
+                <div className={`p-2.5 rounded-xl border ${isBATU ? 'bg-emerald-50 border-emerald-400 font-bold text-emerald-950 ring-1 ring-emerald-400' : 'bg-white/80 border-slate-200 text-slate-500'}`}>
                   <div className="flex items-center justify-between">
                     <span>Route 5: Only EVC</span>
-                    <span>{application.routeType === 'Only EVC' ? '✅ ACTIVE' : '❌ RULED OUT'}</span>
+                    <span>{isBATU ? '✅ ACTIVE (§2.16.1)' : '❌ RULED OUT'}</span>
                   </div>
-                  <p className="text-[10px] text-slate-500 mt-1 font-normal">Surprise/Restoration inspection without desk review (§2.16.1)</p>
+                  <p className="text-[10px] text-slate-500 mt-1 font-normal">Restoration / Site Shift inspection waives scrutiny (§2.16.1)</p>
                 </div>
               </div>
             </div>

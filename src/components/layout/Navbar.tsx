@@ -135,9 +135,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="hidden lg:flex items-center gap-1 bg-slate-900/90 px-2 py-1 rounded-xl border border-blue-900/60 text-[11px]">
               <span className="text-[10px] text-slate-400 font-semibold uppercase pr-1">Tenant:</span>
               {[
-                { id: 'coep', label: 'COEP (NBA)', email: 'principal@coep.ac.in' },
-                { id: 'giits', label: 'GIITS (Non-NBA)', email: 'principal@giits.ac.in' },
-                { id: 'pdimtr', label: 'PDIMTR (Lease)', email: 'principal@pdimtr.ac.in' },
+                { id: 'coep', label: '1. COEP (Scrutiny Only)', email: 'principal@coep.ac.in', hint: 'NBA Fast-Track' },
+                { id: 'giits', label: '2. GIITS (Scrutiny + EVC)', email: 'principal@giits.ac.in', hint: 'Non-NBA Intake Surge' },
+                { id: 'pdimtr', label: '3. PDIMTR (Fast-Track EoA)', email: 'principal@pdimtr.ac.in', hint: 'Self-Disclosure & Lease' },
+                { id: 'apex', label: '4. Apex (EVC + SAC/SHC)', email: 'principal@apex.ac.in', hint: 'Appellate Hearing Loop' },
+                { id: 'batu', label: '5. BATU (Only EVC)', email: 'principal@batu.ac.in', hint: '§2.16.1 Restoration / Shifting' },
               ].map((col) => {
                 const isColActive = (activeActor as any)?.email === col.email || activeActor?.id === `usr-inst-${col.id}`;
                 return (
@@ -145,6 +147,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     key={col.id}
                     disabled={switchingRole}
                     onClick={() => handleSwitchRole(1, col.email, 'inst-apps')}
+                    title={`${col.label} — ${col.hint}`}
                     className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
                       isColActive
                         ? 'bg-blue-600 text-white shadow-2xs'

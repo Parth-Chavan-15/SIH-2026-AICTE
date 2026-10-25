@@ -56,9 +56,11 @@ export const canDecide = (actor: Actor, app: CanonicalApplication) =>
 const liveDocumentStates: Record<string, Record<string, Partial<DocumentItem>>> = {};
 
 export function mapCanonicalToUi(c: CanonicalApplication): Application {
-  const isGIITS = c.id === 'APP-2026-GIITS';
-  const isCOEP = c.id === 'APP-2026-COEP';
-  const isPDIMTR = c.id === 'APP-2026-PDIMTR';
+  const isGIITS = c.id === 'APP-2026-GIITS' || c.id.includes('GIITS');
+  const isCOEP = c.id === 'APP-2026-COEP' || c.id.includes('COEP');
+  const isPDIMTR = c.id === 'APP-2026-PDIMTR' || c.id.includes('PDIMTR');
+  const isAPEX = c.id === 'APP-2026-APEX' || c.id.includes('Apex') || c.id.includes('APEX');
+  const isBATU = c.id === 'APP-2026-BATU' || c.id.includes('BATU');
   const isEVIT = c.id === 'APP-2026-EVIT';
   const isVJTI = c.id === 'APP-2026-VJTI';
 
@@ -66,6 +68,8 @@ export function mapCanonicalToUi(c: CanonicalApplication): Application {
     (isGIITS ? 'Gonna Institute of Information Technology and Sciences (GIITS), Visakhapatnam'
       : isCOEP ? 'College of Engineering Pune (COEP Technological University)'
       : isPDIMTR ? 'Prerna / Univ BDT College of Engineering (PDIMTR)'
+      : isAPEX ? 'Apex Institute of Technology & Management'
+      : isBATU ? 'Dr. Babasaheb Ambedkar Technological University (BATU Lonere)'
       : isEVIT ? 'East Valley Institute of Technology (EVIT)'
       : isVJTI ? 'Veermata Jijabai Technological Institute (VJTI)'
       : c.institutionId);
@@ -182,13 +186,23 @@ export function mapCanonicalToUi(c: CanonicalApplication): Application {
     institutionName: instName,
     institutionCode: c.institutionId,
     region,
-    state: region === 'Western' ? 'Maharashtra' : region === 'South-Central' ? 'Andhra Pradesh' : region === 'Eastern' ? 'West Bengal' : 'Delhi NCR',
-    city: isGIITS ? 'Visakhapatnam' : isCOEP ? 'Pune' : isPDIMTR ? 'Davangere / Nagpur' : isVJTI ? 'Mumbai' : 'Kolkata',
-    applicationType: c.category === 'intake_increase' ? 'Increase in Intake / Additional Course' : 'Extension of Approval (EoA)',
+    state: region === 'Western' ? 'Maharashtra' : region === 'South-Central' ? 'Andhra Pradesh' : region === 'Northern' ? 'Uttar Pradesh' : region === 'Eastern' ? 'West Bengal' : 'Delhi NCR',
+    city: isGIITS ? 'Visakhapatnam' : isCOEP ? 'Pune' : isPDIMTR ? 'Davangere / Nagpur' : isAPEX ? 'Kanpur' : isBATU ? 'Lonere, Raigad' : isVJTI ? 'Mumbai' : 'Kolkata',
+    applicationType: c.category === 'intake_increase' ? 'Increase in Intake / Additional Course' : c.category === 'restoration_or_shifting' ? 'Restoration of Intake / Campus Shifting' : c.category === 'deficiency_appeal' ? 'Hearing & Standing Appellate Review' : 'Extension of Approval (EoA)',
     academicYear: c.session || '2026-27',
     program: (c.facts?.program as any) || 'Engineering & Technology',
     proposedIntake: Number(c.facts?.proposedIntake) || 240,
-    routeType: c.route?.stages?.includes('evc_pending') ? 'Scrutiny + EVC' : 'Scrutiny Only',
+    routeType: (
+      isBATU || c.category === 'restoration_or_shifting' || c.policyRevisionId?.includes('ONLY_EVC')
+        ? 'Only EVC'
+        : isAPEX || c.category === 'deficiency_appeal' || c.policyRevisionId?.includes('SAC_SHC')
+        ? 'Scrutiny + EVC + SAC/SHC'
+        : isPDIMTR || c.category === 'extension_of_approval' || c.policyRevisionId?.includes('EOA_SELF_DISCLOSURE')
+        ? 'Fast-Track EoA'
+        : isGIITS || c.route?.stages?.includes('evc_pending') || c.policyRevisionId?.includes('NON_NBA')
+        ? 'Scrutiny + EVC'
+        : 'Scrutiny Only'
+    ) as WorkflowRouteType,
     currentStage,
     currentStageStartedAt: c.stageEnteredAt || c.createdAt || new Date().toISOString(),
     submittedAt: c.createdAt || new Date().toISOString(),

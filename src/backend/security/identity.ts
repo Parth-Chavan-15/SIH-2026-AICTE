@@ -94,6 +94,32 @@ export const BUILT_IN_DEMO_ACCOUNTS: DemoAccount[] = [
     },
   },
   {
+    email: 'principal@apex.ac.in',
+    passwordHash: DEMO_PW_HASH,
+    active: true,
+    actor: {
+      id: 'usr-inst-apex',
+      roles: ['institution'],
+      permissions: ['case.read', 'case.create', 'document.read', 'document.submit', 'scrutiny.correct', 'notification.read'],
+      scope: 'scoped',
+      institutionIds: ['INST-APEX', 'INST-EAST'],
+      regionIds: ['NRO', 'Northern', 'Eastern'],
+    },
+  },
+  {
+    email: 'principal@batu.ac.in',
+    passwordHash: DEMO_PW_HASH,
+    active: true,
+    actor: {
+      id: 'usr-inst-batu',
+      roles: ['institution'],
+      permissions: ['case.read', 'case.create', 'document.read', 'document.submit', 'scrutiny.correct', 'notification.read'],
+      scope: 'scoped',
+      institutionIds: ['INST-BATU', 'INST-VJTI'],
+      regionIds: ['WRO', 'Western'],
+    },
+  },
+  {
     email: 'scrutiny.reviewer@aicte.gov.in',
     passwordHash: DEMO_PW_HASH,
     active: true,

@@ -46,6 +46,12 @@ export const ComplianceView: React.FC = () => {
     return complianceItems.filter((item) => {
       const actorId = actor?.id || '';
       const email = (actor as any)?.email || '';
+      if (actorId === 'usr-inst-apex' || email === 'principal@apex.ac.in') {
+        return app.id.includes('APEX') || app.id.includes('Apex') || app.institutionCode === 'INST-APEX';
+      }
+      if (actorId === 'usr-inst-batu' || email === 'principal@batu.ac.in') {
+        return app.id.includes('BATU') || app.institutionCode === 'INST-BATU';
+      }
       if (actorId === 'usr-inst-pdimtr' || email === 'principal@pdimtr.ac.in') {
         return item.institutionName.includes('PDIMTR') || item.institutionName.includes('Prerna');
       }

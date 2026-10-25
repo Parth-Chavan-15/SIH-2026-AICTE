@@ -70,6 +70,20 @@ export const CANONICAL_INSTITUTIONS: Institution[] = [
     name: 'Veermata Jijabai Technological Institute (VJTI)',
     regionId: 'Western',
     status: 'active'
+  },
+  {
+    id: 'INST-APEX',
+    permanentId: '1-33104928',
+    name: 'Apex Institute of Technology & Management',
+    regionId: 'Northern',
+    status: 'active'
+  },
+  {
+    id: 'INST-BATU',
+    permanentId: '1-19201481',
+    name: 'Dr. Babasaheb Ambedkar Technological University (BATU Lonere)',
+    regionId: 'Western',
+    status: 'active'
   }
 ];
 
@@ -241,6 +255,76 @@ export const CANONICAL_APPLICATIONS: Application[] = [
     version: 1,
     stageEnteredAt: '2026-10-24T00:00:00.000Z',
     createdAt: '2026-10-24T00:00:00.000Z',
+    updatedAt: '2026-10-24T00:00:00.000Z'
+  },
+  // College 4: Apex Institute - Scrutiny + EVC + SAC/SHC Hearing Loop (APH §1.11 / §2.23.3 / GIITS precedent 2-SOC1776333767)
+  {
+    id: 'APP-2026-APEX',
+    reference: '1-33104928001',
+    institutionId: 'INST-APEX',
+    regionId: 'Northern',
+    category: 'deficiency_appeal',
+    session: '2026-2027',
+    facts: {
+      institutionName: 'Apex Institute of Technology & Management',
+      permanentInstituteId: '1-33104928',
+      program: 'Engineering & Technology',
+      course: 'Civil & Environmental Engineering',
+      currentIntake: 120,
+      proposedIntake: 180,
+      nbaAccredited: false,
+      cadreRatioDeficit: true,
+      sacHearingScheduled: true
+    },
+    policyRevisionId: 'POL_2026_EVC_SAC_SHC_APPEAL',
+    state: 'rescrutiny_pending',
+    route: {
+      policyRevisionId: 'POL_2026_EVC_SAC_SHC_APPEAL',
+      session: '2026-2027',
+      category: 'deficiency_appeal',
+      evaluatedFacts: { standingAppealsHearingRequested: true },
+      result: 'selected',
+      stages: ['submitted', 'scrutiny_pending', 'evc_pending', 'rescrutiny_pending', 'decision_pending'],
+      reasons: ['APH §1.11 & 2026-27 Addendum G02 p. 11 §2.23.3: Contested EVC deficiencies referred to Standing Appellate Committee (SAC) / SHC for personal hearing and Re-EVC order'],
+      sources: [SRC_APH_2026_ERRATA]
+    },
+    version: 2,
+    stageEnteredAt: '2026-10-24T00:00:00.000Z',
+    createdAt: '2026-10-18T00:00:00.000Z',
+    updatedAt: '2026-10-24T00:00:00.000Z'
+  },
+  // College 5: BATU Lonere - Only EVC (Restoration / Break-in-EoA / Site Shifting per APH §2.16.1 & §2.17(e))
+  {
+    id: 'APP-2026-BATU',
+    reference: '1-19201481001',
+    institutionId: 'INST-BATU',
+    regionId: 'Western',
+    category: 'restoration_or_shifting',
+    session: '2026-2027',
+    facts: {
+      institutionName: 'Dr. Babasaheb Ambedkar Technological University (BATU Lonere)',
+      permanentInstituteId: '1-19201481',
+      program: 'Engineering & Technology',
+      course: 'Chemical Engineering',
+      currentIntake: 60,
+      proposedIntake: 120,
+      siteVerificationRequired: true
+    },
+    policyRevisionId: 'POL_2026_ONLY_EVC_RESTORATION',
+    state: 'evc_pending',
+    route: {
+      policyRevisionId: 'POL_2026_ONLY_EVC_RESTORATION',
+      session: '2026-2027',
+      category: 'restoration_or_shifting',
+      evaluatedFacts: { siteVerificationRequired: true },
+      result: 'selected',
+      stages: ['submitted', 'evc_pending', 'decision_pending'],
+      reasons: ['APH 2024-27 §§2.16.1(c)/(d) & §2.17(e): Restoration / Site Shifting mandates physical on-site EVC inspection only, waiving preliminary desk scrutiny'],
+      sources: [SRC_APH_2024_27]
+    },
+    version: 1,
+    stageEnteredAt: '2026-10-24T00:00:00.000Z',
+    createdAt: '2026-10-19T00:00:00.000Z',
     updatedAt: '2026-10-24T00:00:00.000Z'
   }
 ];
