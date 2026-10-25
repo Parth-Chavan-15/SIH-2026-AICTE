@@ -348,8 +348,20 @@ export const ApplicationsListView: React.FC<ApplicationsListViewProps> = ({
                           <span>Self-Disclosure</span>
                           <span className="text-[9px] px-1 py-0.2 rounded bg-blue-200/60 font-mono text-blue-900">EoA</span>
                         </span>
+                      ) : app.routeType === 'Scrutiny + EVC + SAC/SHC' || app.id.includes('Apex') || app.id.includes('60293') ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-purple-50 text-purple-900 border border-purple-300 shadow-2xs">
+                          <span className="text-purple-600">⚖️</span>
+                          <span>EVC + SAC/SHC</span>
+                          <span className="text-[9px] px-1 py-0.2 rounded bg-purple-200/60 font-mono text-purple-900">Appellate</span>
+                        </span>
+                      ) : app.routeType === 'Only EVC' || app.id.includes('BATU') || app.id.includes('19201') ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-indigo-50 text-indigo-900 border border-indigo-300 shadow-2xs">
+                          <span className="text-indigo-600">🚁</span>
+                          <span>Only EVC</span>
+                          <span className="text-[9px] px-1 py-0.2 rounded bg-indigo-200/60 font-mono text-indigo-900">§2.16.1</span>
+                        </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-purple-50 text-purple-800 border border-purple-300 shadow-2xs">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-800 border border-slate-300 shadow-2xs">
                           <span>⚠️</span>
                           <span>{app.routeType}</span>
                         </span>

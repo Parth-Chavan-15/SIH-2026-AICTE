@@ -28,7 +28,8 @@ export type WorkflowRouteType =
   | 'Scrutiny Only'
   | 'Scrutiny + EVC'
   | 'Scrutiny + EVC + SAC/SHC'
-  | 'Fast-Track EoA';
+  | 'Fast-Track EoA'
+  | 'Only EVC';
 
 export type WorkflowStage =
   | 'Draft'

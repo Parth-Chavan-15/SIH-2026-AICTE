@@ -132,7 +132,16 @@ export const WorkflowView: React.FC<WorkflowViewProps> = ({ onSelectApplication 
           'Executive Committee Approval',
           'Approval Issued',
         ];
+      case 'Only EVC':
+        return [
+          'Application Submitted',
+          'EVC Scheduled',
+          'EVC Inspection Completed',
+          'Executive Committee Approval',
+          'Approval Issued',
+        ];
       case 'Fast-Track EoA':
+      default:
         return [
           'Application Submitted',
           'Scrutiny in Progress',
@@ -157,7 +166,7 @@ export const WorkflowView: React.FC<WorkflowViewProps> = ({ onSelectApplication 
 
         {/* Route Filter Tabs */}
         <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200 text-xs shadow-2xs overflow-x-auto">
-          {(['All', 'Scrutiny Only', 'Scrutiny + EVC', 'Scrutiny + EVC + SAC/SHC', 'Fast-Track EoA'] as const).map(
+          {(['All', 'Scrutiny Only', 'Scrutiny + EVC', 'Scrutiny + EVC + SAC/SHC', 'Fast-Track EoA', 'Only EVC'] as const).map(
             (r) => (
               <button
                 key={r}

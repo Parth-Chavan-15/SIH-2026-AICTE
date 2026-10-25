@@ -6,6 +6,7 @@ import { formatDateIndian } from '../../utils/slaCalculator';
 import { getEligibleNextStages, validateWorkflowTransition } from '../../utils/workflowEngine';
 import { api } from '../../services/api';
 import { getSession } from '../../services/session';
+import { CaseSummaryNoticesModal } from './CaseSummaryNoticesModal';
 import {
   X,
   Building,
@@ -85,6 +86,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
   const [showRevertModal, setShowRevertModal] = useState(false);
   const [revertTargetKey, setRevertTargetKey] = useState<string>('submitted');
   const [revertReason, setRevertReason] = useState('');
+  const [showCaseSummaryModal, setShowCaseSummaryModal] = useState(false);
   const [revertError, setRevertError] = useState<string | null>(null);
   const [isReverting, setIsReverting] = useState(false);
 
@@ -374,6 +376,16 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
               </button>
             )}
 
+                        {/* Electronic Case Summary & 5 Standardised Notices Modal Trigger */}
+            <button
+              onClick={() => setShowCaseSummaryModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors shadow-2xs"
+              title="View Electronic Case Summary & 5 Standardised Statutory Communications (APH 2026–27 §1.8–§2.25)"
+            >
+              <FileText className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Case Summary & 5 Notices</span>
+            </button>
+
             {/* Dynamic Institute-Specific Evaluation Table */}
             <a
               href={`/api/v1/cases/${application.id}/intake-evaluation-table`}
@@ -516,7 +528,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
               <span className="text-[11px] font-bold text-indigo-950 uppercase tracking-wider block">
                 Statutory Route Determination & Alternative Path Comparison (APH Table 1 Engine)
               </span>
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-[11px]">
+              <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 text-[11px]">
                 <div className={`p-2.5 rounded-xl border ${isPDIMTR ? 'bg-emerald-50 border-emerald-400 font-bold text-emerald-950 ring-1 ring-emerald-400' : 'bg-white/80 border-slate-200 text-slate-500'}`}>
                   <div className="flex items-center justify-between">
                     <span>Route 1: Self-Disclosure</span>
@@ -538,12 +550,19 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                   </div>
                   <p className="text-[10px] text-slate-500 mt-1 font-normal">{isGIITS ? 'Non-NBA Intake Surge: EVC Mandatory §1.9' : 'Bypassed due to NBA status'}</p>
                 </div>
-                <div className="p-2.5 rounded-xl border bg-white/80 border-slate-200 text-slate-500">
+                                <div className="p-2.5 rounded-xl border bg-white/80 border-slate-200 text-slate-500">
                   <div className="flex items-center justify-between">
                     <span>Route 4: SAC / SHC</span>
                     <span>⏳ APPELLATE</span>
                   </div>
                   <p className="text-[10px] text-slate-500 mt-1 font-normal">Standing Appellate hearing if aggrieved (§1.11)</p>
+                </div>
+                <div className={`p-2.5 rounded-xl border ${application.routeType === 'Only EVC' ? 'bg-emerald-50 border-emerald-400 font-bold text-emerald-950 ring-1 ring-emerald-400' : 'bg-white/80 border-slate-200 text-slate-500'}`}>
+                  <div className="flex items-center justify-between">
+                    <span>Route 5: Only EVC</span>
+                    <span>{application.routeType === 'Only EVC' ? '✅ ACTIVE' : '❌ RULED OUT'}</span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 mt-1 font-normal">Surprise/Restoration inspection without desk review (§2.16.1)</p>
                 </div>
               </div>
             </div>
@@ -1322,6 +1341,13 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
       )}
 
       {/* GOV.UK Styled Document Rectification Dialog */}
+      {showCaseSummaryModal && (
+        <CaseSummaryNoticesModal
+          application={application}
+          onClose={() => setShowCaseSummaryModal(false)}
+        />
+      )}
+
       {correctingDoc && (
         <div className="fixed inset-0 z-60 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95">
