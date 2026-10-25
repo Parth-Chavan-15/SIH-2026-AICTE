@@ -57,6 +57,28 @@ export const canDecide = (actor: Actor, app: CanonicalApplication) =>
 // Live in-memory document state tracking across Scrutiny & Deficiency Cure
 const liveDocumentStates: Record<string, Record<string, Partial<DocumentItem>>> = {};
 
+export const liveCureSubmissions: Record<string, Record<string, string>> = {};
+
+export function getLiveCureRemark(appId: string, itemId: string): string | null {
+  try {
+    const key = `niyamsetu_cure_${appId}_${itemId}`;
+    const stored = typeof window !== 'undefined' ? window.localStorage.getItem(key) : null;
+    if (stored) return stored;
+  } catch {}
+  return liveCureSubmissions[appId]?.[itemId] || null;
+}
+
+export function setLiveCureRemark(appId: string, itemId: string, text: string): void {
+  if (!liveCureSubmissions[appId]) liveCureSubmissions[appId] = {};
+  liveCureSubmissions[appId][itemId] = text;
+  try {
+    if (typeof window !== 'undefined') {
+      const key = `niyamsetu_cure_${appId}_${itemId}`;
+      window.localStorage.setItem(key, text);
+    }
+  } catch {}
+}
+
 export function mapCanonicalToUi(c: CanonicalApplication): Application {
   const isGIITS = c.id === 'APP-2026-GIITS' || c.id.includes('GIITS');
   const isCOEP = c.id === 'APP-2026-COEP' || c.id.includes('COEP');

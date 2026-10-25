@@ -83,8 +83,7 @@ export const ROLE_NAV_ITEMS: Record<RolePortalId, { portalTitle: string; subtitl
     subtitle: 'Competent Authority • Executive Committee Chamber',
     items: [
       { id: 'ca-decision', label: '1. Statutory Decision Gate (APH §1.10)', icon: Award, badge: 'HUMAN ONLY', badgeColor: 'bg-rose-600 text-white font-bold' },
-      { id: 'ca-dispatch', label: '2. National Ecosystem & Siebel Dispatch', icon: Send, badge: '5 ADAPTERS', badgeColor: 'bg-emerald-600 text-white font-bold' },
-      { id: 'notifications', label: '3. Council Alerts & Escalations', icon: Bell, badge: 'CRITICAL', badgeColor: 'bg-rose-600 text-white font-bold' },
+      { id: 'notifications', label: '2. Council Alerts & Escalations', icon: Bell, badge: 'CRITICAL', badgeColor: 'bg-rose-600 text-white font-bold' },
     ]
   },
   6: {

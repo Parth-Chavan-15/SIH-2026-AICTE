@@ -134,6 +134,72 @@ export const PendencyView: React.FC<PendencyViewProps> = ({ onSelectApplication 
         </div>
       )}
 
+            {/* 8-Region Workload & Ageing Matrix (PS Domain B) */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2">
+            <Building className="w-4 h-4 text-indigo-600" />
+            <h3 className="font-bold text-sm text-slate-900">
+              8-Region Live Workload &amp; Ageing Duration Matrix
+            </h3>
+            <span className="text-[10px] bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded-full uppercase">
+              PS Domain B &bull; Real-Time
+            </span>
+          </div>
+          <span className="text-xs text-slate-500 font-mono">
+            4 Statutory Ageing Buckets (0-7d, 8-15d, 16-30d, &gt;30d)
+          </span>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="bg-slate-50 text-slate-600 border-b border-slate-200 text-[11px] font-bold">
+                <th className="py-2.5 px-3">AICTE Region</th>
+                <th className="py-2.5 px-3 text-center text-emerald-700 bg-emerald-50/50">0–7 Days (On-Track)</th>
+                <th className="py-2.5 px-3 text-center text-blue-700 bg-blue-50/50">8–15 Days (Moderate)</th>
+                <th className="py-2.5 px-3 text-center text-amber-700 bg-amber-50/50">16–30 Days (Approaching SLA)</th>
+                <th className="py-2.5 px-3 text-center text-rose-700 bg-rose-50/50">&gt; 30 Days (Critical Bottleneck)</th>
+                <th className="py-2.5 px-3 text-right">Regional Health</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
+              {[
+                { code: 'WRO', name: 'Western (Mumbai)', d0_7: 2, d8_15: 1, d16_30: 0, d30plus: 0, status: 'Normal' },
+                { code: 'SCRO', name: 'South-Central (Hyderabad)', d0_7: 1, d8_15: 1, d16_30: 1, d30plus: 0, status: 'Approaching SLA' },
+                { code: 'NRO', name: 'Northern (Kanpur)', d0_7: 0, d8_15: 1, d16_30: 1, d30plus: 1, status: 'Bottleneck Active' },
+                { code: 'SRO', name: 'Southern (Chennai)', d0_7: 3, d8_15: 0, d16_30: 0, d30plus: 0, status: 'Normal' },
+                { code: 'SWRO', name: 'South-Western (Bangalore)', d0_7: 2, d8_15: 1, d16_30: 0, d30plus: 0, status: 'Normal' },
+                { code: 'NWRO', name: 'North-Western (Chandigarh)', d0_7: 1, d8_15: 0, d16_30: 0, d30plus: 0, status: 'Normal' },
+                { code: 'ERO', name: 'Eastern (Kolkata)', d0_7: 1, d8_15: 1, d16_30: 0, d30plus: 0, status: 'Normal' },
+                { code: 'CRO', name: 'Central (Bhopal)', d0_7: 2, d8_15: 0, d16_30: 0, d30plus: 0, status: 'Normal' },
+              ].map((reg) => (
+                <tr key={reg.code} className="hover:bg-slate-50/80 transition-colors">
+                  <td className="py-2 px-3 font-sans font-bold text-slate-800">
+                    <span className="bg-slate-200 text-slate-800 text-[10px] px-1.5 py-0.5 rounded mr-1.5 font-mono">{reg.code}</span>
+                    {reg.name}
+                  </td>
+                  <td className="py-2 px-3 text-center text-emerald-800 font-bold bg-emerald-50/30">{reg.d0_7}</td>
+                  <td className="py-2 px-3 text-center text-blue-800 font-semibold bg-blue-50/30">{reg.d8_15}</td>
+                  <td className="py-2 px-3 text-center text-amber-800 font-semibold bg-amber-50/30">{reg.d16_30}</td>
+                  <td className="py-2 px-3 text-center text-rose-800 font-bold bg-rose-50/30">
+                    {reg.d30plus > 0 ? <span className="bg-rose-600 text-white px-1.5 py-0.5 rounded text-[10px]">{reg.d30plus} Alert</span> : '0'}
+                  </td>
+                  <td className="py-2 px-3 text-right font-sans">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      reg.status === 'Bottleneck Active' ? 'bg-rose-100 text-rose-800' :
+                      reg.status === 'Approaching SLA' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
+                    }`}>
+                      {reg.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Filter Controls */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-wrap gap-3 items-center">
         <div className="flex items-center gap-2 text-xs font-bold text-slate-700">

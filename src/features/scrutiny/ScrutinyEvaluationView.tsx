@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useScrutiny } from '../applications/hooks/useScrutiny';
 import { formatDateIndian } from '../../utils/slaCalculator';
+import { getLiveCureRemark } from '../../services/api';
 import { SLABadge, StageBadge } from '../../components/common/StatusBadge';
 import {
   FileCheck,
@@ -130,6 +131,41 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
           status: 'deficient',
           remark: 'Deficiency flagged: Fire NOC validity expires within 14 calendar days; advance renewal required.',
           evidenceVersion: 'DOC-D2-v1',
+        },
+      ]);
+    } else if (currentApp?.id.includes('COEP')) {
+      setChecklistItems([
+        {
+          itemId: 'C1',
+          name: 'Item C1: NBA Tier-1 Accreditation Compliance (Mechanical Engineering)',
+          category: 'Accreditation',
+          status: 'accepted',
+          remark: 'Valid NBA Tier-1 accreditation verified through 2028 per Errata G02 p. 42.',
+          evidenceVersion: 'DOC-COEP-NBA-v1',
+        },
+        {
+          itemId: 'C2',
+          name: 'Item C2: Advanced CAD/CAM Laboratories & Infrastructure',
+          category: 'Facilities',
+          status: 'accepted',
+          remark: 'Laboratories equipped and compliant with AICTE Table 2.2 norms.',
+          evidenceVersion: 'DOC-COEP-LAB-v1',
+        },
+        {
+          itemId: 'C3',
+          name: 'Item C3: Professor / Associate Professor Faculty Roster',
+          category: 'Faculty & Academic',
+          status: 'accepted',
+          remark: 'Faculty cadre ratio complies with 1:15 norms. Zero deficit.',
+          evidenceVersion: 'DOC-COEP-FAC-v1',
+        },
+        {
+          itemId: 'C4',
+          name: 'Item C4: Land Ownership & Autonomous University Charter',
+          category: 'Legal & Land',
+          status: 'accepted',
+          remark: 'Freehold land and state university statutory charter verified.',
+          evidenceVersion: 'DOC-COEP-LAND-v1',
         },
       ]);
     } else if (currentApp?.currentStage === 'Scrutiny Cleared' || currentApp?.currentStage === 'Approval Issued') {
@@ -952,7 +988,7 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
                           <span>Applicant Submission (From Role 1 Deficiency Cure Window):</span>
                         </div>
                         <p className="font-mono text-slate-800 text-[11px] bg-slate-50 p-2 rounded border border-slate-200">
-                          &ldquo;Appointed 2 additional Associate Professors vide Order AP-2026-44. Cadre ratio 1:2.0 restored compliant with AICTE norms.&rdquo;
+                          &ldquo;{getLiveCureRemark(currentApp?.id || '', 'D1') || (currentApp?.id.includes('GIITS') ? 'Appointed 2 additional Associate Professors vide Order AP-2026-44. Cadre ratio 1:2.0 restored compliant with AICTE norms.' : 'Applicant remediation uploaded and awaiting committee verification.')}&rdquo;
                         </p>
                         <div className="text-[10px] text-slate-500 font-mono">
                           Evidence: DOC-D1-RECTIFIED-v2 &bull; Signatory: Dr. Principal
@@ -988,7 +1024,7 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
                           <span>Applicant Submission (From Role 1 Deficiency Cure Window):</span>
                         </div>
                         <p className="font-mono text-slate-800 text-[11px] bg-slate-50 p-2 rounded border border-slate-200">
-                          &ldquo;Renewed Municipal Fire Safety NOC #FS/2026/8841 valid through 31-DEC-2027 attached.&rdquo;
+                          &ldquo;{getLiveCureRemark(currentApp?.id || '', 'D2') || (currentApp?.id.includes('GIITS') ? 'Renewed Municipal Fire Safety NOC #FS/2026/8841 valid through 31-DEC-2027 attached.' : 'Applicant municipal renewal certificate submitted.')}&rdquo;
                         </p>
                         <div className="text-[10px] text-slate-500 font-mono">
                           Evidence: DOC-D2-RECTIFIED-v2 &bull; Certified Municipal Authority

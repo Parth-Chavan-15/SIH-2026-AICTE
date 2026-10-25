@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { getSession, login } from '../../services/session';
 import { useApp } from '../../context/AppContext';
+import { setLiveCureRemark } from '../../services/api';
 import {
   FileWarning,
   CheckCircle2,
@@ -77,6 +78,16 @@ export const InstitutionDeficiencyCureView: React.FC<InstitutionDeficiencyCureVi
 
     setCuringDocId(docId);
     try {
+      setLiveCureRemark(activeApp.id, docId, comment);
+      const lower = docName.toLowerCase();
+      if (lower.includes('faculty') || lower.includes('cadre') || docId.toLowerCase().includes('d1')) {
+        setLiveCureRemark(activeApp.id, 'D1', comment);
+      } else if (lower.includes('fire') || lower.includes('safety') || docId.toLowerCase().includes('d2')) {
+        setLiveCureRemark(activeApp.id, 'D2', comment);
+      } else {
+        setLiveCureRemark(activeApp.id, 'D1', comment);
+      }
+
       await verifyDocument(activeApp.id, docId, 'Pending Verification', `Deficiency cured: ${comment}`);
       addToast({
         type: 'success',
