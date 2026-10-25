@@ -71,22 +71,20 @@ export const ROLE_NAV_ITEMS: Record<RolePortalId, { portalTitle: string; subtitl
   },
   4: {
     portalTitle: 'Regional Office Desk (RO)',
-    subtitle: 'Regional Operations • Pendency Monitoring',
+    subtitle: 'Western Regional Office (WRO) • Pendency Matrix',
     items: [
-      { id: 'ro-pendency', label: '1. Consolidated Dashboard & SLAs', icon: Clock, badge: '10d/15d', badgeColor: 'bg-rose-500 text-white font-bold' },
-      { id: 'ro-schedule', label: '2. Committee Allocation & Timetable', icon: Users, badge: 'AICTE SYNC', badgeColor: 'bg-blue-600 text-white font-bold' },
-      { id: 'ro-obligations', label: '3. Post-Approval 4-Clock Timers', icon: ShieldCheck, badge: '3 ACTIVE', badgeColor: 'bg-amber-500 text-white font-bold' },
-      { id: 'notifications', label: '4. Automated Alerts & Escalations', icon: Bell, badge: 'ALERTS', badgeColor: 'bg-amber-500 text-slate-900 font-bold' },
+      { id: 'ro-pendency', label: '1. Regional Pendency & SLA Matrix', icon: Clock, badge: '10d/15d', badgeColor: 'bg-rose-500 text-white font-bold' },
+      { id: 'ro-obligations', label: '2. 4-Clock Timers & Lease Expiry', icon: ShieldCheck, badge: '3 ACTIVE', badgeColor: 'bg-amber-500 text-white font-bold' },
+      { id: 'notifications', label: '3. Regional Alerts & Escalations', icon: Bell, badge: 'ALERTS', badgeColor: 'bg-amber-500 text-slate-900 font-bold' },
     ]
   },
   5: {
-    portalTitle: 'Competent Authority Chamber',
-    subtitle: 'Approval Bureau & Council Executive Committee',
+    portalTitle: 'Approval Bureau & Council',
+    subtitle: 'Competent Authority • Executive Committee Chamber',
     items: [
       { id: 'ca-decision', label: '1. Statutory Decision Gate (APH §1.10)', icon: Award, badge: 'HUMAN ONLY', badgeColor: 'bg-rose-600 text-white font-bold' },
-      { id: 'ca-dossiers', label: '2. Electronic Case Dossiers Queue', icon: FolderKanban },
-      { id: 'ca-dispatch', label: '3. Siebel Write-Back & Ecosystem Dispatch', icon: Send },
-      { id: 'notifications', label: '4. Overdue Cases & Escalations', icon: Bell, badge: 'CRITICAL', badgeColor: 'bg-rose-600 text-white font-bold' },
+      { id: 'ca-dispatch', label: '2. National Ecosystem & Siebel Dispatch', icon: Send, badge: '5 ADAPTERS', badgeColor: 'bg-emerald-600 text-white font-bold' },
+      { id: 'notifications', label: '3. Council Alerts & Escalations', icon: Bell, badge: 'CRITICAL', badgeColor: 'bg-rose-600 text-white font-bold' },
     ]
   },
   6: {
@@ -120,13 +118,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const session = getSession();
   const activeActor = session?.actor;
 
-  // Determine active role portal (1-6)
+  // Determine active role portal (1-6) - Priority order: Institution -> Regional -> Bureau -> EVC -> Reviewer -> Admin
   const roleNumber: RolePortalId = 
-    (activeActor?.id === 'usr-inst-coep' || activeActor?.roles?.includes('institution')) ? 1 :
-    (activeActor?.id === 'usr-scrutiny-reviewer' || activeActor?.roles?.includes('reviewer')) ? 2 :
-    (activeActor?.id === 'usr-evc-chair' || activeActor?.roles?.includes('evc')) ? 3 :
+    (activeActor?.id?.startsWith('usr-inst-') || activeActor?.roles?.includes('institution')) ? 1 :
     (activeActor?.id === 'usr-ro-western' || activeActor?.roles?.includes('regional_officer')) ? 4 :
     (activeActor?.id === 'usr-bureau-hq' || activeActor?.roles?.includes('demo_authority') || activeActor?.roles?.includes('bureau_officer')) ? 5 :
+    (activeActor?.id === 'usr-evc-chair' || activeActor?.roles?.includes('evc')) ? 3 :
+    (activeActor?.id === 'usr-scrutiny-reviewer' || activeActor?.roles?.includes('reviewer')) ? 2 :
     6;
 
   const currentPortal = ROLE_NAV_ITEMS[roleNumber] || ROLE_NAV_ITEMS[4];

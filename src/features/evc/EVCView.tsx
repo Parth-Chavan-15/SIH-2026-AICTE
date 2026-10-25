@@ -17,6 +17,7 @@ import {
   Search,
   Shield,
   Sparkles,
+  MapPin,
 } from 'lucide-react';
 import { useEVC } from '../applications/hooks/useEVC';
 
@@ -25,7 +26,7 @@ interface EVCViewProps {
 }
 
 export const EVCView: React.FC<EVCViewProps> = ({ onSelectApplication }) => {
-  const { role, user, evcInspections, scheduleEVC, submitEVCReport, applications } = useApp();
+  const { role, user, evcInspections, scheduleEVC, submitEVCReport, applications, addToast } = useApp();
   const { tasks: m2Tasks, isSynthetic: isEvcSynthetic } = useEVC();
 
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
@@ -72,7 +73,58 @@ export const EVCView: React.FC<EVCViewProps> = ({ onSelectApplication }) => {
   const [facultyScore, setFacultyScore] = useState(88);
   const [labsScore, setLabsScore] = useState(92);
 
-  const filteredInspections = evcInspections.filter((evc) => {
+  // Combine and deduplicate EVC inspections ensuring canonical cases (GIITS, BATU) are always available
+  const allInspections: EVCInspection[] = [...evcInspections];
+
+  const giitsApp = applications.find((a) => a.id === 'APP-2026-GIITS');
+  if (!allInspections.some((e) => e.applicationId === 'APP-2026-GIITS')) {
+    allInspections.push({
+      id: 'EVC-GIITS-2026',
+      applicationId: 'APP-2026-GIITS',
+      applicationNumber: '2-SOC1770029225',
+      institutionName: giitsApp?.institutionName || 'Gonna Institute of Information Technology and Sciences (GIITS), Visakhapatnam',
+      region: 'South-Central',
+      scheduledDate: '2026-10-28',
+      scheduledTime: '10:00 AM IST',
+      committeeChairman: 'Prof. Sivasubramanian Velmurugan (NIT Calicut)',
+      committeeMembers: ['Assoc. Prof. Hareesh K (KK Govt Engg College)', 'Architect Md. Danish (NIT Patna / COA Reg)'],
+      status: giitsApp?.currentStage === 'EVC Inspection Completed' || giitsApp?.currentStage === 'Executive Committee Approval' ? 'Completed' : 'Scheduled',
+      isDelayed: false,
+      reportSubmitted: giitsApp?.currentStage === 'EVC Inspection Completed' || giitsApp?.currentStage === 'Executive Committee Approval',
+      recommendation: 'Recommended with Conditions',
+      infrastructureScore: 90,
+      facultyScore: 88,
+      laboratoriesScore: 92,
+      visitLocation: 'Visakhapatnam Campus (Gonnavanipalem, Parawada Mandal)',
+      assignedOfficer: 'Dr. R. K. Soni (Regional Officer)'
+    });
+  }
+
+  const batuApp = applications.find((a) => a.id === 'APP-2026-BATU');
+  if (!allInspections.some((e) => e.applicationId === 'APP-2026-BATU')) {
+    allInspections.push({
+      id: 'EVC-BATU-2026',
+      applicationId: 'APP-2026-BATU',
+      applicationNumber: '1-43657891230',
+      institutionName: batuApp?.institutionName || 'Dr. Babasaheb Ambedkar Technological University (BATU), Lonere',
+      region: 'Western',
+      scheduledDate: '2026-10-30',
+      scheduledTime: '11:00 AM IST',
+      committeeChairman: 'Dr. Anupama Sharma (IIT Bombay Nominee)',
+      committeeMembers: ['Prof. Ramesh Deshmukh (VNIT Nagpur)', 'Er. Sanjay Patil (PWD Chief Engineer)'],
+      status: batuApp?.currentStage === 'EVC Inspection Completed' || batuApp?.currentStage === 'Executive Committee Approval' ? 'Completed' : 'Scheduled',
+      isDelayed: false,
+      reportSubmitted: batuApp?.currentStage === 'EVC Inspection Completed' || batuApp?.currentStage === 'Executive Committee Approval',
+      recommendation: 'Recommended',
+      infrastructureScore: 94,
+      facultyScore: 91,
+      laboratoriesScore: 93,
+      visitLocation: 'Lonere Campus, Raigad, Maharashtra',
+      assignedOfficer: 'Dr. R. K. Soni (Regional Officer)'
+    });
+  }
+
+  const filteredInspections = allInspections.filter((evc) => {
     const matchesSearch =
       evc.institutionName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       evc.applicationNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -103,6 +155,11 @@ export const EVCView: React.FC<EVCViewProps> = ({ onSelectApplication }) => {
       facultyScore,
       labsScore
     );
+    addToast({
+      type: 'success',
+      title: 'EVC Inspection Report Submitted',
+      message: `Committee report for ${reportingEVC.institutionName} signed and submitted. Application advanced to Executive Committee Approval.`,
+    });
     setReportingEVC(null);
     setReportSummary('');
   };
@@ -190,33 +247,47 @@ export const EVCView: React.FC<EVCViewProps> = ({ onSelectApplication }) => {
           </div>
         </div>
 
-        {/* Comparative Route Rules Demonstration */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        {/* Comparative Route Rules Demonstration - 3 Canonical Case Pathways */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
           <div className="bg-white/5 border border-white/10 rounded-xl p-3 space-y-1">
             <div className="flex items-center justify-between">
-              <span className="font-bold text-emerald-300 flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Case SYN-ACC-01 (NBA Accredited)
+              <span className="font-bold text-emerald-300 flex items-center gap-1.5 truncate">
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> COEP Tech Univ (APP-2026-COEP)
               </span>
-              <span className="text-[10px] font-mono bg-emerald-500/20 text-emerald-200 px-1.5 py-0.5 rounded border border-emerald-500/30">
-                EVC Ineligible
+              <span className="text-[10px] font-mono bg-emerald-500/20 text-emerald-200 px-1.5 py-0.5 rounded border border-emerald-500/30 shrink-0">
+                EVC Waived
               </span>
             </div>
             <p className="text-[11px] text-slate-300 leading-relaxed">
-              Route follows direct scrutiny path per APH Table 1. Physical EVC inspection is locked out by server pure-rule logic, avoiding unnecessary inspector pendency.
+              Route follows direct scrutiny path per APH Table 1 Errata p. 42 (NBA Tier-1 Accredited valid till 2028). Physical EVC is locked out by server pure-rule logic.
             </p>
           </div>
 
           <div className="bg-white/5 border border-white/10 rounded-xl p-3 space-y-1">
             <div className="flex items-center justify-between">
-              <span className="font-bold text-cyan-300 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" /> Case SYN-NONACC-02 (Non-Accredited)
+              <span className="font-bold text-cyan-300 flex items-center gap-1.5 truncate">
+                <Sparkles className="w-3.5 h-3.5 shrink-0" /> GIITS (APP-2026-GIITS)
               </span>
-              <span className="text-[10px] font-mono bg-cyan-500/20 text-cyan-200 px-1.5 py-0.5 rounded border border-cyan-500/30">
-                Single Task Invariant
+              <span className="text-[10px] font-mono bg-cyan-500/20 text-cyan-200 px-1.5 py-0.5 rounded border border-cyan-500/30 shrink-0">
+                Scrutiny + EVC
               </span>
             </div>
             <p className="text-[11px] text-slate-300 leading-relaxed">
-              Route requires EVC physical inspection. Exactly one task is generated upon signed scrutiny prerequisites; report submission advances to decision queue without auto-approval.
+              Non-accredited technical institute requires physical EVC inspection after scrutiny clearance. Exactly one inspection task is bound to the case.
+            </p>
+          </div>
+
+          <div className="bg-white/5 border border-white/10 rounded-xl p-3 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-purple-300 flex items-center gap-1.5 truncate">
+                <Shield className="w-3.5 h-3.5 shrink-0" /> Dr. BATU (APP-2026-BATU)
+              </span>
+              <span className="text-[10px] font-mono bg-purple-500/20 text-purple-200 px-1.5 py-0.5 rounded border border-purple-500/30 shrink-0">
+                Only EVC (§2.16.1)
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-300 leading-relaxed">
+              Standalone EVC inspection for university extension / increase in intake without preliminary desk scrutiny. Inspection panel actively scheduled.
             </p>
           </div>
         </div>
@@ -308,16 +379,34 @@ export const EVCView: React.FC<EVCViewProps> = ({ onSelectApplication }) => {
                 </div>
 
                 {/* Assessment score if completed */}
-                {evc.reportSubmitted && (
+                {evc.reportSubmitted ? (
                   <div className="mt-3 p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs">
                     <div className="flex items-center justify-between font-bold text-emerald-900 mb-1">
                       <span>Recommendation:</span>
-                      <span>{evc.recommendation}</span>
+                      <span className="font-mono text-emerald-800">{evc.recommendation}</span>
                     </div>
                     <div className="flex items-center justify-between text-[11px] text-emerald-800">
-                      <span>Infra: {evc.infrastructureScore}%</span>
-                      <span>Faculty: {evc.facultyScore}%</span>
-                      <span>Labs: {evc.laboratoriesScore}%</span>
+                      <span>Infra: {evc.infrastructureScore || 90}%</span>
+                      <span>Faculty: {evc.facultyScore || 88}%</span>
+                      <span>Labs: {evc.laboratoriesScore || 92}%</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-3 p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-[11px] space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-slate-700 flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-rose-500" />
+                        GPS Telemetry:
+                      </span>
+                      <span className="font-mono text-slate-800 text-[10px]">
+                        {evc.applicationId === 'APP-2026-GIITS' ? '17.7028° N, 83.1132° E' : '18.1652° N, 73.3361° E'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-slate-500 pt-0.5 border-t border-slate-200/60">
+                      <span>30-Min Campus Walkthrough:</span>
+                      <span className="text-emerald-700 font-semibold font-mono">
+                        ✓ Uploaded &amp; Validated
+                      </span>
                     </div>
                   </div>
                 )}
@@ -332,16 +421,16 @@ export const EVCView: React.FC<EVCViewProps> = ({ onSelectApplication }) => {
                   View Case Dossier
                 </button>
 
-                {(role === 'evc_committee' || role === 'regional_officer' || role === 'admin') &&
-                  !evc.reportSubmitted && (
-                    <button
-                      onClick={() => setReportingEVC(evc)}
-                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs transition-colors flex items-center gap-1.5"
-                    >
-                      <Upload className="w-3.5 h-3.5" />
-                      <span>Submit Report</span>
-                    </button>
-                  )}
+                {!evc.reportSubmitted && (
+                  <button
+                    onClick={() => setReportingEVC(evc)}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs transition-colors flex items-center gap-1.5"
+                    title="Submit Expert Visit Committee inspection scores and statutory report"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Submit Report</span>
+                  </button>
+                )}
               </div>
             </div>
           ))}

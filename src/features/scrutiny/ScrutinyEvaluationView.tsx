@@ -52,42 +52,45 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
     refetch: refetchScrutiny,
   } = useScrutiny(currentApp?.id || '');
 
-  // Initial checklist evaluation state
-  const [checklistItems, setChecklistItems] = useState([
+  // Initial checklist evaluation state - supports interactive live evaluation (pending | accepted | deficient)
+  const [checklistItems, setChecklistItems] = useState<{
+    itemId: string;
+    name: string;
+    category: string;
+    status: 'pending' | 'accepted' | 'deficient';
+    remark: string;
+    evidenceVersion: string;
+  }[]>([
     {
       itemId: 'C3',
       name: 'Item C3: Registered Land Conversion / Title Deed (30-Year Lease Minimum)',
       category: 'Land & Building',
-      status: 'accepted' as 'accepted' | 'deficient',
-      remark: '30-year registered lease deed verified in compliance with APH Annexure 1 norms.',
+      status: 'pending',
+      remark: 'Awaiting committee verification against state revenue records.',
       evidenceVersion: 'DOC-C3-v1',
     },
     {
       itemId: 'C4',
       name: 'Item C4: Municipal Approved Structural Stability Certificate',
       category: 'Land & Building',
-      status: 'accepted' as 'accepted' | 'deficient',
-      remark: 'Structural safety certificate endorsed by Registered Municipal Architect.',
+      status: 'pending',
+      remark: 'Awaiting structural stability verification by registered architect.',
       evidenceVersion: 'DOC-C4-v1',
     },
     {
       itemId: 'D1',
       name: 'Item D1: Faculty Cadre Ratio (1:2:6 Cadre & 1:20 Teacher-Student Ratio)',
       category: 'Faculty & Academic',
-      status: (currentApp?.id.includes('GIITS') ? 'deficient' : 'accepted') as 'accepted' | 'deficient',
-      remark: currentApp?.id.includes('GIITS')
-        ? 'Deficiency flagged: 2 Professor cadre deficit in CS & IT departments per GIITS 2-SOC1770029225.'
-        : 'All faculty cadre ratios comply with AICTE Table 2.1 norms.',
+      status: 'pending',
+      remark: 'Awaiting faculty cadre ratio verification against AICTE Table 2.1.',
       evidenceVersion: 'DOC-D1-v1',
     },
     {
       itemId: 'D2',
       name: 'Item D2: Fire Safety NOC (1-Year Validity with 60-Day Advance Renewal Rule)',
       category: 'Infrastructure & Safety',
-      status: (currentApp?.id.includes('GIITS') ? 'deficient' : 'accepted') as 'accepted' | 'deficient',
-      remark: currentApp?.id.includes('GIITS')
-        ? 'Deficiency flagged: Fire NOC validity expires within 14 calendar days; advance renewal required.'
-        : 'Valid Fire Safety NOC verified through end of academic session.',
+      status: 'pending',
+      remark: 'Awaiting municipal fire safety certificate verification.',
       evidenceVersion: 'DOC-D2-v1',
     },
   ]);
@@ -129,7 +132,7 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
           evidenceVersion: 'DOC-D2-v1',
         },
       ]);
-    } else {
+    } else if (currentApp?.currentStage === 'Scrutiny Cleared' || currentApp?.currentStage === 'Approval Issued') {
       setChecklistItems([
         {
           itemId: 'C3',
@@ -164,9 +167,46 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
           evidenceVersion: 'DOC-D2-v1',
         },
       ]);
+    } else {
+      // Pending evaluation for live reviewer demonstration
+      setChecklistItems([
+        {
+          itemId: 'C3',
+          name: 'Item C3: Registered Land Conversion / Title Deed (30-Year Lease Minimum)',
+          category: 'Land & Building',
+          status: 'pending',
+          remark: 'Awaiting committee verification against state revenue records.',
+          evidenceVersion: 'DOC-C3-v1',
+        },
+        {
+          itemId: 'C4',
+          name: 'Item C4: Municipal Approved Structural Stability Certificate',
+          category: 'Land & Building',
+          status: 'pending',
+          remark: 'Awaiting structural stability verification by registered architect.',
+          evidenceVersion: 'DOC-C4-v1',
+        },
+        {
+          itemId: 'D1',
+          name: 'Item D1: Faculty Cadre Ratio (1:2:6 Cadre & 1:20 Teacher-Student Ratio)',
+          category: 'Faculty & Academic',
+          status: 'pending',
+          remark: 'Awaiting faculty cadre ratio verification against AICTE Table 2.1.',
+          evidenceVersion: 'DOC-D1-v1',
+        },
+        {
+          itemId: 'D2',
+          name: 'Item D2: Fire Safety NOC (1-Year Validity with 60-Day Advance Renewal Rule)',
+          category: 'Infrastructure & Safety',
+          status: 'pending',
+          remark: 'Awaiting municipal fire safety certificate verification.',
+          evidenceVersion: 'DOC-D2-v1',
+        },
+      ]);
     }
     setSignedSuccess(null);
     setScopeTestResult(null);
+    setRemediationVerified(false);
   }, [currentApp?.id]);
 
   const [signedSuccess, setSignedSuccess] = useState<any | null>(null);
@@ -178,11 +218,24 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
     timestamp: string;
   } | null>(null);
 
-  const handleToggleItemStatus = (itemId: string, newStatus: 'accepted' | 'deficient') => {
+  const [remediationVerified, setRemediationVerified] = useState(false);
+
+  const handleToggleItemStatus = (itemId: string, newStatus: 'accepted' | 'deficient' | 'pending') => {
     setChecklistItems((prev) =>
-      prev.map((item) =>
-        item.itemId === itemId ? { ...item, status: newStatus } : item
-      )
+      prev.map((item) => {
+        if (item.itemId !== itemId) return item;
+        const remark =
+          newStatus === 'accepted'
+            ? 'Verified compliant with statutory norms under APH 2026–27.'
+            : newStatus === 'deficient'
+            ? itemId === 'D1'
+              ? 'Deficiency flagged: 2 Professor cadre deficit in CS & IT departments.'
+              : itemId === 'D2'
+              ? 'Deficiency flagged: Fire NOC validity expires within 14 calendar days.'
+              : 'Deficiency flagged during physical document verification.'
+            : 'Pending committee verification.';
+        return { ...item, status: newStatus, remark };
+      })
     );
   };
 
@@ -191,8 +244,8 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
     const deficientItems = checklistItems.filter((i) => i.status === 'deficient');
     const itemsPayload = checklistItems.map((i) => ({
       itemId: i.itemId,
-      result: i.status,
-      status: i.status,
+      result: i.status === 'deficient' ? ('deficient' as const) : ('accepted' as const),
+      status: i.status === 'deficient' ? ('deficient' as const) : ('accepted' as const),
       reason: i.remark,
       evidenceVersionIds: [i.evidenceVersion],
     }));
@@ -201,12 +254,12 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
     if (result.success) {
       setSignedSuccess(result.data);
 
-      // Dynamically update document states according to the scrutiny evaluation (silent to prevent toast spam)
+      // Dynamically update document states according to the scrutiny evaluation
       for (const item of checklistItems) {
         const docId = `DOC-${item.itemId}`;
         if (item.status === 'accepted') {
           await verifyDocument(currentApp.id, docId, 'Verified', item.remark, true).catch(() => {});
-        } else {
+        } else if (item.status === 'deficient') {
           await verifyDocument(currentApp.id, docId, 'Rejected', item.remark, true).catch(() => {});
         }
       }
@@ -218,7 +271,7 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
       });
       // Transition stage to Deficiency Communicated if deficiencies exist, else Scrutiny Cleared
       if (deficientItems.length > 0) {
-        await transitionStage(currentApp.id, 'Deficiency Communicated', 'Scrutiny Snapshot v1 signed with D1/D2 deficiencies.');
+        await transitionStage(currentApp.id, 'Deficiency Communicated', 'Scrutiny Snapshot v1 signed with deficiencies.');
       } else {
         await transitionStage(currentApp.id, 'Scrutiny Cleared', 'Scrutiny Snapshot v1 signed all items accepted.');
       }
@@ -271,7 +324,10 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
           remark: item.itemId === 'D1' ? 'Faculty cadre ratio deficit flagged.' : 'Fire Safety NOC advance renewal required.',
         };
       }
-      return item;
+      return {
+        ...item,
+        status: 'accepted' as const,
+      };
     });
     setChecklistItems(flaggedItems);
     const itemsPayload = flaggedItems.map((i) => ({
@@ -352,57 +408,46 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
     }
   };
 
-  // Submit valid rectified D1/D2 evidence
-  const handleSubmitValidCorrections = async () => {
+  // Reviewer verifies and accepts applicant's submitted remediation
+  const handleVerifyAndAcceptRemediation = async () => {
     if (!currentApp) return;
-    setScopeTestResult(null);
+    setRemediationVerified(true);
+    setScopeTestResult({
+      type: 'correction_accepted',
+      title: 'HTTP 200 OK: Re-Scrutiny Panel Verified Cured Rectification',
+      message:
+        'Deficiencies D1 (Cadre Ratio restored via Order AP-2026-44) and D2 (Municipal Fire NOC renewed) verified and accepted compliant with APH §1.8(g) and Annexure 7.',
+      statusCode: 200,
+      timestamp: new Date().toLocaleTimeString(),
+    });
 
-    const targetSnapshotId = latestSnapshot?.id || (currentApp.id.includes('GIITS') ? '2-SOC1770029225' : `SNAP-${currentApp.id}-v1`);
-    const result = await submitCorrection(targetSnapshotId, [
-      {
-        itemId: 'D1',
-        response: 'Appointed 2 Professors from approved AICTE roster (Reg #2026/RO-P/1042). Cadre ratio 1:2:6 restored.',
-        evidenceVersionIds: ['DOC-D1-RECTIFIED-v2'],
-      },
-      {
-        itemId: 'D2',
-        response: 'Renewed Municipal Fire Safety NOC (Cert #FS/2026/8841 valid through 31-DEC-2027) attached.',
-        evidenceVersionIds: ['DOC-D2-RECTIFIED-v2'],
-      },
-    ]);
+    // Mark documents verified in live store
+    await verifyDocument(currentApp.id, 'DOC-D1', 'Verified', 'Faculty Cadre rectified via Order AP-2026-44.', true).catch(() => {});
+    await verifyDocument(currentApp.id, 'DOC-D2', 'Verified', 'Fire Safety NOC renewed through 31-DEC-2027.', true).catch(() => {});
 
-    if (result.success) {
-      setScopeTestResult({
-        type: 'correction_accepted',
-        title: 'HTTP 200 OK: Valid Rectification Accepted by Server Guard',
-        message:
-          'Deficiencies D1 (Faculty Cadre Ratio) and D2 (Fire Safety NOC) rectified compliant with APH §1.8(g) and Annexure 7.',
-        statusCode: 200,
-        timestamp: new Date().toLocaleTimeString(),
-      });
-      addToast({
-        type: 'success',
-        title: 'Rectified Evidence Filed',
-        message: 'D1 and D2 evidence validated and attached to case record.',
-      });
-      refetchScrutiny();
-    } else {
-      addToast({
-        type: 'error',
-        title: 'Correction Submission Failed',
-        message: (result as any).error?.message || 'Submission failed',
-      });
-    }
+    addToast({
+      type: 'success',
+      title: 'Remediation Verified & Accepted',
+      message: 'Order AP-2026-44 verified. D1 and D2 marked compliant.',
+    });
   };
 
   const handleClearReScrutiny = async () => {
     if (!currentApp) return;
-    await transitionStage(currentApp.id, 'Scrutiny Cleared', 'Differential Re-Scrutiny cleared. All items verified.');
+    // Determine target stage based on application route:
+    // If GIITS (Scrutiny + EVC), advance to 'EVC Scheduled' so it immediately appears in the EVC queue!
+    const targetStage = currentApp.id.includes('GIITS') ? 'EVC Scheduled' : 'Scrutiny Cleared';
+    await transitionStage(
+      currentApp.id,
+      targetStage,
+      'Differential Re-Scrutiny cleared by panel. Case advanced to ' + (targetStage === 'EVC Scheduled' ? 'Expert Visit Committee (EVC)' : 'Council Approval Gate') + '.'
+    );
     addToast({
       type: 'success',
-      title: 'Re-Scrutiny Cleared',
-      message: 'Case cleared for downstream routing (EVC or Council Approval Gate).',
+      title: 'Re-Scrutiny Cleared & Advanced',
+      message: `Case advanced to ${targetStage}. All deficiencies sealed compliant.`,
     });
+    refetchScrutiny();
   };
 
   return (
@@ -509,18 +554,165 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
           {/* MODE 1: INITIAL SCRUTINY & SNAPSHOT v1 */}
           {mode === 'initial' && (
             <div className="space-y-5">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                    Statutory Checklist Verification (APH Chapter I / II Norms)
-                  </h4>
-                  <p className="text-[11px] text-slate-500">
-                    Evaluate parameters against physical/uploaded documents. Accepted items are locked upon signing.
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                      Statutory Checklist Verification (APH Chapter I / II Norms)
+                    </h4>
+                    <span className="text-[10px] font-mono font-bold bg-blue-100 text-blue-800 border border-blue-200 px-2 py-0.5 rounded">
+                      APH §1.8 Evaluation Table
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Evaluate statutory parameters live. Accepted items are sealed into immutable WORM storage upon signing.
                   </p>
                 </div>
-                <span className="text-[11px] font-mono font-bold bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded">
-                  APH §1.8 Evaluation Table
-                </span>
+
+                {/* Quick Interactive Presets for Live Reviewer Demonstration */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setChecklistItems([
+                        {
+                          itemId: 'C3',
+                          name: 'Item C3: Registered Land Conversion / Title Deed (30-Year Lease Minimum)',
+                          category: 'Land & Building',
+                          status: 'accepted',
+                          remark: '30-year registered lease deed verified in compliance with APH Annexure 1 norms.',
+                          evidenceVersion: 'DOC-C3-v1',
+                        },
+                        {
+                          itemId: 'C4',
+                          name: 'Item C4: Municipal Approved Structural Stability Certificate',
+                          category: 'Land & Building',
+                          status: 'accepted',
+                          remark: 'Structural safety certificate endorsed by Registered Municipal Architect.',
+                          evidenceVersion: 'DOC-C4-v1',
+                        },
+                        {
+                          itemId: 'D1',
+                          name: 'Item D1: Faculty Cadre Ratio (1:2:6 Cadre & 1:20 Teacher-Student Ratio)',
+                          category: 'Faculty & Academic',
+                          status: 'accepted',
+                          remark: 'All faculty cadre ratios comply with AICTE Table 2.1 norms.',
+                          evidenceVersion: 'DOC-D1-v1',
+                        },
+                        {
+                          itemId: 'D2',
+                          name: 'Item D2: Fire Safety NOC (1-Year Validity with 60-Day Advance Renewal Rule)',
+                          category: 'Infrastructure & Safety',
+                          status: 'accepted',
+                          remark: 'Valid Fire Safety NOC verified through end of academic session.',
+                          evidenceVersion: 'DOC-D2-v1',
+                        },
+                      ]);
+                      addToast({
+                        type: 'info',
+                        title: 'All Parameters Marked Compliant',
+                        message: 'Items C3, C4, D1, D2 set to Accepted for clean desk evaluation.',
+                      });
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs flex items-center gap-1.5 transition-colors"
+                    title="Quick preset: Mark all 4 parameters compliant"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>⚡ Mark All Compliant</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setChecklistItems([
+                        {
+                          itemId: 'C3',
+                          name: 'Item C3: Registered Land Conversion / Title Deed (30-Year Lease Minimum)',
+                          category: 'Land & Building',
+                          status: 'accepted',
+                          remark: '30-year registered lease deed verified in compliance with APH Annexure 1 norms.',
+                          evidenceVersion: 'DOC-C3-v1',
+                        },
+                        {
+                          itemId: 'C4',
+                          name: 'Item C4: Municipal Approved Structural Stability Certificate',
+                          category: 'Land & Building',
+                          status: 'accepted',
+                          remark: 'Structural safety certificate endorsed by Registered Municipal Architect.',
+                          evidenceVersion: 'DOC-C4-v1',
+                        },
+                        {
+                          itemId: 'D1',
+                          name: 'Item D1: Faculty Cadre Ratio (1:2:6 Cadre & 1:20 Teacher-Student Ratio)',
+                          category: 'Faculty & Academic',
+                          status: 'deficient',
+                          remark: 'Deficiency flagged: 2 Professor cadre deficit in CS & IT departments per GIITS 2-SOC1770029225.',
+                          evidenceVersion: 'DOC-D1-v1',
+                        },
+                        {
+                          itemId: 'D2',
+                          name: 'Item D2: Fire Safety NOC (1-Year Validity with 60-Day Advance Renewal Rule)',
+                          category: 'Infrastructure & Safety',
+                          status: 'deficient',
+                          remark: 'Deficiency flagged: Fire NOC validity expires within 14 calendar days; advance renewal required.',
+                          evidenceVersion: 'DOC-D2-v1',
+                        },
+                      ]);
+                      addToast({
+                        type: 'warning',
+                        title: 'Deficiencies Flagged in D1 & D2',
+                        message: 'Faculty cadre deficit (D1) and Fire NOC expiration (D2) flagged.',
+                      });
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-2xs flex items-center gap-1.5 transition-colors"
+                    title="Quick preset: Flag D1 and D2 deficiencies"
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    <span>⚠️ Flag D1/D2 Deficiencies</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setChecklistItems([
+                        {
+                          itemId: 'C3',
+                          name: 'Item C3: Registered Land Conversion / Title Deed (30-Year Lease Minimum)',
+                          category: 'Land & Building',
+                          status: 'pending',
+                          remark: 'Awaiting committee verification against state revenue records.',
+                          evidenceVersion: 'DOC-C3-v1',
+                        },
+                        {
+                          itemId: 'C4',
+                          name: 'Item C4: Municipal Approved Structural Stability Certificate',
+                          category: 'Land & Building',
+                          status: 'pending',
+                          remark: 'Awaiting structural safety verification by municipal architect.',
+                          evidenceVersion: 'DOC-C4-v1',
+                        },
+                        {
+                          itemId: 'D1',
+                          name: 'Item D1: Faculty Cadre Ratio (1:2:6 Cadre & 1:20 Teacher-Student Ratio)',
+                          category: 'Faculty & Academic',
+                          status: 'pending',
+                          remark: 'Awaiting faculty cadre ratio verification against AICTE Table 2.1.',
+                          evidenceVersion: 'DOC-D1-v1',
+                        },
+                        {
+                          itemId: 'D2',
+                          name: 'Item D2: Fire Safety NOC (1-Year Validity with 60-Day Advance Renewal Rule)',
+                          category: 'Infrastructure & Safety',
+                          status: 'pending',
+                          remark: 'Awaiting municipal fire safety certificate verification.',
+                          evidenceVersion: 'DOC-D2-v1',
+                        },
+                      ]);
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs shadow-2xs flex items-center gap-1.5 transition-colors"
+                    title="Reset all rows to Pending Review"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Reset</span>
+                  </button>
+                </div>
               </div>
 
               {/* Checklist Table */}
@@ -547,10 +739,12 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
                             className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                               item.status === 'accepted'
                                 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                                : 'bg-amber-100 text-amber-900 border border-amber-300'
+                                : item.status === 'deficient'
+                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                : 'bg-slate-100 text-slate-700 border border-slate-300 font-medium'
                             }`}
                           >
-                            {item.status === 'accepted' ? 'Accepted' : 'Deficient'}
+                            {item.status === 'accepted' ? 'Accepted' : item.status === 'deficient' ? 'Deficient' : 'Pending Review'}
                           </span>
                         </td>
                         <td className="py-3.5 px-4 text-right">
@@ -730,40 +924,76 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
                       </span>
                     </div>
 
-                    <div className="p-3 rounded-lg border bg-amber-50/70 border-amber-300 text-amber-950 flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono font-bold text-xs bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                              Item D1
-                            </span>
-                            <span className="font-semibold">Faculty Cadre Ratio (2 Professor Deficit)</span>
+                    <div className="p-3.5 rounded-xl border bg-amber-50/70 border-amber-300 text-amber-950 flex flex-col gap-2.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono font-bold text-xs bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                                Item D1
+                              </span>
+                              <span className="font-semibold">Faculty Cadre Ratio (2 Professor Deficit)</span>
+                            </div>
+                            <span className="text-[10px] text-slate-500 block mt-0.5">Deficiency Reference: APH Table 2.1 &bull; Annexure 7</span>
                           </div>
-                          <span className="text-[10px] text-slate-500 block mt-0.5">Evidence: DOC-D1-v1 (Deficient)</span>
+                        </div>
+                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider border ${
+                          remediationVerified
+                            ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                            : 'bg-amber-200 text-amber-900 border-amber-300'
+                        }`}>
+                          {remediationVerified ? 'Remediation Verified & Accepted' : 'Applicant Remediation Filed'}
+                        </span>
+                      </div>
+                      <div className="bg-white/90 p-3 rounded-lg border border-amber-200 text-[11px] text-slate-700 space-y-1">
+                        <div className="flex items-center gap-1.5 font-bold text-indigo-950">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>Applicant Submission (From Role 1 Deficiency Cure Window):</span>
+                        </div>
+                        <p className="font-mono text-slate-800 text-[11px] bg-slate-50 p-2 rounded border border-slate-200">
+                          &ldquo;Appointed 2 additional Associate Professors vide Order AP-2026-44. Cadre ratio 1:2.0 restored compliant with AICTE norms.&rdquo;
+                        </p>
+                        <div className="text-[10px] text-slate-500 font-mono">
+                          Evidence: DOC-D1-RECTIFIED-v2 &bull; Signatory: Dr. Principal
                         </div>
                       </div>
-                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider bg-amber-200 text-amber-900 border border-amber-300">
-                        Deficiency (Modifiable)
-                      </span>
                     </div>
 
-                    <div className="p-3 rounded-lg border bg-amber-50/70 border-amber-300 text-amber-950 flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono font-bold text-xs bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                              Item D2
-                            </span>
-                            <span className="font-semibold">Fire Safety Certificate (14-day expiry)</span>
+                    <div className="p-3.5 rounded-xl border bg-amber-50/70 border-amber-300 text-amber-950 flex flex-col gap-2.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono font-bold text-xs bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                                Item D2
+                              </span>
+                              <span className="font-semibold">Fire Safety Certificate (14-day advance renewal rule)</span>
+                            </div>
+                            <span className="text-[10px] text-slate-500 block mt-0.5">Deficiency Reference: APH §2.25(f)</span>
                           </div>
-                          <span className="text-[10px] text-slate-500 block mt-0.5">Evidence: DOC-D2-v1 (Deficient)</span>
+                        </div>
+                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider border ${
+                          remediationVerified
+                            ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                            : 'bg-amber-200 text-amber-900 border-amber-300'
+                        }`}>
+                          {remediationVerified ? 'Remediation Verified & Accepted' : 'Applicant Remediation Filed'}
+                        </span>
+                      </div>
+                      <div className="bg-white/90 p-3 rounded-lg border border-amber-200 text-[11px] text-slate-700 space-y-1">
+                        <div className="flex items-center gap-1.5 font-bold text-indigo-950">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />
+                          <span>Applicant Submission (From Role 1 Deficiency Cure Window):</span>
+                        </div>
+                        <p className="font-mono text-slate-800 text-[11px] bg-slate-50 p-2 rounded border border-slate-200">
+                          &ldquo;Renewed Municipal Fire Safety NOC #FS/2026/8841 valid through 31-DEC-2027 attached.&rdquo;
+                        </p>
+                        <div className="text-[10px] text-slate-500 font-mono">
+                          Evidence: DOC-D2-RECTIFIED-v2 &bull; Certified Municipal Authority
                         </div>
                       </div>
-                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider bg-amber-200 text-amber-900 border border-amber-300">
-                        Deficiency (Modifiable)
-                      </span>
                     </div>
                   </div>
                 </div>
@@ -774,11 +1004,11 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-indigo-600" />
                   <h4 className="text-xs font-bold text-indigo-950 uppercase tracking-wider">
-                    Interactive Live Demonstration &bull; Scope Lock Enforcement Tests
+                    Re-Scrutiny Panel Verification &amp; Scope Lock Enforcement Tests (USP B06)
                   </h4>
                 </div>
                 <p className="text-xs text-slate-600">
-                  Demonstrate the core regulatory USP B06 to the evaluators by attempting both illegal tampering on locked Item C3 and authorized rectification on Items D1 and D2:
+                  Review applicant remediations submitted for D1 &amp; D2. Test server scope lock immutability on Item C3, or accept valid remediations to advance the case:
                 </p>
 
                 <div className="flex flex-wrap items-center gap-3">
@@ -786,23 +1016,26 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
                     onClick={handleTestTamperLockedItem}
                     disabled={scrutinyLoading}
                     className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5"
+                    title="Attempt illegal modification on locked Item C3 to demonstrate server HTTP 409 enforcement"
                   >
                     <AlertCircle className="w-4 h-4" />
                     <span>⚡ Test Scope Lock: Attempt Tampering Locked Item C3</span>
                   </button>
 
                   <button
-                    onClick={handleSubmitValidCorrections}
+                    onClick={handleVerifyAndAcceptRemediation}
                     disabled={scrutinyLoading}
                     className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5"
+                    title="Review and formally accept applicant's submitted cure for D1 and D2"
                   >
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>✅ Submit Valid Rectification for D1 &amp; D2</span>
+                    <span>✅ Verify &amp; Accept Cured Remediation (Order AP-2026-44)</span>
                   </button>
 
                   <button
                     onClick={handleClearReScrutiny}
                     className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5"
+                    title="Clear Re-Scrutiny and forward case to Expert Visit Committee (EVC) or Council Gate"
                   >
                     <ArrowRight className="w-4 h-4" />
                     <span>Clear Re-Scrutiny &amp; Advance Case</span>

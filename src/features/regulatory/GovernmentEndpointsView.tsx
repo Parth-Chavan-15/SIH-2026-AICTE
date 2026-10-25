@@ -320,6 +320,35 @@ export const GovernmentEndpointsView: React.FC = () => {
               </div>
             )}
 
+            {/* Rich Visual Details for Ingest Endpoint */}
+            {selectedEndpointId === 'ingest' && (
+              <div className="p-4 rounded-xl bg-blue-50/70 border border-blue-200 space-y-3 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-blue-950 flex items-center gap-1.5">
+                    <CheckCircle className="w-4 h-4 text-emerald-600" />
+                    NSWS Single-Window Ingestion Gateway Status:
+                  </span>
+                  <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    ONLINE &bull; READY
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div className="p-2.5 rounded-lg bg-white border border-blue-100">
+                    <span className="text-[10px] text-slate-500 uppercase block font-semibold">Source Portal</span>
+                    <span className="font-bold text-slate-800">Invest India / NSWS</span>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-white border border-blue-100">
+                    <span className="text-[10px] text-slate-500 uppercase block font-semibold">Signatory DSC Token</span>
+                    <span className="font-bold text-slate-800">Class-3 USB (ePass2003)</span>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-white border border-blue-100">
+                    <span className="text-[10px] text-slate-500 uppercase block font-semibold">Routing Evaluation</span>
+                    <span className="font-bold text-emerald-700">APH Table 1 Automated</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Rich Visual Details for Each Specific Endpoint */}
             {selectedEndpointId === 'registries' && endpointResult?.data && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
@@ -388,20 +417,25 @@ export const GovernmentEndpointsView: React.FC = () => {
               </div>
             )}
 
-            {/* Live Raw JSON Payload Viewer */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-                <span>Synchronized Gateway Payload (Telemetry Inspector):</span>
-                <span className="text-[10px] font-mono text-slate-500">
-                  {endpointResult ? 'Live Observed Response' : 'Click "Execute / Ping Endpoint" to inspect'}
+            {/* Optional Collapsible Technical JSON Payload Inspector */}
+            <details className="group border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+              <summary className="flex items-center justify-between p-3.5 cursor-pointer text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors select-none">
+                <span className="flex items-center gap-2">
+                  <Server className="w-4 h-4 text-slate-500" />
+                  <span>Technical Gateway Payload (Raw JSON Telemetry)</span>
                 </span>
+                <span className="text-[10px] font-mono text-blue-700">
+                  Click to Expand / Collapse
+                </span>
+              </summary>
+              <div className="p-3 bg-slate-900 border-t border-slate-800">
+                <pre className="text-emerald-400 font-mono text-[11px] overflow-x-auto max-h-56">
+                  {endpointResult
+                    ? JSON.stringify(endpointResult, null, 2)
+                    : `// Ready to ping ${selectedEndpoint.path}\n// Click "Execute / Ping Endpoint" above to execute this live national adapter.`}
+                </pre>
               </div>
-              <pre className="p-4 rounded-xl bg-slate-900 text-emerald-400 font-mono text-xs overflow-x-auto max-h-64 border border-slate-800">
-                {endpointResult
-                  ? JSON.stringify(endpointResult, null, 2)
-                  : `// Ready to ping ${selectedEndpoint.path}\n// Click "Execute / Ping Endpoint" above to execute this live national adapter.`}
-              </pre>
-            </div>
+            </details>
           </div>
         </div>
       </div>

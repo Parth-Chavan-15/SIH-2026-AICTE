@@ -33,16 +33,17 @@ export const CompetentAuthorityDecisionView: React.FC<CompetentAuthorityDecision
 }) => {
   const { applications, transitionStage, addToast, auditLog } = useApp();
 
-  // Find candidate cases awaiting decision
-  // Primary candidates: COEP (NBA fast-track, scrutiny cleared) or GIITS (scrutiny+EVC) or PDIMTR
-  const decisionCases = applications.filter(
+  // Candidate cases for Council Statutory Decision (all 5 canonical colleges accessible)
+  const candidateCases = applications.filter(
     (a) =>
       a.currentStage === 'Scrutiny Cleared' ||
       a.currentStage === 'EVC Inspection Completed' ||
       a.currentStage === 'Executive Committee Approval' ||
       a.currentStage === 'Deficiency Communicated' ||
-      a.currentStage === 'Scrutiny in Progress'
+      a.currentStage === 'Scrutiny in Progress' ||
+      a.currentStage === 'Approval Issued'
   );
+  const decisionCases = candidateCases.length > 0 ? candidateCases : applications;
 
   const [selectedCaseId, setSelectedCaseId] = useState<string>(
     decisionCases.find((c) => c.applicationNumber === '1-43657568230')?.id ||

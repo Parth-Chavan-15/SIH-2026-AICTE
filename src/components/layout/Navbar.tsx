@@ -32,13 +32,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   const activeActor = session?.actor;
   const [showClockPopover, setShowClockPopover] = useState(false);
 
-  // Determine active regulatory role (1 to 6)
+  // Determine active regulatory role (1 to 6) - Priority order: Institution -> Regional -> Bureau -> EVC -> Reviewer -> Admin
   const roleNumber: number =
-    (activeActor?.id === 'usr-inst-coep' || activeActor?.id === 'usr-inst-giits' || activeActor?.id === 'usr-inst-pdimtr' || activeActor?.id === 'usr-inst-apex' || activeActor?.id === 'usr-inst-batu' || activeActor?.roles?.includes('institution')) ? 1 :
-    (activeActor?.id === 'usr-scrutiny-reviewer' || (activeActor?.roles?.includes('reviewer') && !activeActor?.roles?.includes('regional_officer'))) ? 2 :
-    (activeActor?.id === 'usr-evc-chair' || activeActor?.roles?.includes('evc')) ? 3 :
+    (activeActor?.id?.startsWith('usr-inst-') || activeActor?.roles?.includes('institution')) ? 1 :
     (activeActor?.id === 'usr-ro-western' || activeActor?.roles?.includes('regional_officer')) ? 4 :
     (activeActor?.id === 'usr-bureau-hq' || activeActor?.roles?.includes('demo_authority') || activeActor?.roles?.includes('bureau_officer')) ? 5 :
+    (activeActor?.id === 'usr-evc-chair' || activeActor?.roles?.includes('evc')) ? 3 :
+    (activeActor?.id === 'usr-scrutiny-reviewer' || activeActor?.roles?.includes('reviewer')) ? 2 :
     6;
 
   // Map college actor to their specific application ID for tenant-isolated notifications

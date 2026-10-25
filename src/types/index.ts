@@ -107,6 +107,11 @@ export interface Application {
   submittedAt: string;
   stageDeadlineDays: number;
   assignedOfficer: string;
+  visitLocation?: string;
+  reportSubmittedAt?: string;
+  videoUrl?: string;
+  gpsLatitude?: number;
+  gpsLongitude?: number;
   priority: PriorityLevel;
   slaStatus: SLAStatusType;
   elapsedDaysAtStage: number;
@@ -141,6 +146,11 @@ export interface EVCInspection {
   facultyScore?: number; // 0-100
   laboratoriesScore?: number; // 0-100
   assignedOfficer: string;
+  visitLocation?: string;
+  reportSubmittedAt?: string;
+  videoUrl?: string;
+  gpsLatitude?: number;
+  gpsLongitude?: number;
 }
 
 export interface ComplianceUndertaking {
