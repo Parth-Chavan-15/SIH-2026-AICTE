@@ -194,7 +194,18 @@ export function createIdentity(options: { accounts: DemoAccount[]; origin?: stri
     origin,
     cookieOptions: { httpOnly: true, sameSite: 'strict' as const, secure, path: '/api/v1', maxAge: ttlMs },
     verifyOrigin(value: string | undefined) {
-      if (value !== origin) throw new SecurityError('FORBIDDEN', 'Same-origin request required');
+      if (!value) throw new SecurityError('FORBIDDEN', 'Same-origin request required');
+      if (value === origin) return;
+      try {
+        const valUrl = new URL(value);
+        const origUrl = new URL(origin);
+        const isLoopbackVal = ['localhost', '127.0.0.1', '[::1]'].includes(valUrl.hostname);
+        const isLoopbackOrig = ['localhost', '127.0.0.1', '[::1]'].includes(origUrl.hostname);
+        if (isLoopbackVal && isLoopbackOrig && valUrl.port === origUrl.port && valUrl.protocol === origUrl.protocol) {
+          return;
+        }
+      } catch {}
+      throw new SecurityError('FORBIDDEN', 'Same-origin request required');
     },
     authenticate(cookie: string | undefined): SessionResponse & { sessionId: string } {
       prune();

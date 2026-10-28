@@ -737,6 +737,51 @@ describe('NIYAMSETU Full Deliverables Regression Suite (Mandatory Prototype Retr
       const coep = (storage as any).inspect?.().cases.find((c: any) => c.id === 'APP-2026-COEP');
       expect(coep.state).toBe('scrutiny_pending'); // Remained scrutiny_pending!
     });
+
+    it('returns 404 for document download and verification when case has no generated decision document (prevents cross-case leakage)', async () => {
+      const { cookie } = await loginAs('bureau.approval@aicte.gov.in');
+
+      // Generate doc for PDIMTR so generatedDocumentsDB has at least one document
+      await request(app)
+        .post('/api/v1/decision-docs/generate/APP-2026-PDIMTR')
+        .set('Cookie', cookie)
+        .set('Origin', 'http://localhost:3000')
+        .send({ documentType: 'EOA' });
+
+      // Request download for COEP (which has NO decision document)
+      const coepDl = await request(app)
+        .get('/api/v1/decision-docs/download/APP-2026-COEP')
+        .set('Cookie', cookie);
+      expect(coepDl.status).toBe(404);
+      expect(coepDl.body.error.code).toBe('NOT_FOUND');
+
+      // Request signature verify for COEP (which has NO decision document)
+      const coepVer = await request(app)
+        .get('/api/v1/decision-docs/verify-signature/APP-2026-COEP')
+        .set('Cookie', cookie);
+      expect(coepVer.status).toBe(404);
+      expect(coepVer.body.error.code).toBe('NOT_FOUND');
+    });
+
+    it('accepts loopback alias origin (127.0.0.1) on same port for local/test access, and denies external origin', async () => {
+      const { cookie } = await loginAs('bureau.approval@aicte.gov.in');
+
+      // Loopback alias origin is permitted
+      const loopbackRes = await request(app)
+        .post('/api/v1/decision-docs/generate/APP-2026-PDIMTR')
+        .set('Cookie', cookie)
+        .set('Origin', 'http://127.0.0.1:3000')
+        .send({ documentType: 'EOA' });
+      expect([200, 201]).toContain(loopbackRes.status);
+
+      // External attacker origin is denied with 403
+      const attackerRes = await request(app)
+        .post('/api/v1/decision-docs/generate/APP-2026-PDIMTR')
+        .set('Cookie', cookie)
+        .set('Origin', 'https://attacker.invalid')
+        .send({ documentType: 'EOA' });
+      expect(attackerRes.status).toBe(403);
+    });
   });
 
   // --- DELIVERABLE 10: Complete Removal of API Setu, State DTE, and Siebel CRM ---

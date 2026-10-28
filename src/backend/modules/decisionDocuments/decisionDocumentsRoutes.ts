@@ -282,9 +282,9 @@ export function createDecisionDocumentsRouter(storage?: CaseStorage): Router {
   router.get('/decision-docs/verify-signature/:caseId', (req: Request, res: Response) => {
     const caseId = req.params.caseId;
     const docs = getAllGeneratedDocuments();
-    const doc = docs.find(d => d.applicationId === caseId) || docs[0];
+    const doc = docs.find(d => d.applicationId === caseId);
     if (!doc) {
-      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'No document found for case' } });
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: `No decision document found for case ${caseId}` } });
     }
     return res.status(200).json({
       success: true,
@@ -300,12 +300,23 @@ export function createDecisionDocumentsRouter(storage?: CaseStorage): Router {
   });
 
   // GET /api/v1/decision-docs/download/:caseId
-  router.get('/decision-docs/download/:caseId', (req: Request, res: Response) => {
+  router.get('/decision-docs/download/:caseId', async (req: Request, res: Response) => {
     const caseId = req.params.caseId;
+    const actor = (req as any).actor as Actor | undefined;
+    if (actor && storage) {
+      try {
+        const app = await storage.get(actor, caseId);
+        if (!app) {
+          return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: `Case ${caseId} not found or inaccessible in caller scope` } });
+        }
+      } catch {
+        return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: `Case ${caseId} not found or inaccessible in caller scope` } });
+      }
+    }
     const docs = getAllGeneratedDocuments();
-    const doc = docs.find(d => d.applicationId === caseId) || docs[0];
+    const doc = docs.find(d => d.applicationId === caseId);
     if (!doc || !doc.pdfBytesBase64) {
-      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'PDF binary not found' } });
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: `PDF binary not found for case ${caseId}` } });
     }
     const pdfBuffer = Buffer.from(doc.pdfBytesBase64, 'base64');
     res.setHeader('Content-Type', 'application/pdf');

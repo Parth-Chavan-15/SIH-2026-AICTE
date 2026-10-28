@@ -4,8 +4,8 @@
 
 [![Live Prototype](https://img.shields.io/badge/Live%20Prototype-niyamsetu--aicte.onrender.com-success?style=for-the-badge&logo=render)](https://niyamsetu-aicte.onrender.com)
 [![Status](https://img.shields.io/badge/Status-High--Fidelity%20Transactional%20Prototype-brightgreen?style=flat-square)](https://niyamsetu-aicte.onrender.com)
-[![Regression Suite](https://img.shields.io/badge/Deliverables%20Suite-36%2F36%20Passed%20(100%25)-brightgreen.svg?style=flat-square)](./tests/regression_retrofit_all_deliverables.test.ts)
-[![Total Test Suite](https://img.shields.io/badge/Total%20Test%20Suite-325%2F325%20Passed%20(100%25)-brightgreen.svg?style=flat-square)](./tests/)
+[![Regression Suite](https://img.shields.io/badge/Deliverables%20Suite-38%2F38%20Passed%20(100%25)-brightgreen.svg?style=flat-square)](./tests/regression_retrofit_all_deliverables.test.ts)
+[![Total Test Suite](https://img.shields.io/badge/Total%20Test%20Suite-327%2F327%20Passed%20(100%25)-brightgreen.svg?style=flat-square)](./tests/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict%20(0%20Errors)-blue.svg?style=flat-square)](./tsconfig.json)
 [![Handbook Base](https://img.shields.io/badge/Handbook%20Base-APH%202024--27%20%2B%20Addendum%20G02-orange.svg?style=flat-square)](https://www.aicte-india.org)
 
@@ -25,7 +25,7 @@ Managing these workflows historically involved manual handoffs between national 
 5. Enforce server-enforced **Differential Re-Scrutiny Scope-Locks (APH §1.8(g))** that permanently lock previously cleared items read-only against any modification.
 6. Decouple **Standing Appellate Committee (SAC) appeals, Standing Hearing Committee (SHC) shortcomings hearings, and Chapter VII §7.10 Grievances** from the main application spine.
 7. Provide a **Central Policy Administrator Workspace (Role 6)** featuring an Active Rules & Routing Registry, versioned draft editor, before/after diff visualizer, route sandbox, and regulatory conflict register.
-8. Synthesize per-case **institute-specific decision documents (LoA/EoA/LoD/LoR)** with HMAC-SHA256 prototype integrity seals (non-production test key), tamper detection, and order-backed compliance materialization.
+8. Synthesize per-case **institute-specific decision documents (LoA/EoA/LoD/LoR)** with HMAC-SHA256 prototype integrity seals (server-keyed test secret), tamper detection, and order-backed compliance materialization.
 9. Track post-approval obligations through an automated **4-clock deterministic timer engine**, isolating APH §2.25(f) security deposits from pre-approval scrutiny cure windows.
 
 ---
@@ -111,85 +111,84 @@ flowchart TD
 | **8. Generated Decision Documents** | AICTE Act 1987 §10(k), Official Order Issuance | [`src/backend/modules/decisionDocuments/`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/backend/modules/decisionDocuments/)<br/>[`src/features/documents/`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/features/documents/) | `Deliverable 8` tests (Dynamic PDF rendering, demo digital signing, complianceDB sync) |
 | **9. Timers & Regulatory Clocks** | APH §2.25(f) vs Deficiency Cure Distinction | [`src/backend/modules/compliance/`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/backend/modules/compliance/) | Acceptance tests T10–T12 & `m3_obligations_timers.test.ts` |
 | **10. Removal of Mock Adapters** | Clean architecture; removal of API Setu, DTE, Siebel | [`src/backend/routes/adapterRoutes.ts`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/backend/routes/adapterRoutes.ts) | `Deliverable 10` tests (All 3 excised endpoints return HTTP 404) |
-| **11. Regression Tests & Documentation** | Verification rigour & demonstration clarity | [`tests/regression_retrofit_all_deliverables.test.ts`](file:///c:/Users/parth/Documents/SIH-26-AICTE/tests/regression_retrofit_all_deliverables.test.ts) | 21/21 retrofit tests + 310 total repository tests passing natively |
+| **11. Regression Tests & Documentation** | Verification rigour & demonstration clarity | [`tests/regression_retrofit_all_deliverables.test.ts`](file:///c:/Users/parth/Documents/SIH-26-AICTE/tests/regression_retrofit_all_deliverables.test.ts) | 38/38 retrofit tests + 327 total repository tests passing natively |
 
 ---
 
 ## 👥 The 6 Statutory User Personas
 
-| Role ID | Persona Title | Statutory Responsibilities in NiyamSetu |
-|---|---|---|
-| `institution` | **College Principal / Trust Signatory** | Onboards via NSWS simulation, tracks stage progression, cures flagged deficiencies ($D1, D2$) during 15-day windows, and uploads compliance renewal proofs. *Constitutional guard: Cannot edit cleared checklist items or self-approve.* |
-| `reviewer` | **Desk Scrutiny Committee Expert** | University professors and empanelled subject experts. Evaluates applications across 6 statutory categories, flags deficiencies, and signs evaluation reports. *Constitutional guard: Cannot re-evaluate cleared items ($C3, C4$) on re-scrutiny.* |
-| `evc` | **Expert Visit Committee Officer** | Senior inspection experts. Coordinates on-site physical audits and confirms geo-coordinates and walkthrough recordings per APH §1.9 (note: 500m campus geofencing is an application engineering enhancement; APH §1.9 mandates on-site physical visit and geo-coordinates verification). |
-| `regional_officer` | **Regional Office Operations Desk** | AICTE Regional Directors (Western, Northern, Eastern, Southern, South-Central, South-Western, North-Western, Central). Allocates cases across Scrutiny Groups A/B and EVC Panels Alpha/Beta, monitors 8-region pendency buckets, and tracks SLAs. |
-| `bureau_officer` | **Approval Bureau / Council Authority** | AICTE Executive Committee & Member Secretary. Reviews consolidated case summaries, exercises human-only decision authority (AICTE Act 1987 §10(k)), and generates digitally signed LoA/EoA/LoD/LoR orders with conditional undertakings. |
-| `policy_admin` | **Central Policy Administrator** | Custodians of the Active Rules & Routing Registry. Edits versioned rules, inspects before/after diffs, simulates routes in the sandbox, manages the conflict register, and inspects the SHA-256 audit ledger. |
+All accounts use the built-in demo password: **`password123`**
+
+| Role ID | Persona Title | Email Account | Statutory Responsibilities in NiyamSetu |
+|---|---|---|---|
+| `institution` | **College Principal / Trust Signatory** | `principal@coep.ac.in`<br/>`principal@pdimtr.ac.in` | Onboards via NSWS simulation, tracks stage progression, cures flagged deficiencies ($D1, D2$) during 15-day windows, and uploads compliance renewal proofs. *Constitutional guard: Cannot edit cleared checklist items or self-approve.* |
+| `reviewer` | **Desk Scrutiny Committee Expert** | `scrutiny.reviewer@aicte.gov.in` | University professors and empanelled subject experts. Evaluates applications across 6 statutory categories, flags deficiencies, and signs evaluation reports. *Constitutional guard: Cannot re-evaluate cleared items ($C3, C4$) on re-scrutiny.* |
+| `evc` | **Expert Visit Committee Officer** | `evc.chair@aicte.gov.in` | Senior inspection experts. Coordinates on-site physical audits and confirms geo-coordinates and infrastructure. *Constitutional guard: Assigned only when mandated by Table 2.3.* |
+| `regional_officer` | **Regional Officer (RO Western / SCRO)** | `ro.western@aicte.gov.in` | AICTE regional administrative officer. Manages committee workloads, assigns Scrutiny and EVC groups, reviews SLA metrics, and transmits completed proformas to HQ. |
+| `bureau_officer` / `demo_authority` | **Approval Bureau Officer / Council Chair** | `bureau.approval@aicte.gov.in` | Executive Committee / Council representative. Reviews recommendations, records authorized decisions, generates official signed decision letters (LoA/EoA/LoD/LoR), and materializes compliance obligations. |
+| `policy_admin` | **AICTE Regulation Bureau Policy Admin** | `admin@aicte.gov.in` | Policy custodian. Operates the Active Rules & Routing Registry, edits draft rules with before/after diffs, runs sandbox simulations, and maintains the conflict register. |
 
 ---
 
-## 🏫 The 5 Canonical Sample Colleges Seeded
+## 🏫 Canonical Seed Applications
 
-| Institution Name | Region | Category & Scope | Canonical Workflow Demonstrated |
+| Application ID | Regional Office | Approval Category | Narrative & Regulatory Path |
 |---|---|---|---|
-| **GIITS Visakhapatnam**<br/>`APP-2026-GIITS` | South-Central | Increase in Intake (`180 ➔ 240`)<br/>Non-NBA accredited | Non-NBA course requires Desk Scrutiny followed by physical EVC inspection. Demonstrates initial scrutiny deficiency flagging ($D1, D2$), applicant rectification, differential re-scrutiny scope-lock, and progression to EVC. |
-| **COEP Tech University, Pune**<br/>`APP-2026-COEP` | Western | Increase in Intake (`120 ➔ 180`)<br/>NBA Tier-1 Accredited (Score 680) | Holds valid NBA accreditation. Dynamic Route Engine executes Fast-Track route: physical EVC inspection is **explicitly bypassed** under Addendum 2026–27 p. 42 §2.6(c)(1). |
-| **PDIMTR / Univ BDT College**<br/>`APP-2026-PDIMTR` | Western | Extension of Approval (EoA)<br/>Conditional Order Compliance | Approved with mandatory undertakings. Actively tracks 3 post-approval obligations in `complianceDB`: 30-year registered land lease deed, annual Fire Safety NOC renewal, and 6-month faculty appointment undertaking. |
+| **College of Engineering Pune (COEP)**<br/>`APP-2026-COEP` | Western | Increase in Intake (NBA Accredited)<br/>B.Tech AI & Data Science | Sourced from Addendum 2026–27 §2.6(c)(1): High NBA score (680) waives physical EVC inspection. Evaluated strictly via Fast-Track Desk Scrutiny and advances directly to Executive Committee approval. |
+| **GMR Institute of Technology (GIITS)**<br/>`APP-2026-GIITS` | South-Central | Increase in Intake (Non-NBA)<br/>Mechanical & Computing | Follows APH Table 2.3 Row 9: Non-NBA status requires sequential Desk Scrutiny followed by physical verification by EVC Panel Alpha before Council consideration. |
+| **PDIMTR Nagpur**<br/>`APP-2026-PDIMTR` | Western | Extension of Approval (EoA)<br/>Self-Disclosure with Conditions | Chapter II §2.5: Pre-seeded with recorded conditional approval. Demonstrates decision document synthesis (EoA) and the 3 conditions in `complianceDB`: 30-year registered land lease deed, annual Fire Safety NOC renewal, and 6-month faculty appointment undertaking. |
 | **Apex Institute of Technology**<br/>`APP-2026-APEX` | Northern | Increase in Intake<br/>Decoupled Governance Branch | Demonstrates decoupled appellate workflows: adverse rejection order triggers statutory appeal to the Standing Appellate Committee (SAC) within a 7-calendar-day window with appellant DSC token. |
 | **BATU Lonere**<br/>`APP-2026-BATU` | Western | Change of Site / Location<br/>Break-in-EoA Restoration | Evaluates under APH Table 2.3 Row 11: Desk Scrutiny is **bypassed** in favor of immediate physical site verification by EVC Panel Beta. |
 
 ---
 
-## 🚀 Step-by-Step Golden Demo Runbooks
+## 💾 Persistence Modes & Storage Architecture
 
-### 🌟 Path A: NSWS Intake Simulation to Council Order & Compliance
+NiyamSetu features a dual-mode persistence architecture designed for zero setup friction during hackathons and robust enterprise durability:
 
-```
-[NSWS Onboarding] ➔ [Route Engine] ➔ [RO Allocation] ➔ [Scrutiny & Scope-Lock] ➔ [EVC Bypass/Visit] ➔ [Council Decision & Signed PDF] ➔ [Obligations DB]
-```
+### 1. High-Fidelity Transactional In-Memory Storage Engine (Default)
+- **Active when**: `MONGODB_URI` is unset or MongoDB is offline.
+- **Engine**: Custom transactional memory adapter (`memoryAdapter.ts`) with optimistic version checks, isolated snapshot transactions, idempotency receipts, and SHA-256 audit chaining.
+- **Persistence Boundary**: State resets to the canonical seed cases on server process termination. Ideal for deterministic evaluation, clean test runs, and self-contained demos.
 
-1. **Step 1 — NSWS Intake Simulation (`/nsws`):**
-   - Click **NSWS Simulation** in the top navigation bar.
-   - Onboard *College of Engineering Pune (COEP)*: verify simulated PAN (`AAACB1234F`) and emBridge Class-3 cryptographic USB token (`EP2003-8841-A99B`).
-   - Review live route pre-check: NBA Score 680 waives physical EVC inspection under Addendum 2026–27 p. 42.
-   - Submit application: creates a persistent record with `intakeChannel: 'NSWS_SIMULATION'`.
-2. **Step 2 — Regional Office Operations Desk Allocation (`/ro-allocation`):**
-   - Switch persona to **Regional Officer** (`ro.western@aicte.gov.in`).
-   - Navigate to **RO Desk Allocation**: review standing panels `SCR-GROUP-A`, `SCR-GROUP-B`, `EVC-GROUP-A`, `EVC-GROUP-B`.
-   - Attempt to assign case `APP-2026-COEP` to `EVC-GROUP-A`: observe system **blocking the assignment with HTTP 422** (`EVC_NOT_APPLICABLE_FOR_ROUTE`).
-   - Assign to `SCR-GROUP-B` with reason: *"Western regional desk workload balancing"*; review audit trail.
-3. **Step 3 — Scrutiny Desk & Scope-Lock Enforcement (`/scrutiny`):**
-   - Switch persona to **Scrutiny Reviewer** (`scrutiny.reviewer@aicte.gov.in`).
-   - Review submitted documents: mark Land Conversion compliant and Faculty Cadre deficient ($D1$).
-   - On re-scrutiny under **APH §1.8(g)**, previously approved items ($C3, C4$) are locked read-only.
-   - Any attempt to modify cleared items returns **HTTP 409 Conflict (`SCOPE_VIOLATION`)**.
-4. **Step 4 — Council Decision & PDF Decision Document (`/decision-docs`):**
-   - Switch persona to **Bureau Officer** (`bureau.approval@aicte.gov.in`).
-   - Open **Decision Documents**: generate an **Extension of Approval (EoA)** for `APP-2026-COEP`.
-   - Click **Download PDF**: inspect the generated document rendered via `pdf-lib` containing case details, courses, approved intake (180), and the prominent watermark:
-     > `DEMO DIGITAL SIGNATURE — NOT AN OFFICIAL AICTE SIGNATURE / NOT AN OFFICIAL ORDER`
-   - Click **Verify Digital Signature**: observe HMAC SHA-256 certificate validation.
-   - Open **Post-Approval Compliance**: observe obligations materialized strictly and only from represented conditions in the authorized decision.
+### 2. Production MongoDB Store (Multi-Document Transactions)
+- **Active when**: Connected to a MongoDB replica set via `MONGODB_URI`.
+- **Collections Persisted**:
+  - `applications`: Canonical cases, versions, facts, and state.
+  - `institutions`: Institutional profiles and credentials.
+  - `policy_revisions`: Active statutory rules and candidate drafts.
+  - `core_audit`: Cryptographic audit log entries.
+  - `core_decisions`: Recorded Executive Committee / Council decisions.
+  - `core_outbox`: Reliable transactional outbox notifications.
+  - `core_receipts`: Idempotency receipts.
+- **Companion In-Memory Layers**: In the current prototype, generated document binary cache (`generatedDocumentsDB`) and dynamic compliance timers (`complianceDB`) reside in companion Node memory maps. Downstream calls to `/decision-docs/generate/:caseId` idempotently reconstruct documents from canonical MongoDB decisions if needed.
 
 ---
 
-### 📂 Path B: Existing Portal Report Ingestion & Policy Registry
+## 🔐 Security Boundaries & Cryptographic Disclosures
 
-```
-[Portal Report Ingest] ➔ [Mapping Preview] ➔ [Scoped Re-Scrutiny] ➔ [Policy Registry Diff] ➔ [Conflict Register]
-```
+1. **HMAC-SHA256 Prototype Integrity Seal**: Decision document PDF seals are generated server-side using an HMAC-SHA256 signature keyed with `PROTOTYPE_SEAL_SECRET`. They demonstrate tamper detection and cryptographic integrity verification in a prototype sandbox. They are **not** embedded PAdES/PKCS#7 asymmetric digital signatures and do **not** carry sovereign legal certification.
+2. **Same-Origin CSRF Protection**: All mutating HTTP endpoints (`POST`, `PUT`, `PATCH`, `DELETE`) require an `Origin` header matching `CLIENT_URL` or `RENDER_EXTERNAL_URL`. For local developer convenience, loopback aliases (`http://localhost:3000` and `http://127.0.0.1:3000`) on matching ports are supported.
+3. **Session Authentication**: Issued via `HttpOnly`, `SameSite=Strict` cookies (`sih_demo_session`). Token digests are held in server memory; sessions expire after 15 minutes of inactivity.
+4. **Scope Gates**: Institution principals are cryptographically scoped to their own institution IDs. Regional officers are scoped to their regional jurisdictions. Council chairs hold global scope.
+5. **Simulated External Portals**: NSWS onboarding, emBridge Class-3 USB token interactions, and SMS/Email gateway alerts are simulated locally for testability without requiring sovereign government portal credentials.
+6. **Engineering Safeguards**: The 500-meter EVC GPS geofence is an engineering enhancement to assist inspectors; APH §1.9 governs the physical on-site audit requirement. The 60-day Fire Safety NOC reminder is an operational SLA.
 
-1. **Step 1 — Portal Deficiency Report Ingestion (`/portal-import`):**
-   - Click **Portal Report Import** in the navigation bar.
-   - Select offline fixture `Real 2026–27 AICTE Scrutiny Evaluation Report - GIITS.pdf` (or upload a PDF/JSON deficiency report).
-   - Click **Generate Extraction Preview**: inspect extracted fields, source page numbers (pp. 1–6), mapping confidence scores (0.95–0.99), and SHA-256 immutable original report hash.
-   - Click **Confirm Ingestion & Spawn Scoped Re-Scrutiny Task**: preserves original report immutable as Evidence V1 and creates task `RESCRUTINY-TASK-...` targeting only original deficiency IDs ($D1, D2$).
-2. **Step 2 — Policy Administrator Workspace (`/admin/rules`):**
-   - Switch persona to **Policy Administrator** (`admin@aicte.gov.in`).
-   - Navigate to **Active Rules & Routing Registry**: browse active rules with physical and printed page citations.
-   - Click **Edit Rule** on `ADD-2026-27-CH2-2.6C-NBA`: edit intake threshold in the draft editor and inspect the **Before / After Diff Viewer**.
-   - Open the **Sandbox Route Simulator**: test intake expansion with $X=360$ and observe the unresolved ambiguity flag.
-   - Open the **Conflict Register**: review documented regulatory divergences ($ELP\text{ 50\%}$, $X=360$, Hibernation timing) and their safe holding paths.
+---
+
+## ⚙️ Environment Variables Reference
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `PORT` | Optional | `3000` | Port for Express HTTP server. Injected automatically by Render/Cloud platforms. |
+| `HOST` | Optional | `127.0.0.1` (dev) / `0.0.0.0` (prod) | Network interface binding. Must be `0.0.0.0` inside Docker/Render. |
+| `NODE_ENV` | Optional | `development` | Set to `production` for static asset serving and strict production security. |
+| `MONGODB_URI` | Optional | `mongodb://127.0.0.1:27017/niyamsetu` | MongoDB connection URI. Replica set required for multi-document ACID transactions. |
+| `CLIENT_URL` | Optional | `http://localhost:3000` | Allowed client origin for CORS and Same-Origin CSRF enforcement. |
+| `RENDER_EXTERNAL_URL` | Optional | *(Render URL)* | Automatically set by Render. Overrides `CLIENT_URL` for same-origin checking. |
+| `JWT_SECRET` | Optional | *(Demo Secret)* | HMAC secret for session authentication tokens. |
+| `SESSION_SECRET` | Optional | *(Demo Secret)* | Session cookie signing secret. |
+| `PROTOTYPE_SEAL_SECRET` | Optional | *(Built-in Nonprod)* | Server secret key used to compute HMAC-SHA256 decision document integrity seals. |
 
 ---
 
@@ -198,7 +197,7 @@ flowchart TD
 The project requires **zero external database setup**. Its built-in transactional memory storage starts instantly out of the box.
 
 ### Prerequisites
-- **Node.js**: v18 or v20 LTS
+- **Node.js**: v20 or v22 LTS
 - **npm**: v9 or higher
 
 ### Commands (Copy & Paste)
@@ -215,13 +214,13 @@ npm install
 npx tsc --noEmit
 
 # 4. Run automated regression & acceptance test suites
-# Full retrofitted regression suite (36/36 passed)
+# Full retrofitted regression suite (38/38 passed)
 npx vitest run tests/regression_retrofit_all_deliverables.test.ts
 
 # Acceptance verification suites (22/22 passed)
 npx vitest run tests/verification_t01_t16.test.ts tests/verification_t17_t22.test.ts
 
-# Complete repository suite (325/325 passed across 27 files)
+# Complete repository suite (327/327 passed across 27 files)
 npx vitest run
 
 # 5. Build and launch development server
@@ -238,21 +237,44 @@ Try the full application online without installing anything:
 
 ---
 
-## 🧪 Automated Test Coverage (325 Tests / 27 Suites)
+## 🧪 Automated Test Coverage (327 Tests / 27 Suites)
 
 ```
 Test Files  27 passed (27)
-     Tests  325 passed (325)
-  Duration  9.91s (100% pass rate, 0 failed, 0 skipped)
+     Tests  327 passed (327)
+  Duration  12.05s (100% pass rate, 0 failed, 0 skipped)
 ```
 
-- **`tests/regression_retrofit_all_deliverables.test.ts` (36 tests):** Verifies all 11 mandatory deliverables end-to-end, including decision preconditions, outcome alignment, HMAC-SHA256 integrity verification, and boundary hold conditions.
+- **`tests/regression_retrofit_all_deliverables.test.ts` (38 tests):** Verifies all 11 mandatory deliverables end-to-end, including decision preconditions, outcome alignment, HMAC-SHA256 integrity verification, no cross-case leakage, loopback origin matching, and boundary hold conditions.
 - **`tests/verification_t01_t16.test.ts` (16 tests):** Acceptance checks T01–T16 (tenant isolation, scrutiny scope-lock, human-only decisions, timer acceleration).
 - **`tests/verification_t17_t22.test.ts` (6 tests):** Acceptance checks T17–T22 (authorized reverts, statutory notices, DSC signatures, compliance certificates).
 - **`tests/policy/routing.test.ts` (37 tests):** Comprehensive route engine predicate tests across Table 2.3.
 - **`tests/decisions/core.test.ts` (34 tests):** Decision transactions, authority guards, and speaking order verification.
 - **`tests/security/auth.test.ts` (18 tests):** Session authentication, cookie security, RBAC scopes, and login attempt throttling.
 - **`tests/core/http.test.ts` & `tests/core/commands.test.ts` (22 tests):** HTTP guards, transaction serialization, rollback semantics, and outbox isolation.
+
+---
+
+## 🛠️ Operational Troubleshooting & Hosting Runbook
+
+### 1. Render Free-Tier Cold Starts (35–50s Latency)
+- **Cause**: Render free instances spin down after 15 minutes of HTTP inactivity.
+- **Resolution**: The first request may take 35–50 seconds to initialize the Node.js container and Vite engine. Subsequent requests respond in <50ms. Health checks at `/health` verify alive status.
+
+### 2. Same-Origin Request Required (HTTP 403 Forbidden)
+- **Cause**: CSRF protection checks the HTTP `Origin` header on state mutations (`POST`, `PUT`, `DELETE`).
+- **Resolution**: In local development, access via `http://localhost:3000` or `http://127.0.0.1:3000`. On custom domains or Render deployments, ensure `CLIENT_URL` or `RENDER_EXTERNAL_URL` matches the deployed hostname exactly.
+
+### 3. Memory Ceiling (512MB RAM on Free Tier)
+- **Cause**: High concurrency during PDF rendering (`pdf-lib`) and 3D canvas rendering.
+- **Resolution**: Document generation is streamed with base64 payload limits (10MB ceiling) and constant-time buffer allocations.
+
+### 4. Database Seed & Recovery
+- To re-seed MongoDB with canonical test institutions:
+  ```bash
+  npm run seed:mongo
+  ```
+- If MongoDB becomes unreachable, NiyamSetu automatically falls back to its internal transactional in-memory store without crashing or throwing unhandled errors.
 
 ---
 
@@ -272,4 +294,4 @@ Test Files  27 passed (27)
   - `origin`: `https://github.com/Mayuresh-1306/SIH-2026-AICTE.git` (Tracked master)
   - `personal`: `https://github.com/Parth-Chavan-15/SIH-2026-AICTE.git` (Backup deployment mirror)
 - **Live Deployment**: [https://niyamsetu-aicte.onrender.com](https://niyamsetu-aicte.onrender.com)
-- **Status**: High-Fidelity Transactional Prototype with In-Memory State Engines (AY 2026–27 | 325/325 Tests Passing)
+- **Status**: High-Fidelity Transactional Prototype with In-Memory & MongoDB Persistence Engines (AY 2026–27 | 327/327 Tests Passing)
