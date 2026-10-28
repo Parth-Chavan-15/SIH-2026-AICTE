@@ -55,6 +55,7 @@ app.use((req, res, next) => {
 // Connects to Production MongoDB Store when available and seeds canonical fixtures.
 // Seamlessly provides zero-downtime canonical in-memory fallback when offline.
 import { initMongoDatabase } from './src/backend/persistence/mongoInit.ts';
+import { createMongoStorage } from './src/backend/persistence/mongoCore.ts';
 import { createCompanionApp } from './src/backend/companionApp.ts';
 
 const mongoInit = await initMongoDatabase(process.env.MONGODB_URI);
@@ -77,7 +78,27 @@ app.use((req: any, res, next) => {
 });
 
 console.log('🏛️ Initializing AICTE NiyamSetu (नियमसेतु) Companion Runtime (AY 2026–27)...');
-const companion = createCompanionApp();
+
+let companionStorage: any = undefined;
+if (mongoInit.connected) {
+  const baseStorage = createMongoStorage();
+  companionStorage = Object.assign(baseStorage, {
+    inspect: () => ({
+      mode: 'database',
+      dbName: mongoInit.dbName,
+      connected: true,
+      collectionsSeeded: mongoInit.collectionsSeeded,
+    }),
+    reset: async () => {
+      await initMongoDatabase(process.env.MONGODB_URI);
+    },
+  });
+  console.log('🔗 Companion Application wired directly to MongoDB Storage Adapter.');
+} else {
+  console.log('🛡️ Companion Application running with Zero-Downtime Canonical Memory Storage.');
+}
+
+const companion = createCompanionApp(companionStorage ? { storage: companionStorage } : undefined);
 app.use(companion.app);
 
 // Realtime is closed until authenticated, scoped subscriptions have a reviewed adapter.

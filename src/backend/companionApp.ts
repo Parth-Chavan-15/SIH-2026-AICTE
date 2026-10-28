@@ -57,7 +57,12 @@ export function createCompanionApp(options?: {
 
   // Public Root Endpoints
   app.get('/health', (_req: Request, res: Response) => {
-    res.json({ status: 'alive', readiness: '/api/v1/ready' });
+    res.json({
+      status: 'alive',
+      uptimeSeconds: Math.floor(process.uptime()),
+      commit: process.env.RENDER_GIT_COMMIT || '2beba60',
+      readiness: '/api/v1/ready'
+    });
   });
 
   // Authentication Middleware for /api/v1 companion routes

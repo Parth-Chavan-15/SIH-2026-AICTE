@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import type {
   ApiResult,
   Application,
@@ -60,6 +61,39 @@ export function clearEVCTasks(): void {
   idempotencyStore.clear();
 }
 
+export async function persistEVCTaskToMongo(task: EVCTask): Promise<void> {
+  try {
+    if (mongoose.connection.readyState === 1 && mongoose.connection.db) {
+      await mongoose.connection.db.collection('evc_tasks').updateOne(
+        { id: task.id },
+        { $set: task },
+        { upsert: true }
+      );
+    }
+  } catch {
+    // Non-blocking fallback
+  }
+}
+
+export async function syncEVCTasksFromMongo(): Promise<number> {
+  try {
+    if (mongoose.connection.readyState === 1 && mongoose.connection.db) {
+      const items = await mongoose.connection.db.collection('evc_tasks').find({}).toArray();
+      let count = 0;
+      for (const item of items) {
+        if (item && (item as any).id) {
+          evcTasks.set((item as any).id, item as any);
+          count++;
+        }
+      }
+      return count;
+    }
+  } catch {
+    // Non-blocking fallback
+  }
+  return 0;
+}
+
 /**
  * Creates an EVC task for an eligible application.
  * Returns error if route does not include evc_pending or active task already exists.
@@ -117,6 +151,7 @@ export async function createEVCTask(
   };
 
   evcTasks.set(newTask.id, newTask);
+  persistEVCTaskToMongo(newTask);
 
   const event: EventEnvelope<'EVCTaskCreated'> = {
     id: `EVT-EVC-CREATED-${Date.now()}`,
@@ -173,8 +208,7 @@ export async function scheduleEVC(
       policyRevisionId: 'POL_2026_INTAKE_NON_NBA',
       assigneeIds: ['usr-evc-chair'],
       version: 1,
-      status: 'scheduled',
-      scheduledAt: new Date().toISOString()
+      status: 'pending'
     };
     evcTasks.set(taskId, task);
   }
@@ -220,6 +254,7 @@ export async function scheduleEVC(
     version: task.version + 1
   };
   evcTasks.set(taskId, updatedTask);
+  persistEVCTaskToMongo(updatedTask);
 
   const event: EventEnvelope<'EVCScheduled'> = {
     id: `EVT-EVC-SCHEDULED-${Date.now()}`,
@@ -278,8 +313,7 @@ export async function submitEVCReport(
       policyRevisionId: 'POL_2026_INTAKE_NON_NBA',
       assigneeIds: ['usr-evc-chair'],
       version: 1,
-      status: 'scheduled',
-      scheduledAt: new Date().toISOString()
+      status: 'pending'
     };
     evcTasks.set(taskId, task);
   }
@@ -314,6 +348,7 @@ export async function submitEVCReport(
     version: task.version + 1
   };
   evcTasks.set(taskId, updatedTask);
+  persistEVCTaskToMongo(updatedTask);
 
   // If corePort is provided, transition case state from evc_pending to decision_pending
   if (corePort) {

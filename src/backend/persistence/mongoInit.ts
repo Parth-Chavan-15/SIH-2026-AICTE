@@ -4,6 +4,10 @@ import { REQUIRED_INDEXES } from './mongoCore';
 import ApplicationModel from '../models/Application.js';
 import { CoreAudit, CoreOutbox, CoreReceipt, CoreDecision } from './records';
 import { APPROVED_2026_POLICIES } from '../policy/candidates';
+import { syncComplianceFromMongo } from '../modules/compliance/complianceService';
+import { syncDecisionDocumentsFromMongo } from '../modules/decisionDocuments/decisionDocumentsService';
+import { syncAppealsAndHearingsFromMongo } from '../modules/appealsAndHearings/appealsAndHearingsService';
+import { syncEVCTasksFromMongo } from '../modules/evc/evcService';
 
 export interface MongoInitResult {
   connected: boolean;
@@ -43,7 +47,12 @@ export async function initMongoDatabase(uri?: string): Promise<MongoInitResult> 
       'core_outbox',
       'core_receipts',
       'core_decisions',
-      'compliance_obligations'
+      'compliance_obligations',
+      'compliance_documents',
+      'decision_documents',
+      'appeals_hearings',
+      'chapter_vii_complaints',
+      'evc_tasks'
     ];
 
     for (const name of requiredCollections) {
@@ -64,6 +73,28 @@ export async function initMongoDatabase(uri?: string): Promise<MongoInitResult> 
         const hasIdx = existingIdxs.some((idx) => idx.key && idx.key[key] === 1);
         if (!hasIdx) {
           await collection.createIndex({ [key]: 1 }, { unique: true, sparse, name: `${coll}_${key}_idx` });
+        }
+      } catch {
+        // Non-blocking index creation
+      }
+    }
+
+    const companionIndexes = [
+      ['compliance_obligations', 'id'],
+      ['compliance_documents', 'id'],
+      ['decision_documents', 'docId'],
+      ['appeals_hearings', 'id'],
+      ['chapter_vii_complaints', 'complaintId'],
+      ['evc_tasks', 'id']
+    ] as const;
+
+    for (const [coll, key] of companionIndexes) {
+      try {
+        const collection = db.collection(coll);
+        const existingIdxs = await collection.listIndexes().toArray();
+        const hasIdx = existingIdxs.some((idx) => idx.key && idx.key[key] === 1);
+        if (!hasIdx) {
+          await collection.createIndex({ [key]: 1 }, { unique: true, name: `${coll}_${key}_idx` });
         }
       } catch {
         // Non-blocking index creation
@@ -174,6 +205,12 @@ export async function initMongoDatabase(uri?: string): Promise<MongoInitResult> 
         );
       }
     }
+
+    // 4. Synchronize companion in-memory caches with durable MongoDB state
+    await syncComplianceFromMongo();
+    await syncDecisionDocumentsFromMongo();
+    await syncAppealsAndHearingsFromMongo();
+    await syncEVCTasksFromMongo();
 
     return {
       connected: true,

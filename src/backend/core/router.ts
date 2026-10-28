@@ -5,6 +5,7 @@ import { getIdentity, type Identity } from '../security/identity';
 import { ERROR_STATUS } from '../../shared/contracts';
 import { CoreError, type CaseStorage } from './storage';
 import { createCaseService, type EvidencePrerequisite, type PolicyFactsReader } from './cases';
+import mongoose from 'mongoose';
 import { createMongoStorage } from '../persistence/mongoCore';
 import { createDecisionService, type DecisionEvidenceReader } from './decisions';
 import type { DecisionObligationParticipant, ScrutinyPrerequisitePort } from '../../shared/ports';
@@ -21,8 +22,94 @@ export function createCoreRouter(options: { storage?: CaseStorage; identity?: ()
     }
   };
   router.use((_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
-  router.get('/health', (_req, res) => res.json({ status: 'alive', readiness: '/api/v1/ready' }));
-  router.get('/ready', wrap(async (_req, res) => { await service.storage.ready(); res.json({ success: true, data: { status: 'ready' } }); }));
+  router.get('/health', (_req, res) => res.json({
+    status: 'alive',
+    uptimeSeconds: Math.floor(process.uptime()),
+    commit: process.env.RENDER_GIT_COMMIT || '2beba60',
+    readiness: '/api/v1/ready'
+  }));
+  router.get('/ready', wrap(async (_req, res) => {
+    await service.storage.ready();
+
+    const isMongoConfigured = Boolean(process.env.MONGODB_URI && process.env.MONGODB_URI.trim().length > 0);
+    const isProduction = process.env.NODE_ENV === 'production';
+    const isConnected = mongoose.connection.readyState === 1;
+
+    let pingLatencyMs: number | null = null;
+    if (isConnected && mongoose.connection.db) {
+      try {
+        const start = Date.now();
+        await mongoose.connection.db.admin().ping();
+        pingLatencyMs = Date.now() - start;
+      } catch {
+        pingLatencyMs = null;
+      }
+    }
+
+    const storageInspection = typeof (service.storage as any).inspect === 'function' ? (service.storage as any).inspect() : null;
+    const storageMode = isConnected ? 'mongodb' : (storageInspection?.mode === 'database' ? 'mongodb' : 'in-memory-fallback');
+
+    if (isProduction) {
+      if (!isMongoConfigured) {
+        return res.status(503).json({
+          success: false,
+          status: 'unhealthy',
+          storageMode: 'in-memory-unverified',
+          error: {
+            code: 'DATABASE_NOT_CONFIGURED',
+            message: 'Production service requires MONGODB_URI environment variable on Render'
+          },
+          data: {
+            status: 'unhealthy',
+            storageMode: 'in-memory-unverified',
+            database: {
+              configured: false,
+              connected: false,
+              readyState: mongoose.connection.readyState
+            }
+          }
+        });
+      }
+
+      if (!isConnected || pingLatencyMs === null) {
+        return res.status(503).json({
+          success: false,
+          status: 'unhealthy',
+          storageMode: 'mongodb_connection_failed',
+          error: {
+            code: 'DATABASE_UNAVAILABLE',
+            message: 'Configured MongoDB Atlas connection failed ping or network access check'
+          },
+          data: {
+            status: 'unhealthy',
+            storageMode: 'mongodb_connection_failed',
+            database: {
+              configured: true,
+              connected: false,
+              readyState: mongoose.connection.readyState
+            }
+          }
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        status: 'ready',
+        storageMode,
+        database: {
+          configured: isMongoConfigured,
+          connected: isConnected,
+          readyState: mongoose.connection.readyState,
+          dbName: isConnected ? mongoose.connection.name : undefined,
+          pingLatencyMs
+        },
+        uptimeSeconds: Math.floor(process.uptime()),
+        commit: process.env.RENDER_GIT_COMMIT || '2beba60'
+      }
+    });
+  }));
   router.post('/auth/login', wrap(async (req, res) => {
     const auth = identity(); auth.verifyOrigin(req.get('origin'));
     const { token, session } = await auth.login(req.body, req.ip ?? 'unknown', req.headers.cookie);

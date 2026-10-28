@@ -11,6 +11,8 @@
  * - Human decision gates maintained.
  */
 
+import mongoose from 'mongoose';
+
 export interface HearingRecord {
   id: string;
   type: 'SHC_COMPLIANCE_HEARING' | 'SAC_STATUTORY_APPEAL' | 'PGRC_COMPLAINT_HEARING';
@@ -102,6 +104,60 @@ export function getAllComplaints(): ComplaintRecord[] {
   return Array.from(complaintsDB.values());
 }
 
+export async function persistHearingToMongo(h: HearingRecord): Promise<void> {
+  try {
+    if (mongoose.connection.readyState === 1 && mongoose.connection.db) {
+      await mongoose.connection.db.collection('appeals_hearings').updateOne(
+        { id: h.id },
+        { $set: h },
+        { upsert: true }
+      );
+    }
+  } catch {
+    // Non-blocking fallback
+  }
+}
+
+export async function persistComplaintToMongo(c: ComplaintRecord): Promise<void> {
+  try {
+    if (mongoose.connection.readyState === 1 && mongoose.connection.db) {
+      await mongoose.connection.db.collection('chapter_vii_complaints').updateOne(
+        { complaintId: c.complaintId },
+        { $set: c },
+        { upsert: true }
+      );
+    }
+  } catch {
+    // Non-blocking fallback
+  }
+}
+
+export async function syncAppealsAndHearingsFromMongo(): Promise<{ hearings: number; complaints: number }> {
+  let hearingsCount = 0;
+  let complaintsCount = 0;
+  try {
+    if (mongoose.connection.readyState === 1 && mongoose.connection.db) {
+      const hItems = await mongoose.connection.db.collection('appeals_hearings').find({}).toArray();
+      for (const item of hItems) {
+        if (item && (item as any).id) {
+          hearingsDB.set((item as any).id, item as any);
+          hearingsCount++;
+        }
+      }
+      const cItems = await mongoose.connection.db.collection('chapter_vii_complaints').find({}).toArray();
+      for (const item of cItems) {
+        if (item && (item as any).complaintId) {
+          complaintsDB.set((item as any).complaintId, item as any);
+          complaintsCount++;
+        }
+      }
+    }
+  } catch {
+    // Non-blocking fallback
+  }
+  return { hearings: hearingsCount, complaints: complaintsCount };
+}
+
 export function lodgeComplaint(data: {
   caseId?: string;
   institutionName: string;
@@ -130,6 +186,7 @@ export function lodgeComplaint(data: {
       nextStep: 'DISMISSED'
     };
     complaintsDB.set(complaintId, rejectedRecord);
+    persistComplaintToMongo(rejectedRecord);
     return {
       success: false,
       complaint: rejectedRecord,
@@ -153,6 +210,7 @@ export function lodgeComplaint(data: {
   };
 
   complaintsDB.set(complaintId, record);
+  persistComplaintToMongo(record);
   return {
     success: true,
     complaint: record,
@@ -208,6 +266,7 @@ export function submitStatutoryAppeal(data: {
   };
 
   hearingsDB.set(hearingId, hearing);
+  persistHearingToMongo(hearing);
   return { success: true, hearing };
 }
 
@@ -238,6 +297,7 @@ export function referShortcomingsToSHC(data: {
   };
 
   hearingsDB.set(hearingId, hearing);
+  persistHearingToMongo(hearing);
   return hearing;
 }
 
@@ -269,6 +329,7 @@ export function scheduleHearing(data: {
   };
 
   hearingsDB.set(hearingId, hearing);
+  persistHearingToMongo(hearing);
   return hearing;
 }
 
@@ -290,5 +351,6 @@ export function disposeAppeal(appealId: string, data: {
     appeal.committeeMembers = data.committeeMembers;
   }
   hearingsDB.set(appealId, appeal);
+  persistHearingToMongo(appeal);
   return { success: true, appeal };
 }

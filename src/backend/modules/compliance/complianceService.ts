@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import mongoose from 'mongoose';
 import type {
   DecisionCommand,
   DocumentVersion,
@@ -69,6 +70,54 @@ export const complianceDB = {
   simulatedClockTimestamp: Date.parse('2026-10-24T09:00:00.000Z'),
 };
 
+// MongoDB Durable Persistence Helpers
+export async function persistObligationToMongo(obl: Obligation): Promise<void> {
+  try {
+    if (mongoose.connection.readyState === 1 && mongoose.connection.db) {
+      await mongoose.connection.db.collection('compliance_obligations').updateOne(
+        { id: obl.id },
+        { $set: obl },
+        { upsert: true }
+      );
+    }
+  } catch {
+    // Non-blocking fallback
+  }
+}
+
+export async function persistStoredDocumentToMongo(doc: StoredDocument): Promise<void> {
+  try {
+    if (mongoose.connection.readyState === 1 && mongoose.connection.db) {
+      await mongoose.connection.db.collection('compliance_documents').updateOne(
+        { id: doc.id },
+        { $set: doc },
+        { upsert: true }
+      );
+    }
+  } catch {
+    // Non-blocking fallback
+  }
+}
+
+export async function syncComplianceFromMongo(): Promise<number> {
+  try {
+    if (mongoose.connection.readyState === 1 && mongoose.connection.db) {
+      const items = await mongoose.connection.db.collection('compliance_obligations').find({}).toArray();
+      let count = 0;
+      for (const item of items) {
+        if (item && (item as any).id) {
+          complianceDB.obligations.set((item as any).id, item as any);
+          count++;
+        }
+      }
+      return count;
+    }
+  } catch {
+    // Non-blocking
+  }
+  return 0;
+}
+
 /**
  * Pure Decision Obligation Participant implementing M1/M3 boundary.
  */
@@ -99,6 +148,7 @@ export const complianceObligationParticipant: DecisionObligationParticipant = {
       // Write through transactional participant
       await tx.repositories.obligations.insert(obligation);
       complianceDB.obligations.set(obligation.id, obligation);
+      persistObligationToMongo(obligation);
 
       // Register initial 4-clock timer task
       const task: ComplianceTimerTask = {
@@ -187,8 +237,10 @@ export function uploadDocumentEvidence(params: {
     obl.status = 'submitted';
     obl.version += 1;
     complianceDB.obligations.set(obl.id, obl);
+    persistObligationToMongo(obl);
   }
 
+  persistStoredDocumentToMongo(newDoc);
   return newDoc;
 }
 
@@ -209,6 +261,7 @@ export function verifyDocumentEvidence(params: {
   doc.reviewedAt = new Date(complianceDB.simulatedClockTimestamp).toISOString();
   doc.remarks = params.remarks;
   complianceDB.documents.set(doc.id, doc);
+  persistStoredDocumentToMongo(doc);
 
   // If verified, fulfill the linked obligation and suppress stale alerts (Test T11)
   if (doc.obligationId && complianceDB.obligations.has(doc.obligationId)) {
@@ -218,6 +271,7 @@ export function verifyDocumentEvidence(params: {
       obl.version += 1;
       obl.reviewerId = params.reviewerId;
       complianceDB.obligations.set(obl.id, obl);
+      persistObligationToMongo(obl);
 
       // SUPPRESS STALE ALERTS (Test T11): Any pending reminders for this obligation are cancelled
       for (const [timerId, task] of complianceDB.timers) {
@@ -230,6 +284,7 @@ export function verifyDocumentEvidence(params: {
       obl.status = 'rejected';
       obl.version += 1;
       complianceDB.obligations.set(obl.id, obl);
+      persistObligationToMongo(obl);
     }
   }
 

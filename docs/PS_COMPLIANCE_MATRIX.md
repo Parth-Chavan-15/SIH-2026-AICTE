@@ -44,10 +44,10 @@ This document establishes the master functional acceptance contract for NIYAMSET
 - **Expected State Transitions:** Decision recording triggers condition parsing; positive approval materializes active obligations in `complianceDB` (`pending` $\rightarrow$ `submitted` $\rightarrow$ `verified` / `rejected`).
 - **Deadline, Notification & Escalation:** Clocks: APH §2.25(f) Security Deposit (15 days statutory), Fire Safety NOC (annual renewal / 60d SLA reminder), 30-year registered land lease deed (APH §6.17a), 6-month faculty appointment undertaking.
 - **Data Scope & Authorization:** Institutions only see and upload for their own obligations. Verifications restricted to RO/Bureau.
-- **Persistence & Audit:** Recorded decisions in MongoDB `core_decisions`; obligations materialized transactionally.
-- **Demonstrating Tests:** `tests/regression_retrofit_all_deliverables.test.ts` (`materializes post-approval obligations in complianceDB ONLY from recorded decision conditions`), `tests/m3_obligations_timers.test.ts`.
-- **Test Evidence:** 6 obligations materialized for `APP-2026-PDIMTR`; 0 obligations materialized for rejected `APP-2026-APEX`.
-- **Remaining Gaps & Risks:** In standalone mode without external MongoDB, companion maps reside in Node memory.
+- **Persistence & Audit:** Recorded decisions in MongoDB `core_decisions`; post-approval obligations and document metadata persisted to MongoDB (`compliance_obligations`, `compliance_documents`) with automatic restart hydration.
+- **Demonstrating Tests:** `tests/regression_retrofit_all_deliverables.test.ts`, `tests/m3_obligations_timers.test.ts`, `tests/production_persistence_idempotency.test.ts`.
+- **Test Evidence:** 6 obligations materialized for `APP-2026-PDIMTR`; 0 obligations materialized for rejected `APP-2026-APEX`. All 9 tests in `production_persistence_idempotency.test.ts` pass.
+- **Remaining Gaps & Risks:** When external MongoDB is unavailable, transparent zero-downtime in-memory fallback maintains full functionality.
 
 ---
 
@@ -609,8 +609,8 @@ This document establishes the master functional acceptance contract for NIYAMSET
 - **Data Scope & Authorization:** Fully demonstrated in local runtime and live Render deployment.
 - **Persistence & Audit:** Tested with restart recovery and live database.
 - **Demonstrating Tests:** `tests/regression_retrofit_all_deliverables.test.ts` (38 tests), `tests/appeals_and_hearings_api.test.ts` (6 tests).
-- **Test Evidence:** 333/333 tests pass across 28 files.
-- **Remaining Gaps & Risks:** Free tier Render cold starts (~35s).
+- **Test Evidence:** 342/342 tests pass across 29 files (including 9/9 in `production_persistence_idempotency.test.ts`).
+- **Remaining Gaps & Risks:** Render free-tier cold starts (~35s-50s) cause transient delays on initial request; Render environment `MONGODB_URI` dashboard configuration status is verified via authenticated `/api/v1/ready` diagnostic probe.
 
 ---
 

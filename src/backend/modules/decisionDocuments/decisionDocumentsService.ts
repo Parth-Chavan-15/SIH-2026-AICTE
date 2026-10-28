@@ -18,7 +18,8 @@
 
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { createHash, createHmac } from 'node:crypto';
-import { complianceDB } from '../compliance/complianceService';
+import mongoose from 'mongoose';
+import { complianceDB, persistObligationToMongo } from '../compliance/complianceService';
 
 export const PROTOTYPE_SEAL_KEY = process.env.PROTOTYPE_SEAL_SECRET || 'NIYAMSETU-PROTOTYPE-HMAC-SEAL-KEY-2026-NONPROD';
 
@@ -69,6 +70,39 @@ export interface DecisionDocumentMetadata {
 
 // In-memory store of generated decision documents
 export const generatedDocumentsDB: Map<string, DecisionDocumentMetadata> = new Map();
+
+export async function persistDecisionDocumentToMongo(doc: DecisionDocumentMetadata): Promise<void> {
+  try {
+    if (mongoose.connection.readyState === 1 && mongoose.connection.db) {
+      await mongoose.connection.db.collection('decision_documents').updateOne(
+        { docId: doc.docId },
+        { $set: doc },
+        { upsert: true }
+      );
+    }
+  } catch {
+    // Non-blocking fallback
+  }
+}
+
+export async function syncDecisionDocumentsFromMongo(): Promise<number> {
+  try {
+    if (mongoose.connection.readyState === 1 && mongoose.connection.db) {
+      const items = await mongoose.connection.db.collection('decision_documents').find({}).toArray();
+      let count = 0;
+      for (const item of items) {
+        if (item && (item as any).docId) {
+          generatedDocumentsDB.set((item as any).docId, item as any);
+          count++;
+        }
+      }
+      return count;
+    }
+  } catch {
+    // Non-blocking fallback
+  }
+  return 0;
+}
 
 /**
  * Generates an institute-specific PDF document using pdf-lib and signs with a demo test signature
@@ -346,12 +380,13 @@ export async function generateAndSignDecisionDocument(data: {
   };
 
   generatedDocumentsDB.set(docId, metadata);
+  persistDecisionDocumentToMongo(metadata);
 
   // Materialize post-approval obligations in complianceDB ONLY for approval outcomes (LoA/EoA) with conditions!
   if (isApprovalOutcome && conditions.length > 0) {
     for (const c of conditions) {
       const obligationId = `OBL-${data.applicationId}-${c.conditionKey}`;
-      complianceDB.obligations.set(obligationId, {
+      const oblRecord = {
         id: obligationId,
         applicationId: data.applicationId,
         decisionEventId: docId,
@@ -371,7 +406,9 @@ export async function generateAndSignDecisionDocument(data: {
         dueReason: c.requirement,
         version: 1,
         status: 'pending'
-      });
+      };
+      complianceDB.obligations.set(obligationId, oblRecord as any);
+      persistObligationToMongo(oblRecord as any);
     }
   }
 
