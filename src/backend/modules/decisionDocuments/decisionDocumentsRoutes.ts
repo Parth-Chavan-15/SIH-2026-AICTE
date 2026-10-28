@@ -1,17 +1,222 @@
 import { Router, Request, Response } from 'express';
-import { createHash } from 'node:crypto';
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import {
   generateAndSignDecisionDocument,
   getDocumentMetadata,
   getAllGeneratedDocuments,
-  generatedDocumentsDB
+  generatedDocumentsDB,
+  PROTOTYPE_SEAL_KEY
 } from './decisionDocumentsService';
-import type { Actor } from '../../../shared/contracts';
+import type { Actor, Application, Decision } from '../../../shared/contracts';
 import { requirePermission } from '../../security/authorization';
 import type { CaseStorage } from '../../core/storage';
+import { CANONICAL_DECISIONS } from '../../data/seedCanonicalCases';
 
 export function createDecisionDocumentsRouter(storage?: CaseStorage): Router {
   const router = Router();
+
+  // Helper for unified document generation bound to canonical recorded decision
+  async function executeAuthorizedDocumentGeneration(
+    actor: Actor,
+    caseId: string,
+    rawRequestedType: string | undefined,
+    bodyApplicationId: string | undefined,
+    res: Response
+  ) {
+    // 1. Cross-case protection: Validate application ID consistency
+    if (bodyApplicationId && bodyApplicationId !== caseId) {
+      return res.status(422).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_FAILED',
+          message: `Mismatched application ID: URL parameter '${caseId}' does not match body applicationId '${bodyApplicationId}'.`
+        }
+      });
+    }
+
+    // 2. Fetch canonical application from storage
+    if (!storage) {
+      return res.status(503).json({
+        success: false,
+        error: { code: 'STORAGE_UNAVAILABLE', message: 'Authoritative storage unavailable' }
+      });
+    }
+
+    let app: Application | null = null;
+    try {
+      app = await storage.get(actor, caseId);
+    } catch (err: any) {
+      if (err?.code === 'NOT_FOUND') {
+        return res.status(404).json({
+          success: false,
+          error: { code: 'NOT_FOUND', message: `Application ${caseId} not found` }
+        });
+      }
+      return res.status(503).json({
+        success: false,
+        error: { code: 'STORAGE_UNAVAILABLE', message: err.message }
+      });
+    }
+
+    if (!app) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: `Application ${caseId} not found` }
+      });
+    }
+
+    // 3. Precondition: Check route resolution (halted cases cannot generate documents)
+    if (app.route?.result === 'review_required') {
+      return res.status(412).json({
+        success: false,
+        error: {
+          code: 'PRECONDITION_FAILED',
+          message: `Application ${caseId} route is halted for policy review (review_required). A decision document cannot be generated until policy review is complete.`
+        }
+      });
+    }
+
+    // 4. Precondition: Verify that an authorized decision exists
+    const inspectDecisions: Decision[] = (storage as any).inspect?.().decisions || [];
+    const recordedDecision = inspectDecisions.find(d => d.applicationId === caseId) ||
+      CANONICAL_DECISIONS.find(d => d.applicationId === caseId);
+
+    const isTerminalState = app.state === 'approved' || app.state === 'conditionally_approved' || app.state === 'rejected';
+
+    if (!recordedDecision && !isTerminalState) {
+      return res.status(412).json({
+        success: false,
+        error: {
+          code: 'PRECONDITION_FAILED',
+          message: `No authorized decision has been recorded for application ${caseId}. Current case state is '${app.state}'. A formal Council/Executive Committee decision must be recorded prior to document generation.`
+        }
+      });
+    }
+
+    // Determine authoritative outcome
+    const outcome: 'approved' | 'conditional' | 'rejected' = recordedDecision?.outcome ||
+      (app.state === 'rejected' ? 'rejected' : app.state === 'conditionally_approved' ? 'conditional' : 'approved');
+
+    // 5. Outcome and Document Type Alignment
+    const normalizedRaw = (rawRequestedType || '').trim().toUpperCase();
+
+    if (outcome === 'rejected') {
+      if (normalizedRaw === 'LOA' || normalizedRaw === 'EOA') {
+        return res.status(422).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_FAILED',
+            message: `Cannot generate approval document (${normalizedRaw}) for rejected application ${caseId}. Authoritative outcome is 'rejected'. Must generate LoR.`
+          }
+        });
+      }
+    } else {
+      // outcome is approved or conditional
+      if (normalizedRaw === 'LOR' || normalizedRaw === 'LOD') {
+        return res.status(422).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_FAILED',
+            message: `Cannot generate rejection or deficiency document (${normalizedRaw}) for an approved application. Must generate LoA/EoA.`
+          }
+        });
+      }
+    }
+
+    const documentType: 'LoA' | 'EoA' | 'LoD' | 'LoR' = outcome === 'rejected'
+      ? 'LoR'
+      : app.category === 'new_institution'
+        ? 'LoA'
+        : 'EoA';
+
+    // 6. Idempotency Check: prevent duplicate generation and duplicate obligations
+    const existingDoc = getAllGeneratedDocuments().find(
+      d => d.applicationId === caseId && d.documentType === documentType
+    );
+    if (existingDoc) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          document: {
+            ...existingDoc,
+            caseId: existingDoc.applicationId,
+            signatureStatus: 'DEMO_TEST_SIGNED',
+            demoNotice: 'DEMO PROTOTYPE INTEGRITY SEAL — NOT AN OFFICIAL AICTE ORDER',
+            documentDigest: `SHA256-${existingDoc.digitalSignature.integrityHashSha256}`
+          }
+        },
+        message: `Existing authorized ${documentType} letter returned (idempotent retry).`
+      });
+    }
+
+    // 7. Authoritative Data Sourcing (Canonical case facts and decision records ONLY)
+    const institutionName = (app.facts?.institutionName as string) || 'Institution';
+    const permanentInstituteId = app.institutionId;
+    const region = app.regionId;
+    const academicYear = app.session;
+
+    const courses = outcome !== 'rejected'
+      ? [
+          {
+            program: (app.facts?.program as string) || 'Engineering & Technology',
+            course: (app.facts?.course as string) || 'Approved Technical Course',
+            level: 'Under Graduate',
+            previousIntake: Number(app.facts?.currentIntake) || 0,
+            approvedIntake: Number(app.facts?.proposedIntake) || Number(app.facts?.currentIntake) || 60
+          }
+        ]
+      : [];
+
+    const orderBackedConditions = (outcome === 'conditional' && recordedDecision?.conditions)
+      ? recordedDecision.conditions.map(c => ({
+          conditionKey: c.conditionKey,
+          requirement: c.dueReason,
+          governingClause: c.source?.location || 'APH §2.25(f)',
+          dueDays: 15
+        }))
+      : [];
+
+    const speakingOrderSummary = outcome === 'rejected'
+      ? `Council Executive Committee rejected application ${caseId} under AICTE Act §10(k) based on recorded statutory shortcomings.`
+      : outcome === 'conditional'
+        ? `Council Executive Committee granted Extension of Approval for Academic Year ${academicYear} subject to fulfillment of mandatory recorded undertakings under APH §2.25.`
+        : `Council Executive Committee granted Extension of Approval for Academic Year ${academicYear} per APH norms.`;
+
+    try {
+      const doc = await generateAndSignDecisionDocument({
+        applicationId: caseId,
+        institutionName,
+        permanentInstituteId,
+        region,
+        academicYear,
+        documentType,
+        speakingOrderSummary,
+        courses,
+        orderBackedConditions,
+        decisionAuthority: actor.id,
+        designation: 'Approval Bureau Authority'
+      });
+
+      return res.status(201).json({
+        success: true,
+        data: {
+          document: {
+            ...doc,
+            caseId: doc.applicationId,
+            signatureStatus: 'DEMO_TEST_SIGNED',
+            demoNotice: 'DEMO PROTOTYPE INTEGRITY SEAL — NOT AN OFFICIAL AICTE ORDER',
+            documentDigest: `SHA256-${doc.digitalSignature.integrityHashSha256}`
+          }
+        },
+        message: `Official ${documentType} letter generated with HMAC-SHA256 prototype integrity seal.`
+      });
+    } catch (err: any) {
+      return res.status(500).json({
+        success: false,
+        error: { code: 'GENERATION_FAILED', message: err.message || 'PDF generation failed' }
+      });
+    }
+  }
 
   // GET /api/v1/decision-docs - List generated decision docs
   router.get('/decision-docs', (_req: Request, res: Response) => {
@@ -32,7 +237,7 @@ export function createDecisionDocumentsRouter(storage?: CaseStorage): Router {
     });
   });
 
-  // POST /api/v1/decision-docs/generate/:caseId - Auto-generate and sign per case (Secured with decision.record)
+  // POST /api/v1/decision-docs/generate/:caseId - Auto-generate per case (Secured with decision.record)
   router.post('/decision-docs/generate/:caseId', requirePermission('decision.record'), async (req: Request, res: Response) => {
     const actor = req.actor;
     if (!actor || !actor.id) {
@@ -40,81 +245,37 @@ export function createDecisionDocumentsRouter(storage?: CaseStorage): Router {
     }
 
     const caseId = req.params.caseId;
-    const rawType = (req.body.documentType || 'EoA').trim().toUpperCase();
-    const documentType: 'LoA' | 'EoA' | 'LoD' | 'LoR' = rawType === 'LOA' ? 'LoA'
-      : rawType === 'EOA' ? 'EoA'
-      : rawType === 'LOD' ? 'LoD'
-      : 'LoR';
+    return executeAuthorizedDocumentGeneration(
+      actor,
+      caseId,
+      req.body.documentType,
+      req.body.applicationId,
+      res
+    );
+  });
 
-    let institutionName = 'College of Engineering Pune (COEP)';
-    let permanentInstituteId = '1-435789102';
-    let region = 'Western';
-    let academicYear = '2026-27';
-
-    if (storage) {
-      try {
-        const app = await storage.get(actor, caseId);
-        if (!app) {
-          return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: `Application ${caseId} not found` } });
-        }
-        if (app.facts?.institutionName) institutionName = app.facts.institutionName as string;
-        if (app.institutionId) permanentInstituteId = app.institutionId;
-        if (app.regionId) region = app.regionId;
-        if (app.session) academicYear = app.session;
-      } catch (err: any) {
-        if (err?.code === 'NOT_FOUND') {
-          return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: `Application ${caseId} not found` } });
-        }
-      }
+  // POST /api/v1/decision-documents/generate - Alias endpoint (Secured with decision.record)
+  router.post('/decision-documents/generate', requirePermission('decision.record'), async (req: Request, res: Response) => {
+    const actor = req.actor;
+    if (!actor || !actor.id) {
+      return res.status(401).json({ success: false, error: { code: 'UNAUTHENTICATED', message: 'Authentication required' } });
     }
 
-    try {
-      const doc = await generateAndSignDecisionDocument({
-        applicationId: caseId,
-        institutionName,
-        permanentInstituteId,
-        region,
-        academicYear,
-        documentType,
-        speakingOrderSummary: req.body.speakingOrderSummary || `Council Executive Committee approved ${documentType} for Academic Year ${academicYear} per APH norms.`,
-        courses: req.body.courses || [
-          { program: 'Engineering & Technology', course: 'Computer Engineering', approvedIntake: 180, level: 'Under Graduate' },
-          { program: 'Engineering & Technology', course: 'Mechanical Engineering', approvedIntake: 120, level: 'Under Graduate' }
-        ],
-        orderBackedConditions: req.body.orderBackedConditions || [
-          {
-            conditionKey: 'COND-AFF-3',
-            requirement: 'Affidavit-3 compliance proof of security deposit submission within 15 calendar days per APH §2.25(f)',
-            dueDays: 15,
-            governingClause: 'APH §2.25(f)'
-          },
-          {
-            conditionKey: 'COND-FIRE-RENEW',
-            requirement: 'Annual Fire Safety NOC renewal intimation 60 days in advance of certificate expiry',
-            dueDays: 300,
-            governingClause: 'GVMC Condition 10 / APH §6.17'
-          }
-        ],
-        decisionAuthority: actor.id,
-        designation: 'Approval Bureau Authority'
+    const caseId = req.body.applicationId;
+    if (!caseId) {
+      return res.status(422).json({
+        success: false,
+        error: { code: 'VALIDATION_FAILED', message: 'applicationId is required.' }
       });
-
-      return res.status(201).json({
-        success: true,
-        data: {
-          document: {
-            ...doc,
-            caseId: doc.applicationId,
-            signatureStatus: 'DEMO_TEST_SIGNED',
-            demoNotice: 'DEMO PROTOTYPE INTEGRITY SEAL — NOT AN OFFICIAL AICTE ORDER',
-            documentDigest: `SHA256-${doc.digitalSignature.integrityHashSha256}`
-          }
-        },
-        message: 'Decision document generated with HMAC-SHA256 prototype integrity seal.'
-      });
-    } catch (err: any) {
-      return res.status(500).json({ success: false, error: { code: 'GENERATION_FAILED', message: err.message } });
     }
+
+    return executeAuthorizedDocumentGeneration(
+      actor,
+      caseId,
+      req.body.documentType,
+      req.body.applicationId,
+      res
+    );
   });
 
   // GET /api/v1/decision-docs/verify-signature/:caseId
@@ -186,84 +347,62 @@ export function createDecisionDocumentsRouter(storage?: CaseStorage): Router {
     return res.send(pdfBuffer);
   });
 
-  // POST /api/v1/decision-documents/generate - Authority generates & signs institute-specific letter (Secured)
-  router.post('/decision-documents/generate', requirePermission('decision.record'), async (req: Request, res: Response) => {
-    const actor = req.actor;
-    if (!actor || !actor.id) {
-      return res.status(401).json({ success: false, error: { code: 'UNAUTHENTICATED', message: 'Authentication required' } });
-    }
-
-    try {
-      const {
-        applicationId,
-        institutionName,
-        permanentInstituteId,
-        region,
-        academicYear,
-        documentType,
-        speakingOrderSummary,
-        courses,
-        orderBackedConditions
-      } = req.body;
-
-      if (!applicationId || !institutionName || !permanentInstituteId || !documentType) {
-        return res.status(422).json({
-          success: false,
-          error: { code: 'VALIDATION_FAILED', message: 'applicationId, institutionName, permanentInstituteId, and documentType are required.' }
-        });
-      }
-
-      const doc = await generateAndSignDecisionDocument({
-        applicationId,
-        institutionName,
-        permanentInstituteId,
-        region: region || 'Western',
-        academicYear: academicYear || '2026-27',
-        documentType,
-        speakingOrderSummary: speakingOrderSummary || 'Approved in terms of AICTE Approval Process Handbook norms.',
-        courses,
-        orderBackedConditions,
-        decisionAuthority: actor.id,
-        designation: 'Approval Bureau Authority'
-      });
-
-      const { pdfBytesBase64, ...responseMeta } = doc;
-      return res.status(201).json({
-        success: true,
-        data: responseMeta,
-        downloadUrl: `/api/v1/decision-documents/${doc.docId}/download`,
-        message: `Official ${documentType} letter generated with HMAC-SHA256 prototype integrity seal.`
-      });
-    } catch (err: any) {
-      return res.status(500).json({
-        success: false,
-        error: { code: 'GENERATION_FAILED', message: err.message || 'PDF generation failed' }
-      });
-    }
-  });
-
-  // POST /api/v1/decision-documents/verify-signature/:docId - Genuine SHA-256 Digest Verification
+  // POST /api/v1/decision-documents/verify-signature/:docId - Genuine HMAC-SHA256 Digest Verification
   router.post('/decision-documents/verify-signature/:docId', (req: Request, res: Response) => {
     const doc = getDocumentMetadata(req.params.docId);
     if (!doc || !doc.pdfBytesBase64) {
       return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Document not found' } });
     }
 
-    // Recompute actual SHA-256 hash of the stored binary
-    const actualHash = createHash('sha256').update(Buffer.from(doc.pdfBytesBase64, 'base64')).digest('hex');
-    const storedHash = doc.digitalSignature.integrityHashSha256;
-
-    let isSignatureValid = actualHash === storedHash;
-    let tamperCheck: 'PASSED_UNMODIFIED' | 'TAMPER_DETECTED' = isSignatureValid ? 'PASSED_UNMODIFIED' : 'TAMPER_DETECTED';
-
-    // If caller provided client-side PDF bytes to check for tampering
-    if (req.body?.pdfBytesBase64) {
-      const clientHash = createHash('sha256').update(Buffer.from(req.body.pdfBytesBase64, 'base64')).digest('hex');
-      if (clientHash !== storedHash) {
-        isSignatureValid = false;
-        tamperCheck = 'TAMPER_DETECTED';
-      }
+    if (!req.body || req.body.pdfBytesBase64 === undefined || req.body.pdfBytesBase64 === null) {
+      return res.status(422).json({
+        success: false,
+        error: { code: 'MISSING_PAYLOAD', message: 'pdfBytesBase64 payload is required for signature verification' }
+      });
     }
+
+    if (typeof req.body.pdfBytesBase64 !== 'string') {
+      return res.status(422).json({
+        success: false,
+        error: { code: 'INVALID_PAYLOAD', message: 'pdfBytesBase64 must be a base64-encoded string' }
+      });
+    }
+
+    // Oversized input check (10MB)
+    if (req.body.pdfBytesBase64.length > 10 * 1024 * 1024) {
+      return res.status(413).json({
+        success: false,
+        error: { code: 'FILE_TOO_LARGE', message: 'Payload exceeds 10MB limit' }
+      });
+    }
+
+    const trimmed = req.body.pdfBytesBase64.trim();
+    if (!/^[A-Za-z0-9+/=]+$/.test(trimmed)) {
+      return res.status(422).json({
+        success: false,
+        error: { code: 'MALFORMED_BASE64', message: 'Malformed base64 encoding in PDF payload' }
+      });
+    }
+
+    const clientBuffer = Buffer.from(trimmed, 'base64');
+    if (clientBuffer.length === 0) {
+      return res.status(422).json({
+        success: false,
+        error: { code: 'EMPTY_PAYLOAD', message: 'Decoded PDF buffer is empty' }
+      });
+    }
+
+    const clientSha256 = createHash('sha256').update(clientBuffer).digest('hex');
+    const clientHmac = createHmac('sha256', PROTOTYPE_SEAL_KEY).update(clientBuffer).digest('hex');
+
+    const storedHmacBuf = Buffer.from(doc.digitalSignature.hmacSignature || '', 'hex');
+    const clientHmacBuf = Buffer.from(clientHmac, 'hex');
+
+    const isSignatureValid = storedHmacBuf.length > 0 &&
+      storedHmacBuf.length === clientHmacBuf.length &&
+      timingSafeEqual(storedHmacBuf, clientHmacBuf);
+
+    const tamperCheck: 'PASSED_UNMODIFIED' | 'TAMPER_DETECTED' = isSignatureValid ? 'PASSED_UNMODIFIED' : 'TAMPER_DETECTED';
 
     return res.status(200).json({
       success: true,
@@ -274,9 +413,9 @@ export function createDecisionDocumentsRouter(storage?: CaseStorage): Router {
         signerName: doc.digitalSignature.signerName,
         signerRole: doc.digitalSignature.signerRole,
         certificateAuthority: doc.digitalSignature.certificateAuthority,
-        signatureAlgorithm: doc.digitalSignature.signatureAlgorithm,
+        signatureAlgorithm: 'HMAC-SHA256 Prototype Integrity Seal',
         signedAt: doc.digitalSignature.signedAt,
-        sha256Hash: actualHash,
+        sha256Hash: clientSha256,
         prominentNotice: doc.digitalSignature.prominentNotice,
         tamperCheck,
         signatureType: 'HMAC_SHA256_PROTOTYPE_SEAL'

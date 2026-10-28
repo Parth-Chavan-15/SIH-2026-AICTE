@@ -2,12 +2,14 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { createCompanionApp } from '../src/backend/companionApp';
 import { evaluateRouteWithEngine } from '../src/backend/policy/dynamicRouteEngine';
+import { generatedDocumentsDB } from '../src/backend/modules/decisionDocuments/decisionDocumentsService';
 
 describe('NIYAMSETU Full Deliverables Regression Suite (Mandatory Prototype Retrofit)', () => {
   let app: any;
   let storage: any;
 
   beforeEach(() => {
+    generatedDocumentsDB.clear();
     const companion = createCompanionApp();
     app = companion.app;
     storage = companion.storage;
@@ -456,11 +458,95 @@ describe('NIYAMSETU Full Deliverables Regression Suite (Mandatory Prototype Retr
       expect(res.body.error.code).toBe('FORBIDDEN');
     });
 
-    it('generates downloadable PDF with non-production test certificate digital signature when authorized', async () => {
+    it('rejects decision document generation when no authorized decision has been recorded with 412', async () => {
+      const { cookie } = await loginAs('bureau.approval@aicte.gov.in');
+      // Case APP-2026-COEP is in 'scrutiny_pending' and has NO recorded decision
+      const res = await request(app)
+        .post('/api/v1/decision-docs/generate/APP-2026-COEP')
+        .set('Cookie', cookie)
+        .set('Origin', 'http://localhost:3000')
+        .send({ documentType: 'EOA' });
+      expect(res.status).toBe(412);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('PRECONDITION_FAILED');
+      expect(res.body.error.message).toContain('No authorized decision has been recorded');
+    });
+
+    it('rejects decision document generation when route is halted for policy review with 412', async () => {
+      const { cookie } = await loginAs('bureau.approval@aicte.gov.in');
+      const testActor = { id: 'usr-bureau-hq', role: 'bureau_officer', roles: ['bureau_officer'], institutionIds: [], regionIds: [], permissions: ['*'], scope: 'global' };
+      await storage.transaction(async (unit: any) => {
+        const c = await unit.get(testActor, 'APP-2026-PDIMTR');
+        if (c) {
+          c.route.result = 'review_required';
+          await unit.save(c, c.version);
+        }
+      });
+
+      const res = await request(app)
+        .post('/api/v1/decision-docs/generate/APP-2026-PDIMTR')
+        .set('Cookie', cookie)
+        .set('Origin', 'http://localhost:3000')
+        .send({ documentType: 'EOA' });
+      expect(res.status).toBe(412);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('PRECONDITION_FAILED');
+      expect(res.body.error.message).toContain('review_required');
+    });
+
+    it('rejects decision document generation for non-existent case with 404', async () => {
+      const { cookie } = await loginAs('bureau.approval@aicte.gov.in');
+      const res = await request(app)
+        .post('/api/v1/decision-docs/generate/APP-2026-DOES-NOT-EXIST')
+        .set('Cookie', cookie)
+        .set('Origin', 'http://localhost:3000')
+        .send({ documentType: 'EOA' });
+      expect(res.status).toBe(404);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('NOT_FOUND');
+    });
+
+    it('rejects mismatched URL caseId and body applicationId with 422', async () => {
+      const { cookie } = await loginAs('bureau.approval@aicte.gov.in');
+      const res = await request(app)
+        .post('/api/v1/decision-docs/generate/APP-2026-PDIMTR')
+        .set('Cookie', cookie)
+        .set('Origin', 'http://localhost:3000')
+        .send({ applicationId: 'APP-2026-COEP', documentType: 'EOA' });
+      expect(res.status).toBe(422);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('VALIDATION_FAILED');
+      expect(res.body.error.message).toContain('Mismatched application ID');
+    });
+
+    it('rejects approval document (LoA/EoA) request for a rejected case with 422', async () => {
+      const { cookie } = await loginAs('bureau.approval@aicte.gov.in');
+      const testActor = { id: 'usr-bureau-hq', role: 'bureau_officer', roles: ['bureau_officer'], institutionIds: [], regionIds: [], permissions: ['*'], scope: 'global' };
+      await storage.transaction(async (unit: any) => {
+        const a = await unit.get(testActor, 'APP-2026-APEX');
+        if (a) {
+          a.state = 'rejected';
+          await unit.save(a, a.version);
+        }
+      });
+
+      const res = await request(app)
+        .post('/api/v1/decision-docs/generate/APP-2026-APEX')
+        .set('Cookie', cookie)
+        .set('Origin', 'http://localhost:3000')
+        .send({ documentType: 'EOA' });
+      expect(res.status).toBe(422);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('VALIDATION_FAILED');
+      expect(res.body.error.message).toContain('Cannot generate approval document');
+    });
+
+    it('generates downloadable PDF with HMAC-SHA256 seal when case has valid recorded decision (APP-2026-PDIMTR)', async () => {
       const { cookie } = await loginAs('bureau.approval@aicte.gov.in');
 
+      // APP-2026-PDIMTR has authorized conditional decision in canonical seed
       const genRes = await request(app)
-        .post('/api/v1/decision-docs/generate/APP-2026-COEP')
+        .post('/api/v1/decision-docs/generate/APP-2026-PDIMTR')
         .set('Cookie', cookie)
         .set('Origin', 'http://localhost:3000')
         .send({ documentType: 'EOA' });
@@ -470,9 +556,9 @@ describe('NIYAMSETU Full Deliverables Regression Suite (Mandatory Prototype Retr
       expect(genRes.body.data.document.documentDigest).toMatch(/^SHA256-/);
       expect(genRes.body.data.document.decisionAuthority).toBe('usr-bureau-hq');
 
-      // Verify digital signature
+      // Verify digital signature via caseId
       const verRes = await request(app)
-        .get('/api/v1/decision-docs/verify-signature/APP-2026-COEP')
+        .get('/api/v1/decision-docs/verify-signature/APP-2026-PDIMTR')
         .set('Cookie', cookie);
       expect(verRes.status).toBe(200);
       expect(verRes.body.data.valid).toBe(true);
@@ -480,7 +566,7 @@ describe('NIYAMSETU Full Deliverables Regression Suite (Mandatory Prototype Retr
 
       // Download PDF endpoint
       const dlRes = await request(app)
-        .get('/api/v1/decision-docs/download/APP-2026-COEP')
+        .get('/api/v1/decision-docs/download/APP-2026-PDIMTR')
         .set('Cookie', cookie);
       expect(dlRes.status).toBe(200);
       expect(dlRes.headers['content-type']).toBe('application/pdf');
@@ -488,76 +574,168 @@ describe('NIYAMSETU Full Deliverables Regression Suite (Mandatory Prototype Retr
       expect(dlRes.body.length).toBeGreaterThan(100);
     });
 
-    it('detects tamper when client PDF bytes do not match stored SHA-256 hash', async () => {
+    it('prevents duplicate generation and returns existing document idempotently (200 OK)', async () => {
       const { cookie } = await loginAs('bureau.approval@aicte.gov.in');
 
-      const genRes = await request(app)
+      // First generation
+      const gen1 = await request(app)
+        .post('/api/v1/decision-docs/generate/APP-2026-PDIMTR')
+        .set('Cookie', cookie)
+        .set('Origin', 'http://localhost:3000')
+        .send({ documentType: 'EOA' });
+      expect(gen1.status).toBe(201);
+      const docId1 = gen1.body.data.document.docId;
+
+      // Second generation (retry)
+      const gen2 = await request(app)
+        .post('/api/v1/decision-docs/generate/APP-2026-PDIMTR')
+        .set('Cookie', cookie)
+        .set('Origin', 'http://localhost:3000')
+        .send({ documentType: 'EOA' });
+      expect(gen2.status).toBe(200);
+      expect(gen2.body.data.document.docId).toBe(docId1);
+      expect(gen2.body.message).toContain('idempotent');
+    });
+
+    it('materializes post-approval obligations in complianceDB ONLY from recorded decision conditions', async () => {
+      const { cookie } = await loginAs('bureau.approval@aicte.gov.in');
+
+      await request(app)
+        .post('/api/v1/decision-docs/generate/APP-2026-PDIMTR')
+        .set('Cookie', cookie)
+        .set('Origin', 'http://localhost:3000')
+        .send({ documentType: 'EOA' });
+
+      const compRes = await request(app)
+        .get('/api/v1/compliance/obligations/APP-2026-PDIMTR')
+        .set('Cookie', cookie);
+      expect(compRes.status).toBe(200);
+      expect(compRes.body.data.obligations.length).toBeGreaterThan(0);
+      expect(compRes.body.data.obligations.every((o: any) => o.caseId === 'APP-2026-PDIMTR')).toBe(true);
+    });
+
+    it('generates Letter of Rejection (LoR) for rejected case and does NOT create compliance obligations', async () => {
+      const { cookie } = await loginAs('bureau.approval@aicte.gov.in');
+      const testActor = { id: 'usr-bureau-hq', role: 'bureau_officer', roles: ['bureau_officer'], institutionIds: [], regionIds: [], permissions: ['*'], scope: 'global' };
+      await storage.transaction(async (unit: any) => {
+        const a = await unit.get(testActor, 'APP-2026-APEX');
+        if (a) {
+          a.state = 'rejected';
+          await unit.save(a, a.version);
+        }
+      });
+
+      const lorRes = await request(app)
         .post('/api/v1/decision-documents/generate')
         .set('Cookie', cookie)
         .set('Origin', 'http://localhost:3000')
         .send({
-          applicationId: 'APP-2026-COEP',
-          institutionName: 'College of Engineering Pune',
-          permanentInstituteId: '1-435789102',
-          region: 'Western',
-          academicYear: '2026-27',
-          documentType: 'EOA'
+          applicationId: 'APP-2026-APEX',
+          documentType: 'LoR'
         });
-      expect(genRes.status).toBe(201);
-      const docId = genRes.body.data.docId;
+      expect(lorRes.status).toBe(201);
+      expect(lorRes.body.data.document.documentType).toBe('LoR');
+      expect(lorRes.body.data.document.courses.length).toBe(0); // Zero sanctioned intake on rejection!
 
-      // Tampered payload verification
-      const fakeBytes = Buffer.from('TAMPERED_PDF_CONTENT_MALICIOUS').toString('base64');
+      // Verify zero obligations created
+      const compRes = await request(app)
+        .get('/api/v1/compliance/obligations/APP-2026-APEX')
+        .set('Cookie', cookie);
+      expect(compRes.status).toBe(200);
+      expect(compRes.body.data.obligations.length).toBe(0);
+    });
+
+    it('verifies unchanged PDF bytes pass HMAC-SHA256 verification and detects tampering', async () => {
+      const { cookie } = await loginAs('bureau.approval@aicte.gov.in');
+
+      const genRes = await request(app)
+        .post('/api/v1/decision-docs/generate/APP-2026-PDIMTR')
+        .set('Cookie', cookie)
+        .set('Origin', 'http://localhost:3000')
+        .send({ documentType: 'EOA' });
+      expect(genRes.status).toBe(201);
+      const doc = genRes.body.data.document;
+
+      // 1. Valid unchanged bytes
+      const validVerRes = await request(app)
+        .post(`/api/v1/decision-documents/verify-signature/${doc.docId}`)
+        .set('Cookie', cookie)
+        .set('Origin', 'http://localhost:3000')
+        .send({ pdfBytesBase64: doc.pdfBytesBase64 });
+      expect(validVerRes.status).toBe(200);
+      expect(validVerRes.body.data.isSignatureValid).toBe(true);
+      expect(validVerRes.body.data.tamperCheck).toBe('PASSED_UNMODIFIED');
+      expect(validVerRes.body.data.signatureType).toBe('HMAC_SHA256_PROTOTYPE_SEAL');
+
+      // 2. Tampered altered bytes
+      const fakeBytes = Buffer.from('ALTERED_TAMPERED_PDF_CONTENT').toString('base64');
       const tamperRes = await request(app)
-        .post(`/api/v1/decision-documents/verify-signature/${docId}`)
+        .post(`/api/v1/decision-documents/verify-signature/${doc.docId}`)
         .set('Cookie', cookie)
         .set('Origin', 'http://localhost:3000')
         .send({ pdfBytesBase64: fakeBytes });
       expect(tamperRes.status).toBe(200);
       expect(tamperRes.body.data.isSignatureValid).toBe(false);
       expect(tamperRes.body.data.tamperCheck).toBe('TAMPER_DETECTED');
+
+      // 3. Malformed base64
+      const malformedRes = await request(app)
+        .post(`/api/v1/decision-documents/verify-signature/${doc.docId}`)
+        .set('Cookie', cookie)
+        .set('Origin', 'http://localhost:3000')
+        .send({ pdfBytesBase64: 'NOT_VALID_BASE_64!@#$' });
+      expect(malformedRes.status).toBe(422);
+      expect(malformedRes.body.error.code).toBe('MALFORMED_BASE64');
+
+      // 4. Missing payload
+      const missingRes = await request(app)
+        .post(`/api/v1/decision-documents/verify-signature/${doc.docId}`)
+        .set('Cookie', cookie)
+        .set('Origin', 'http://localhost:3000')
+        .send({});
+      expect(missingRes.status).toBe(422);
+      expect(missingRes.body.error.code).toBe('MISSING_PAYLOAD');
+
+      // 5. Wrong document ID
+      const wrongIdRes = await request(app)
+        .post('/api/v1/decision-documents/verify-signature/DOC-NONEXISTENT-9999')
+        .set('Cookie', cookie)
+        .set('Origin', 'http://localhost:3000')
+        .send({ pdfBytesBase64: fakeBytes });
+      expect(wrongIdRes.status).toBe(404);
+      expect(wrongIdRes.body.error.code).toBe('NOT_FOUND');
     });
 
-    it('materializes post-approval obligations in complianceDB ONLY from represented conditions', async () => {
-      const { cookie } = await loginAs('bureau.approval@aicte.gov.in');
+    it('verifies denied calls leave domain state and compliance obligations unchanged', async () => {
+      const initialObligations = (storage as any).inspect?.().obligations.length;
 
+      // Unauthenticated call
       await request(app)
         .post('/api/v1/decision-docs/generate/APP-2026-COEP')
-        .set('Cookie', cookie)
+        .send({ documentType: 'EOA' });
+
+      // Unauthorized role call
+      const { cookie: instCookie } = await loginAs('principal@coep.ac.in');
+      await request(app)
+        .post('/api/v1/decision-docs/generate/APP-2026-COEP')
+        .set('Cookie', instCookie)
         .set('Origin', 'http://localhost:3000')
         .send({ documentType: 'EOA' });
 
-      const compRes = await request(app)
-        .get('/api/v1/compliance/obligations/APP-2026-COEP')
-        .set('Cookie', cookie);
-      expect(compRes.status).toBe(200);
-      expect(compRes.body.data.obligations.length).toBeGreaterThan(0);
-      expect(compRes.body.data.obligations.every((o: any) => o.caseId === 'APP-2026-COEP')).toBe(true);
-    });
-
-    it('does NOT materialize compliance obligations when document is LoD or LoR', async () => {
-      const { cookie } = await loginAs('bureau.approval@aicte.gov.in');
-
-      const lodRes = await request(app)
-        .post('/api/v1/decision-documents/generate')
-        .set('Cookie', cookie)
+      // Precondition-failed call (case without decision)
+      const { cookie: burCookie } = await loginAs('bureau.approval@aicte.gov.in');
+      await request(app)
+        .post('/api/v1/decision-docs/generate/APP-2026-COEP')
+        .set('Cookie', burCookie)
         .set('Origin', 'http://localhost:3000')
-        .send({
-          applicationId: 'APP-2026-LOD-TEST',
-          institutionName: 'Deficient College',
-          permanentInstituteId: '1-999999999',
-          region: 'Northern',
-          academicYear: '2026-27',
-          documentType: 'LoD',
-          speakingOrderSummary: 'Deficiencies in faculty cadre ratio'
-        });
-      expect(lodRes.status).toBe(201);
+        .send({ documentType: 'EOA' });
 
-      const compRes = await request(app)
-        .get('/api/v1/compliance/obligations/APP-2026-LOD-TEST')
-        .set('Cookie', cookie);
-      expect(compRes.status).toBe(200);
-      expect(compRes.body.data.obligations.length).toBe(0);
+      // Verify domain state unchanged
+      const currentObligations = (storage as any).inspect?.().obligations.length;
+      expect(currentObligations).toBe(initialObligations);
+
+      const coep = (storage as any).inspect?.().cases.find((c: any) => c.id === 'APP-2026-COEP');
+      expect(coep.state).toBe('scrutiny_pending'); // Remained scrutiny_pending!
     });
   });
 

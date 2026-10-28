@@ -4,8 +4,8 @@
 
 [![Live Prototype](https://img.shields.io/badge/Live%20Prototype-niyamsetu--aicte.onrender.com-success?style=for-the-badge&logo=render)](https://niyamsetu-aicte.onrender.com)
 [![Status](https://img.shields.io/badge/Status-High--Fidelity%20Transactional%20Prototype-brightgreen?style=flat-square)](https://niyamsetu-aicte.onrender.com)
-[![Regression Suite](https://img.shields.io/badge/Deliverables%20Suite-29%2F29%20Passed%20(100%25)-brightgreen.svg?style=flat-square)](./tests/regression_retrofit_all_deliverables.test.ts)
-[![Total Test Suite](https://img.shields.io/badge/Total%20Test%20Suite-318%2F318%20Passed%20(100%25)-brightgreen.svg?style=flat-square)](./tests/)
+[![Regression Suite](https://img.shields.io/badge/Deliverables%20Suite-36%2F36%20Passed%20(100%25)-brightgreen.svg?style=flat-square)](./tests/regression_retrofit_all_deliverables.test.ts)
+[![Total Test Suite](https://img.shields.io/badge/Total%20Test%20Suite-325%2F325%20Passed%20(100%25)-brightgreen.svg?style=flat-square)](./tests/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict%20(0%20Errors)-blue.svg?style=flat-square)](./tsconfig.json)
 [![Handbook Base](https://img.shields.io/badge/Handbook%20Base-APH%202024--27%20%2B%20Addendum%20G02-orange.svg?style=flat-square)](https://www.aicte-india.org)
 
@@ -41,41 +41,58 @@ flowchart TD
     classDef docNode fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
     classDef auditNode fill:#1c1917,stroke:#f59e0b,stroke-width:1.5px,color:#fbbf24;
 
-    A["1. NSWS Intake Simulation<br/>(PAN Check + emBridge DSC Token)"]:::startNode --> B["2. Dynamic Route Engine<br/>(APH 2024-27 Table 2.3 + Addendum G02)"]:::processNode
+    A["1. NSWS Intake Simulation<br/>(PAN Check + emBridge DSC Token Simulation)"]:::startNode --> B["2. Dynamic Route Engine<br/>(APH 2024-27 Table 2.3 + Addendum Errata G02)"]:::processNode
     
-    B -->|Self-Disclosure EoA| G["Decision Authority Gate<br/>(Executive Committee APH §2.25)"]:::decisionNode
-    B -->|New Inst / Non-NBA Intake| C["RO Desk Allocation<br/>(Assign Desk Scrutiny Group)"]:::processNode
-    B -->|Site Shifting / Break-in-EoA| E["RO Desk Allocation<br/>(Assign EVC Panel Direct)"]:::processNode
-    B -->|Ambiguity Hold X=360| BH["Policy Review Required<br/>(Addendum 2026-27 p. 42)"]:::decisionNode
+    B -->|Self-Disclosure EoA| G_EC["Chapter II Executive Committee Gate<br/>(Grant of EoA APH §2.25)"]:::decisionNode
+    B -->|New Inst / Non-NBA Intake| C["RO Desk Allocation<br/>(Assign Standing Scrutiny Group)"]:::processNode
+    B -->|Site Shifting / Restoration| E["RO Desk Allocation<br/>(Direct EVC Panel Assignment)"]:::processNode
+    B -->|Policy Ambiguity Hold X=360| BH["Policy Review Required Hold<br/>(Addendum 2026-27 p. 42 / Safe Halt)"]:::decisionNode
 
-    C --> D["Desk Scrutiny Verification<br/>(6 Statutory Checklist Categories)"]:::processNode
-    D -->|Deficiencies Flagged D1, D2| D1["Differential Re-Scrutiny<br/>Scope-Lock (APH §1.8g)<br/>C3/C4 Locked Read-Only"]:::branch
-    D1 -->|Deficiencies Cured| D2Check{"Route Requires<br/>EVC?"}
+    C --> D["Desk Scrutiny Committee<br/>(6 Statutory Checklist Categories)"]:::processNode
+    D -->|Deficiencies Flagged D1, D2| D_LOD["Issue Formal Letter of Deficiency (LoD)<br/>(Statutory Shortcomings Notice APH §1.11 / §2.25c)"]:::decisionNode
+    D_LOD -->|Cure Window 15 Days| D1["Differential Re-Scrutiny Scope-Lock<br/>(APH §1.8g: Cleared C3/C4 Read-Only)"]:::branch
+    D1 -->|Deficiencies Successfully Cured| D2Check{"Route Requires<br/>EVC?"}
     D -->|All Compliant C1-C6| D2Check
 
-    D2Check -->|Yes: Non-NBA / New Inst| E
-    D2Check -->|No: Valid NBA per Addendum §2.6c1| G
+    D2Check -->|Yes: Non-NBA Intake / New Inst| E
+    D2Check -->|No: Valid NBA per Addendum §2.6c1| G_EC
 
-    E --> F["EVC Physical Inspection<br/>(On-Site Coordinates + Video APH §1.9)"]:::processNode
-    F --> G
+    E --> F["Expert Visit Committee (EVC)<br/>(On-Site Physical Inspection APH §1.9<br/>Engineering Enhancement: 500m geofence)"]:::processNode
+    F -->|Satisfactory Report| G_ROUTE{"Application<br/>Category?"}
+    
+    G_ROUTE -->|Chapter I: New Institution| G_CH1_EC["Executive Committee Decision<br/>(APH §1.10a)"]:::decisionNode
+    G_CH1_EC --> G_CH1_COUNCIL["Council Ratification<br/>(APH §1.10a)"]:::decisionNode
+    G_CH1_COUNCIL -->|Approved| H1["Issue Letter of Approval (LoA)<br/>(AICTE Act §10k / APH §1.10)"]:::docNode
+    G_CH1_COUNCIL -->|Rejected| I2["Issue Letter of Rejection (LoR)<br/>(Speaking Order AICTE Act §10k)"]:::decisionNode
 
-    G -->|Approved New Inst| H1["Issue Letter of Approval (LoA)<br/>(Ratified by Council APH §1.10)"]:::docNode
-    G -->|Approved Existing Inst| H2["Issue Extension of Approval (EoA)<br/>(Speaking Order APH §2.25)"]:::docNode
-    G -->|Deficiencies Observed| I1["Issue Formal Letter of Deficiency (LoD)<br/>(Statutory Notice APH §1.11 / §2.24)"]:::decisionNode
-    G -->|Adverse EC Decision| I2["Issue Letter of Rejection (LoR)<br/>(Speaking Order AICTE Act §10k)"]:::decisionNode
+    G_ROUTE -->|Chapter II: Existing Institution| G_EC
+    G_EC -->|Approved| H2["Issue Extension of Approval (EoA)<br/>(Speaking Order APH §2.25)"]:::docNode
+    G_EC -->|Adverse Decision| I2
 
-    I1 -.->|Aggrieved within 7 Days| J["Decoupled SAC Appeal Branch<br/>(SAC Hearing -> Council Decision APH §2.24)"]:::branch
-    I2 -.->|Aggrieved within 7 Days| J
-    D -.->|Shortcomings Referred| K["SHC Compliance Hearing<br/>(APH §2.23.3 -> EC Decision)"]:::branch
-    F -.->|Shortcomings Referred| K
-    L["PGRC Grievance Intake<br/>(Identity Verified per APH §7.10)"]:::branch -.-> M["SCSC Grievance Scrutiny<br/>(Show-Cause / EVC -> SHC -> EC)"]:::branch
+    %% Decoupled Chapter II SHC Shortcomings Branch
+    D -.->|Unresolved Shortcomings| SHC_COMP["Chapter II SHC Compliance Opportunity<br/>(APH §2.23.3: Hearing & Evidence)"]:::branch
+    F -.->|Serious Deficiencies| SHC_COMP
+    SHC_COMP --> SHC_REC["SHC Recommendations<br/>(Submitted to Executive Committee)"]:::branch
+    SHC_REC --> G_EC
 
-    H1 --> N["Post-Approval Compliance DB<br/>(Materialized from Order Conditions)"]:::auditNode
+    %% Decoupled Chapter II SAC Appellate Branch
+    I2 -.->|Aggrieved within 7 Days| SAC_APP["Standing Appellate Committee (SAC)<br/>(Eligible Statutory Appeal APH §2.24)"]:::branch
+    SAC_APP --> SAC_REC["SAC Recommendations<br/>(Submitted to Council)"]:::branch
+    SAC_REC --> SAC_FINAL["Council Decision<br/>(Final under APH §2.24)"]:::decisionNode
+
+    %% Decoupled Chapter VII Grievance & Complaint Branch
+    PGRC["Chapter VII PGRC Intake<br/>(Identity Verification; Reject Anonymous APH §7.10)"]:::startNode -.-> SCSC["Standing Complaint Scrutiny Committee (SCSC)<br/>(Evidence Scrutiny & Fact Assessment)"]:::branch
+    SCSC -.-> SCSC_ACT{"Action Required?"}
+    SCSC_ACT -.->|Show-Cause / Fact-Finding| SCSC_EVC["Warning / Show-Cause Notice / Fact-Finding EVC"]:::branch
+    SCSC_EVC -.-> SHC_COMP
+
+    %% Post-Approval Compliance Materialization
+    H1 --> N["Post-Approval Compliance DB<br/>(Materialized Strictly from Authorized Order Conditions)"]:::auditNode
     H2 --> N
-    N --> N1["Clock 1: APH §2.25f Security Deposit & Affidavit-3 (15d)"]:::auditNode
-    N --> N2["Clock 2: Fire Safety NOC Renewal (Operational SLA / GVMC 60d)"]:::auditNode
-    N --> N3["Clock 3: 30-Year Registered Land Lease Deed (APH §6.17a)"]:::auditNode
-    N --> N4["Clock 4: Faculty Appointment Undertaking (6-Month Cadre Ratio)"]:::auditNode
+    N --> N1["Clock 1: APH §2.25f Security Deposit & Affidavit-3 (15 Days - Statutory)"]:::auditNode
+    N -.->|When Imposed by Order| N2["Clock 2: Fire Safety NOC Renewal (Operational SLA / Local Municipal Rule)"]:::auditNode
+    N -.->|When Imposed by Order| N3["Clock 3: 30-Year Registered Land Lease Deed (APH §6.17a)"]:::auditNode
+    N -.->|When Imposed by Order| N4["Clock 4: Faculty Appointment Undertaking (6-Month Cadre Ratio)"]:::auditNode
 ```
 
 ---
@@ -198,13 +215,13 @@ npm install
 npx tsc --noEmit
 
 # 4. Run automated regression & acceptance test suites
-# Full retrofitted regression suite (29/29 passed)
+# Full retrofitted regression suite (36/36 passed)
 npx vitest run tests/regression_retrofit_all_deliverables.test.ts
 
 # Acceptance verification suites (22/22 passed)
 npx vitest run tests/verification_t01_t16.test.ts tests/verification_t17_t22.test.ts
 
-# Complete repository suite (318/318 passed across 27 files)
+# Complete repository suite (325/325 passed across 27 files)
 npx vitest run
 
 # 5. Build and launch development server
@@ -221,15 +238,15 @@ Try the full application online without installing anything:
 
 ---
 
-## 🧪 Automated Test Coverage (318 Tests / 27 Suites)
+## 🧪 Automated Test Coverage (325 Tests / 27 Suites)
 
 ```
 Test Files  27 passed (27)
-     Tests  318 passed (318)
-  Duration  11.36s (100% pass rate, 0 failed, 0 skipped)
+     Tests  325 passed (325)
+  Duration  9.91s (100% pass rate, 0 failed, 0 skipped)
 ```
 
-- **`tests/regression_retrofit_all_deliverables.test.ts` (29 tests):** Verifies all 11 mandatory deliverables end-to-end.
+- **`tests/regression_retrofit_all_deliverables.test.ts` (36 tests):** Verifies all 11 mandatory deliverables end-to-end, including decision preconditions, outcome alignment, HMAC-SHA256 integrity verification, and boundary hold conditions.
 - **`tests/verification_t01_t16.test.ts` (16 tests):** Acceptance checks T01–T16 (tenant isolation, scrutiny scope-lock, human-only decisions, timer acceleration).
 - **`tests/verification_t17_t22.test.ts` (6 tests):** Acceptance checks T17–T22 (authorized reverts, statutory notices, DSC signatures, compliance certificates).
 - **`tests/policy/routing.test.ts` (37 tests):** Comprehensive route engine predicate tests across Table 2.3.
@@ -255,4 +272,4 @@ Test Files  27 passed (27)
   - `origin`: `https://github.com/Mayuresh-1306/SIH-2026-AICTE.git` (Tracked master)
   - `personal`: `https://github.com/Parth-Chavan-15/SIH-2026-AICTE.git` (Backup deployment mirror)
 - **Live Deployment**: [https://niyamsetu-aicte.onrender.com](https://niyamsetu-aicte.onrender.com)
-- **Status**: High-Fidelity Transactional Prototype with In-Memory State Engines (AY 2026–27 | 318/318 Tests Passing)
+- **Status**: High-Fidelity Transactional Prototype with In-Memory State Engines (AY 2026–27 | 325/325 Tests Passing)

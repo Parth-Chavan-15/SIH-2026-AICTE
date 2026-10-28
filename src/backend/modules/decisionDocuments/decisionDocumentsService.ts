@@ -20,6 +20,8 @@ import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { createHash, createHmac } from 'node:crypto';
 import { complianceDB } from '../compliance/complianceService';
 
+export const PROTOTYPE_SEAL_KEY = process.env.PROTOTYPE_SEAL_SECRET || 'NIYAMSETU-PROTOTYPE-HMAC-SEAL-KEY-2026-NONPROD';
+
 export interface DecisionDocumentMetadata {
   docId: string;
   applicationId: string;
@@ -55,7 +57,9 @@ export interface DecisionDocumentMetadata {
     certificateAuthority: string;
     signatureAlgorithm: string;
     signedAt: string;
+    sha256Digest: string;
     integrityHashSha256: string;
+    hmacSignature: string;
     status: 'DEMO_SIGNATURE_VERIFIED' | 'SIGNING_NOT_CONFIGURED';
     prominentNotice: string;
   };
@@ -305,7 +309,8 @@ export async function generateAndSignDecisionDocument(data: {
 
   const pdfBytes = await pdfDoc.save();
   const pdfBase64 = Buffer.from(pdfBytes).toString('base64');
-  const integrityHash = createHash('sha256').update(pdfBytes).digest('hex');
+  const sha256Digest = createHash('sha256').update(pdfBytes).digest('hex');
+  const hmacSignature = createHmac('sha256', PROTOTYPE_SEAL_KEY).update(pdfBytes).digest('hex');
 
   const metadata: DecisionDocumentMetadata = {
     docId,
@@ -330,9 +335,11 @@ export async function generateAndSignDecisionDocument(data: {
       certificateAuthority: 'NIYAMSETU Prototype Non-Production Authority',
       signatureAlgorithm: 'HMAC-SHA256 Prototype Integrity Seal',
       signedAt: signTimestamp,
-      integrityHashSha256: integrityHash,
+      sha256Digest,
+      integrityHashSha256: sha256Digest,
+      hmacSignature,
       status: 'DEMO_SIGNATURE_VERIFIED',
-      prominentNotice: 'PROTOTYPE DEMONSTRATION DOCUMENT — HMAC-SHA256 INTEGRITY SEAL (NOT AN OFFICIAL AICTE PAdES SIGNATURE)'
+      prominentNotice: 'PROTOTYPE DEMONSTRATION DOCUMENT — HMAC-SHA256 INTEGRITY SEAL (NOT AN EMBEDDED PAdES/PKCS#7 OR OFFICIAL AICTE DIGITAL SIGNATURE)'
     },
     pdfBytesBase64: pdfBase64,
     byteSize: pdfBytes.length
