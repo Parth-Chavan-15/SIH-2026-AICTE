@@ -75,8 +75,7 @@ export function createCompanionApp(options?: {
       '/portal-import/',
       '/allocation/',
       '/appeals-hearings/',
-      '/rules-registry/',
-      '/decision-docs/'
+      '/rules-registry/'
     ];
     if (publicPrefixes.some(p => req.path.startsWith(p)) || req.path === '/adapter/status') {
       return next();
@@ -106,7 +105,7 @@ export function createCompanionApp(options?: {
   app.use('/api/v1', createRulesRegistryRouter());
 
   // Decision Documents & Non-Production Digital Signing Router
-  app.use('/api/v1', createDecisionDocumentsRouter());
+  app.use('/api/v1', createDecisionDocumentsRouter(storage));
 
   // Member 2 Scrutiny & EVC Routes
   app.use('/api/v1', createScrutinyRouter(corePort));

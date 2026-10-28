@@ -115,6 +115,12 @@ export function evaluateDynamicRoute(facts: Record<string, any>): DynamicRouteRe
     unresolvedFlags.push('RULE_AMBIGUITY: Hibernation timing heading vs body discrepancy under Addendum Item 24 / §2.16.1(d). Requires human verification');
   }
 
+  // Material unresolved regulatory ambiguities fail safely to review_required (Phases 2 & 3 mandate)
+  const hasBlockingAmbiguity = unresolvedFlags.some(
+    f => f.startsWith('RULE_AMBIGUITY:') || f.startsWith('CONFLICT:')
+  );
+  const routeResult: 'selected' | 'review_required' = hasBlockingAmbiguity ? 'review_required' : 'selected';
+
   // 1. Route Family: New Technical Institution
   if (category === 'new_institution' || category === 'New Technical Institution') {
     matchedRules.push({
@@ -138,7 +144,7 @@ export function evaluateDynamicRoute(facts: Record<string, any>): DynamicRouteRe
       ruleVersion: 'v2026.1',
       session,
       category,
-      result: 'selected',
+      result: routeResult,
       stages,
       conditionalBranches,
       skippedStages,
@@ -179,7 +185,7 @@ export function evaluateDynamicRoute(facts: Record<string, any>): DynamicRouteRe
       ruleVersion: 'v2026.1',
       session,
       category,
-      result: 'selected',
+      result: routeResult,
       stages,
       conditionalBranches,
       skippedStages,
@@ -222,7 +228,7 @@ export function evaluateDynamicRoute(facts: Record<string, any>): DynamicRouteRe
       ruleVersion: 'v2026.1',
       session,
       category,
-      result: 'selected',
+      result: routeResult,
       stages,
       conditionalBranches,
       skippedStages,
@@ -268,7 +274,7 @@ export function evaluateDynamicRoute(facts: Record<string, any>): DynamicRouteRe
         ruleVersion: 'v2026.2',
         session,
         category,
-        result: 'selected',
+        result: routeResult,
         stages,
         conditionalBranches,
         skippedStages,
@@ -301,7 +307,7 @@ export function evaluateDynamicRoute(facts: Record<string, any>): DynamicRouteRe
         ruleVersion: 'v2026.2',
         session,
         category,
-        result: 'selected',
+        result: routeResult,
         stages,
         conditionalBranches,
         skippedStages,
@@ -343,7 +349,7 @@ export function evaluateDynamicRoute(facts: Record<string, any>): DynamicRouteRe
     ruleVersion: 'v2026.1',
     session,
     category,
-    result: unresolvedFlags.length > 0 ? 'review_required' : 'selected',
+    result: routeResult,
     stages,
     conditionalBranches,
     skippedStages,

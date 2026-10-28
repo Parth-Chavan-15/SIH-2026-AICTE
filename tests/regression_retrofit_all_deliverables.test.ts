@@ -89,7 +89,8 @@ describe('NIYAMSETU Full Deliverables Regression Suite (Mandatory Prototype Retr
           facts: {
             program: 'Engineering and Technology',
             level: 'Under Graduate',
-            proposedIntake: 360,
+            existingIntake: 120,
+            proposedIntake: 180,
             nbaAccredited: true,
             nbaScore: 680
           }
@@ -109,11 +110,12 @@ describe('NIYAMSETU Full Deliverables Regression Suite (Mandatory Prototype Retr
         category: 'increase_intake',
         program: 'Engineering and Technology',
         level: 'Under Graduate',
-        proposedIntake: 300,
+        proposedIntake: 180,
         nbaAccredited: true,
         nbaScore: 680
       });
       expect(decision.policyRevisionId).toBe('POL-2026-INTAKE-NBA');
+      expect(decision.result).toBe('selected');
       expect(decision.stages.includes('evc_pending')).toBe(false);
       expect(decision.skippedStages.some((s) => s.stage === 'evc_pending')).toBe(true);
       expect(decision.sources.some((s) => s.title.includes('Addendum'))).toBe(true);
@@ -124,16 +126,17 @@ describe('NIYAMSETU Full Deliverables Regression Suite (Mandatory Prototype Retr
         category: 'increase_intake',
         program: 'Engineering and Technology',
         level: 'Under Graduate',
-        proposedIntake: 300,
+        proposedIntake: 240,
         nbaAccredited: false,
         nbaScore: 500
       });
       expect(decision.policyRevisionId).toBe('POL-2026-INTAKE-NON-NBA');
+      expect(decision.result).toBe('selected');
       expect(decision.stages).toContain('evc_pending');
       expect(decision.skippedStages.length).toBe(0);
     });
 
-    it('detects unresolved X=360 boundary condition and flags for verification', () => {
+    it('detects unresolved X=360 boundary condition and safely sets result to review_required', () => {
       const decision = evaluateRouteWithEngine({
         category: 'increase_intake',
         program: 'Engineering and Technology',
@@ -143,6 +146,42 @@ describe('NIYAMSETU Full Deliverables Regression Suite (Mandatory Prototype Retr
         nbaScore: 680
       });
       expect(decision.unresolvedFlags.some((f) => f.includes('X = 360') || f.includes('X=360'))).toBe(true);
+      expect(decision.result).toBe('review_required');
+    });
+
+    it('verifies adjacent boundary values around X=360 fail-safe', () => {
+      const decision359 = evaluateRouteWithEngine({
+        category: 'increase_intake',
+        proposedIntake: 359,
+        nbaAccredited: true
+      });
+      expect(decision359.result).toBe('selected');
+      expect(decision359.unresolvedFlags.length).toBe(0);
+
+      const decision361 = evaluateRouteWithEngine({
+        category: 'increase_intake',
+        proposedIntake: 361,
+        nbaAccredited: true
+      });
+      expect(decision361.result).toBe('selected');
+      expect(decision361.unresolvedFlags.length).toBe(0);
+    });
+
+    it('fails safely to review_required for ELP 50% conflict and hibernation discrepancy', () => {
+      const elpDecision = evaluateRouteWithEngine({
+        category: 'increase_intake',
+        proposedIntake: 180,
+        isExperientialLearningProgram: true
+      });
+      expect(elpDecision.result).toBe('review_required');
+      expect(elpDecision.unresolvedFlags.some(f => f.includes('CONFLICT'))).toBe(true);
+
+      const hiberDecision = evaluateRouteWithEngine({
+        category: 'extension_of_approval',
+        hibernationTiming: true
+      });
+      expect(hiberDecision.result).toBe('review_required');
+      expect(hiberDecision.unresolvedFlags.some(f => f.includes('Hibernation timing'))).toBe(true);
     });
   });
 
@@ -370,8 +409,55 @@ describe('NIYAMSETU Full Deliverables Regression Suite (Mandatory Prototype Retr
 
   // --- DELIVERABLE 8: Generated Decision Documents & Demo Digital Signing ---
   describe('Deliverable 8: Decision Documents & Demo Digital Signing Verification', () => {
-    it('generates downloadable PDF with non-production test certificate digital signature', async () => {
+    it('rejects unauthenticated requests to /api/v1/decision-docs/generate/:caseId with 401', async () => {
+      const res = await request(app)
+        .post('/api/v1/decision-docs/generate/APP-2026-COEP')
+        .send({ documentType: 'EOA' });
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('UNAUTHENTICATED');
+    });
+
+    it('rejects unauthenticated requests to /api/v1/decision-documents/generate with 401', async () => {
+      const res = await request(app)
+        .post('/api/v1/decision-documents/generate')
+        .send({
+          applicationId: 'APP-2026-COEP',
+          institutionName: 'COEP',
+          permanentInstituteId: '1-435789102',
+          documentType: 'EOA'
+        });
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('UNAUTHENTICATED');
+    });
+
+    it('rejects decision document generation by applicant (institution role) with 403', async () => {
+      const { cookie } = await loginAs('principal@coep.ac.in');
+      const res = await request(app)
+        .post('/api/v1/decision-docs/generate/APP-2026-COEP')
+        .set('Cookie', cookie)
+        .set('Origin', 'http://localhost:3000')
+        .send({ documentType: 'EOA' });
+      expect(res.status).toBe(403);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('FORBIDDEN');
+    });
+
+    it('rejects decision document generation by regional officer (lacks decision.record) with 403', async () => {
       const { cookie } = await loginAs('ro.western@aicte.gov.in');
+      const res = await request(app)
+        .post('/api/v1/decision-docs/generate/APP-2026-COEP')
+        .set('Cookie', cookie)
+        .set('Origin', 'http://localhost:3000')
+        .send({ documentType: 'EOA' });
+      expect(res.status).toBe(403);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('FORBIDDEN');
+    });
+
+    it('generates downloadable PDF with non-production test certificate digital signature when authorized', async () => {
+      const { cookie } = await loginAs('bureau.approval@aicte.gov.in');
 
       const genRes = await request(app)
         .post('/api/v1/decision-docs/generate/APP-2026-COEP')
@@ -380,8 +466,9 @@ describe('NIYAMSETU Full Deliverables Regression Suite (Mandatory Prototype Retr
         .send({ documentType: 'EOA' });
       expect(genRes.status).toBe(201);
       expect(genRes.body.data.document.signatureStatus).toBe('DEMO_TEST_SIGNED');
-      expect(genRes.body.data.document.demoNotice).toContain('NOT AN OFFICIAL AICTE SIGNATURE');
+      expect(genRes.body.data.document.demoNotice).toContain('NOT AN OFFICIAL AICTE');
       expect(genRes.body.data.document.documentDigest).toMatch(/^SHA256-/);
+      expect(genRes.body.data.document.decisionAuthority).toBe('usr-bureau-hq');
 
       // Verify digital signature
       const verRes = await request(app)
@@ -401,8 +488,38 @@ describe('NIYAMSETU Full Deliverables Regression Suite (Mandatory Prototype Retr
       expect(dlRes.body.length).toBeGreaterThan(100);
     });
 
+    it('detects tamper when client PDF bytes do not match stored SHA-256 hash', async () => {
+      const { cookie } = await loginAs('bureau.approval@aicte.gov.in');
+
+      const genRes = await request(app)
+        .post('/api/v1/decision-documents/generate')
+        .set('Cookie', cookie)
+        .set('Origin', 'http://localhost:3000')
+        .send({
+          applicationId: 'APP-2026-COEP',
+          institutionName: 'College of Engineering Pune',
+          permanentInstituteId: '1-435789102',
+          region: 'Western',
+          academicYear: '2026-27',
+          documentType: 'EOA'
+        });
+      expect(genRes.status).toBe(201);
+      const docId = genRes.body.data.docId;
+
+      // Tampered payload verification
+      const fakeBytes = Buffer.from('TAMPERED_PDF_CONTENT_MALICIOUS').toString('base64');
+      const tamperRes = await request(app)
+        .post(`/api/v1/decision-documents/verify-signature/${docId}`)
+        .set('Cookie', cookie)
+        .set('Origin', 'http://localhost:3000')
+        .send({ pdfBytesBase64: fakeBytes });
+      expect(tamperRes.status).toBe(200);
+      expect(tamperRes.body.data.isSignatureValid).toBe(false);
+      expect(tamperRes.body.data.tamperCheck).toBe('TAMPER_DETECTED');
+    });
+
     it('materializes post-approval obligations in complianceDB ONLY from represented conditions', async () => {
-      const { cookie } = await loginAs('ro.western@aicte.gov.in');
+      const { cookie } = await loginAs('bureau.approval@aicte.gov.in');
 
       await request(app)
         .post('/api/v1/decision-docs/generate/APP-2026-COEP')
@@ -416,6 +533,31 @@ describe('NIYAMSETU Full Deliverables Regression Suite (Mandatory Prototype Retr
       expect(compRes.status).toBe(200);
       expect(compRes.body.data.obligations.length).toBeGreaterThan(0);
       expect(compRes.body.data.obligations.every((o: any) => o.caseId === 'APP-2026-COEP')).toBe(true);
+    });
+
+    it('does NOT materialize compliance obligations when document is LoD or LoR', async () => {
+      const { cookie } = await loginAs('bureau.approval@aicte.gov.in');
+
+      const lodRes = await request(app)
+        .post('/api/v1/decision-documents/generate')
+        .set('Cookie', cookie)
+        .set('Origin', 'http://localhost:3000')
+        .send({
+          applicationId: 'APP-2026-LOD-TEST',
+          institutionName: 'Deficient College',
+          permanentInstituteId: '1-999999999',
+          region: 'Northern',
+          academicYear: '2026-27',
+          documentType: 'LoD',
+          speakingOrderSummary: 'Deficiencies in faculty cadre ratio'
+        });
+      expect(lodRes.status).toBe(201);
+
+      const compRes = await request(app)
+        .get('/api/v1/compliance/obligations/APP-2026-LOD-TEST')
+        .set('Cookie', cookie);
+      expect(compRes.status).toBe(200);
+      expect(compRes.body.data.obligations.length).toBe(0);
     });
   });
 

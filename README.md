@@ -3,9 +3,9 @@
 **Smart India Hackathon 2026 | Problem Statement 26262 (AICTE Regulation Bureau) | Academic Year 2026–2027**
 
 [![Live Prototype](https://img.shields.io/badge/Live%20Prototype-niyamsetu--aicte.onrender.com-success?style=for-the-badge&logo=render)](https://niyamsetu-aicte.onrender.com)
-[![Status](https://img.shields.io/badge/Status-Fully%20Retrofitted%20Prototype-brightgreen?style=flat-square)](https://niyamsetu-aicte.onrender.com)
-[![Regression Suite](https://img.shields.io/badge/Deliverables%20Suite-21%2F21%20Passed%20(100%25)-brightgreen.svg?style=flat-square)](./tests/regression_retrofit_all_deliverables.test.ts)
-[![Total Test Suite](https://img.shields.io/badge/Total%20Test%20Suite-310%2F310%20Passed%20(100%25)-brightgreen.svg?style=flat-square)](./tests/)
+[![Status](https://img.shields.io/badge/Status-High--Fidelity%20Transactional%20Prototype-brightgreen?style=flat-square)](https://niyamsetu-aicte.onrender.com)
+[![Regression Suite](https://img.shields.io/badge/Deliverables%20Suite-29%2F29%20Passed%20(100%25)-brightgreen.svg?style=flat-square)](./tests/regression_retrofit_all_deliverables.test.ts)
+[![Total Test Suite](https://img.shields.io/badge/Total%20Test%20Suite-318%2F318%20Passed%20(100%25)-brightgreen.svg?style=flat-square)](./tests/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict%20(0%20Errors)-blue.svg?style=flat-square)](./tsconfig.json)
 [![Handbook Base](https://img.shields.io/badge/Handbook%20Base-APH%202024--27%20%2B%20Addendum%20G02-orange.svg?style=flat-square)](https://www.aicte-india.org)
 
@@ -19,14 +19,14 @@ Managing these workflows historically involved manual handoffs between national 
 
 **NiyamSetu (नियमसेतु)** is an enterprise-grade regulatory companion engine engineered for the AICTE Regulation Bureau to:
 1. Provide a seamless, simulated **National Single Window System (NSWS) → AICTE** application intake pipeline with emBridge Class-3 USB token authentication.
-2. Execute a **deterministic, source-grounded Dynamic Route Engine** anchored directly to APH 2024–27 Table 2.3 and AY 2026–27 Addendum Errata G02.
+2. Execute a **deterministic, source-grounded Dynamic Route Engine** anchored directly to APH 2024–27 Table 2.3 and AY 2026–27 Addendum Errata G02, failing safely to `review_required` on material policy ambiguities ($X=360$, ELP 50%, Hibernation).
 3. Provide an active **Regional Office Operations Desk Allocation** console with workload tracking across standing Scrutiny and Expert Visit Committee (EVC) groups.
 4. Support an **Existing AICTE Portal Scrutiny Report Ingestion Flow** with immutable report preservation and automated extraction mapping.
-5. Enforce cryptographic **Differential Re-Scrutiny Scope-Locks (APH §1.8(g))** that permanently lock previously cleared items read-only.
+5. Enforce server-enforced **Differential Re-Scrutiny Scope-Locks (APH §1.8(g))** that permanently lock previously cleared items read-only against any modification.
 6. Decouple **Standing Appellate Committee (SAC) appeals, Standing Hearing Committee (SHC) shortcomings hearings, and Chapter VII §7.10 Grievances** from the main application spine.
 7. Provide a **Central Policy Administrator Workspace (Role 6)** featuring an Active Rules & Routing Registry, versioned draft editor, before/after diff visualizer, route sandbox, and regulatory conflict register.
-8. Synthesize per-case **institute-specific decision documents (LoA/EoA/LoD/LoR)** with standards-compliant HMAC SHA-256 demo digital signing and order-backed compliance materialization.
-9. Track post-approval obligations through an automated **4-clock deterministic timer engine**, isolating APH §2.25(f) security deposits from scrutiny cure windows.
+8. Synthesize per-case **institute-specific decision documents (LoA/EoA/LoD/LoR)** with HMAC-SHA256 prototype integrity seals (non-production test key), tamper detection, and order-backed compliance materialization.
+9. Track post-approval obligations through an automated **4-clock deterministic timer engine**, isolating APH §2.25(f) security deposits from pre-approval scrutiny cure windows.
 
 ---
 
@@ -43,33 +43,39 @@ flowchart TD
 
     A["1. NSWS Intake Simulation<br/>(PAN Check + emBridge DSC Token)"]:::startNode --> B["2. Dynamic Route Engine<br/>(APH 2024-27 Table 2.3 + Addendum G02)"]:::processNode
     
-    B -->|Self-Disclosure EoA| G["Decision Pending Gate<br/>(Human Authority Only)"]:::decisionNode
+    B -->|Self-Disclosure EoA| G["Decision Authority Gate<br/>(Executive Committee APH §2.25)"]:::decisionNode
     B -->|New Inst / Non-NBA Intake| C["RO Desk Allocation<br/>(Assign Desk Scrutiny Group)"]:::processNode
     B -->|Site Shifting / Break-in-EoA| E["RO Desk Allocation<br/>(Assign EVC Panel Direct)"]:::processNode
+    B -->|Ambiguity Hold X=360| BH["Policy Review Required<br/>(Addendum 2026-27 p. 42)"]:::decisionNode
 
-    C --> D["Desk Scrutiny Verification<br/>(6 Checklist Categories)"]:::processNode
+    C --> D["Desk Scrutiny Verification<br/>(6 Statutory Checklist Categories)"]:::processNode
     D -->|Deficiencies Flagged D1, D2| D1["Differential Re-Scrutiny<br/>Scope-Lock (APH §1.8g)<br/>C3/C4 Locked Read-Only"]:::branch
     D1 -->|Deficiencies Cured| D2Check{"Route Requires<br/>EVC?"}
     D -->|All Compliant C1-C6| D2Check
 
     D2Check -->|Yes: Non-NBA / New Inst| E
-    D2Check -->|No: NBA Fast-Track >= 670| G
+    D2Check -->|No: Valid NBA per Addendum §2.6c1| G
 
-    E --> F["EVC Physical Inspection<br/>(GPS Geo-Fenced + 30-min Video)"]:::processNode
+    E --> F["EVC Physical Inspection<br/>(On-Site Coordinates + Video APH §1.9)"]:::processNode
     F --> G
 
-    G -->|Approved| H["Issue LoA / EoA<br/>(Generated PDF + Test Digital Seal)"]:::docNode
-    G -->|Rejected| I["Issue Letter of Rejection (LoD/LoR)"]:::decisionNode
+    G -->|Approved New Inst| H1["Issue Letter of Approval (LoA)<br/>(Ratified by Council APH §1.10)"]:::docNode
+    G -->|Approved Existing Inst| H2["Issue Extension of Approval (EoA)<br/>(Speaking Order APH §2.25)"]:::docNode
+    G -->|Deficiencies Observed| I1["Issue Formal Letter of Deficiency (LoD)<br/>(Statutory Notice APH §1.11 / §2.24)"]:::decisionNode
+    G -->|Adverse EC Decision| I2["Issue Letter of Rejection (LoR)<br/>(Speaking Order AICTE Act §10k)"]:::decisionNode
 
-    I -.->|Aggrieved within 7 Days| J["Decoupled SAC Appeal Branch<br/>(APH §1.11 / §2.24 + Appellant DSC)"]:::branch
-    D -.->|Shortcomings Referred| K["SHC Hearing Branch<br/>(APH §2.23.3)"]:::branch
-    L["Citizen / Faculty Grievance<br/>(Identity Verified per §7.10)"]:::branch -.-> M["SCSC Grievance Review<br/>(Chapter VII Norms)"]:::branch
+    I1 -.->|Aggrieved within 7 Days| J["Decoupled SAC Appeal Branch<br/>(SAC Hearing -> Council Decision APH §2.24)"]:::branch
+    I2 -.->|Aggrieved within 7 Days| J
+    D -.->|Shortcomings Referred| K["SHC Compliance Hearing<br/>(APH §2.23.3 -> EC Decision)"]:::branch
+    F -.->|Shortcomings Referred| K
+    L["PGRC Grievance Intake<br/>(Identity Verified per APH §7.10)"]:::branch -.-> M["SCSC Grievance Scrutiny<br/>(Show-Cause / EVC -> SHC -> EC)"]:::branch
 
-    H --> N["Post-Approval Compliance DB<br/>(Materialized from Order Conditions)"]:::auditNode
-    N --> N1["Clock 1: APH §2.25f Security Deposit (15d)"]:::auditNode
-    N --> N2["Clock 2: Annual Fire Safety NOC Renewal (60d)"]:::auditNode
-    N --> N3["Clock 3: 30-Year Registered Land Lease Deed"]:::auditNode
-    N --> N4["Clock 4: Faculty Appointment Undertaking (6m)"]:::auditNode
+    H1 --> N["Post-Approval Compliance DB<br/>(Materialized from Order Conditions)"]:::auditNode
+    H2 --> N
+    N --> N1["Clock 1: APH §2.25f Security Deposit & Affidavit-3 (15d)"]:::auditNode
+    N --> N2["Clock 2: Fire Safety NOC Renewal (Operational SLA / GVMC 60d)"]:::auditNode
+    N --> N3["Clock 3: 30-Year Registered Land Lease Deed (APH §6.17a)"]:::auditNode
+    N --> N4["Clock 4: Faculty Appointment Undertaking (6-Month Cadre Ratio)"]:::auditNode
 ```
 
 ---
@@ -98,7 +104,7 @@ flowchart TD
 |---|---|---|
 | `institution` | **College Principal / Trust Signatory** | Onboards via NSWS simulation, tracks stage progression, cures flagged deficiencies ($D1, D2$) during 15-day windows, and uploads compliance renewal proofs. *Constitutional guard: Cannot edit cleared checklist items or self-approve.* |
 | `reviewer` | **Desk Scrutiny Committee Expert** | University professors and empanelled subject experts. Evaluates applications across 6 statutory categories, flags deficiencies, and signs evaluation reports. *Constitutional guard: Cannot re-evaluate cleared items ($C3, C4$) on re-scrutiny.* |
-| `evc` | **Expert Visit Committee Officer** | Senior inspection experts. Coordinates on-site physical audits, verifies laboratory/infrastructure compliance within satellite GPS boundaries (500m campus geofence), and confirms geo-tagged walkthrough recordings. |
+| `evc` | **Expert Visit Committee Officer** | Senior inspection experts. Coordinates on-site physical audits and confirms geo-coordinates and walkthrough recordings per APH §1.9 (note: 500m campus geofencing is an application engineering enhancement; APH §1.9 mandates on-site physical visit and geo-coordinates verification). |
 | `regional_officer` | **Regional Office Operations Desk** | AICTE Regional Directors (Western, Northern, Eastern, Southern, South-Central, South-Western, North-Western, Central). Allocates cases across Scrutiny Groups A/B and EVC Panels Alpha/Beta, monitors 8-region pendency buckets, and tracks SLAs. |
 | `bureau_officer` | **Approval Bureau / Council Authority** | AICTE Executive Committee & Member Secretary. Reviews consolidated case summaries, exercises human-only decision authority (AICTE Act 1987 §10(k)), and generates digitally signed LoA/EoA/LoD/LoR orders with conditional undertakings. |
 | `policy_admin` | **Central Policy Administrator** | Custodians of the Active Rules & Routing Registry. Edits versioned rules, inspects before/after diffs, simulates routes in the sandbox, manages the conflict register, and inspects the SHA-256 audit ledger. |
@@ -109,8 +115,8 @@ flowchart TD
 
 | Institution Name | Region | Category & Scope | Canonical Workflow Demonstrated |
 |---|---|---|---|
-| **GIITS Visakhapatnam**<br/>`APP-2026-GIITS` | South-Central | Increase in Intake (`240 ➔ 300`)<br/>Non-NBA accredited | Non-NBA course requires Desk Scrutiny followed by physical EVC inspection. Demonstrates initial scrutiny deficiency flagging ($D1, D2$), applicant rectification, differential re-scrutiny scope-lock, and progression to EVC. |
-| **COEP Tech University, Pune**<br/>`APP-2026-COEP` | Western | Increase in Intake (`300 ➔ 360`)<br/>NBA Tier-1 Accredited (Score 680) | Holds valid NBA accreditation. Dynamic Route Engine executes Fast-Track route: physical EVC inspection is **explicitly bypassed** under Addendum 2026–27 p. 42 §2.6(c)(1). |
+| **GIITS Visakhapatnam**<br/>`APP-2026-GIITS` | South-Central | Increase in Intake (`180 ➔ 240`)<br/>Non-NBA accredited | Non-NBA course requires Desk Scrutiny followed by physical EVC inspection. Demonstrates initial scrutiny deficiency flagging ($D1, D2$), applicant rectification, differential re-scrutiny scope-lock, and progression to EVC. |
+| **COEP Tech University, Pune**<br/>`APP-2026-COEP` | Western | Increase in Intake (`120 ➔ 180`)<br/>NBA Tier-1 Accredited (Score 680) | Holds valid NBA accreditation. Dynamic Route Engine executes Fast-Track route: physical EVC inspection is **explicitly bypassed** under Addendum 2026–27 p. 42 §2.6(c)(1). |
 | **PDIMTR / Univ BDT College**<br/>`APP-2026-PDIMTR` | Western | Extension of Approval (EoA)<br/>Conditional Order Compliance | Approved with mandatory undertakings. Actively tracks 3 post-approval obligations in `complianceDB`: 30-year registered land lease deed, annual Fire Safety NOC renewal, and 6-month faculty appointment undertaking. |
 | **Apex Institute of Technology**<br/>`APP-2026-APEX` | Northern | Increase in Intake<br/>Decoupled Governance Branch | Demonstrates decoupled appellate workflows: adverse rejection order triggers statutory appeal to the Standing Appellate Committee (SAC) within a 7-calendar-day window with appellant DSC token. |
 | **BATU Lonere**<br/>`APP-2026-BATU` | Western | Change of Site / Location<br/>Break-in-EoA Restoration | Evaluates under APH Table 2.3 Row 11: Desk Scrutiny is **bypassed** in favor of immediate physical site verification by EVC Panel Beta. |
@@ -141,9 +147,9 @@ flowchart TD
    - On re-scrutiny under **APH §1.8(g)**, previously approved items ($C3, C4$) are locked read-only.
    - Any attempt to modify cleared items returns **HTTP 409 Conflict (`SCOPE_VIOLATION`)**.
 4. **Step 4 — Council Decision & PDF Decision Document (`/decision-docs`):**
-   - Switch persona to **Bureau Officer** (`bureau.officer@aicte.gov.in`).
+   - Switch persona to **Bureau Officer** (`bureau.approval@aicte.gov.in`).
    - Open **Decision Documents**: generate an **Extension of Approval (EoA)** for `APP-2026-COEP`.
-   - Click **Download PDF**: inspect the generated document rendered via `pdf-lib` containing case details, courses, approved intake (360), and the prominent watermark:
+   - Click **Download PDF**: inspect the generated document rendered via `pdf-lib` containing case details, courses, approved intake (180), and the prominent watermark:
      > `DEMO DIGITAL SIGNATURE — NOT AN OFFICIAL AICTE SIGNATURE / NOT AN OFFICIAL ORDER`
    - Click **Verify Digital Signature**: observe HMAC SHA-256 certificate validation.
    - Open **Post-Approval Compliance**: observe obligations materialized strictly and only from represented conditions in the authorized decision.
@@ -182,7 +188,7 @@ The project requires **zero external database setup**. Its built-in transactiona
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/Mayuresh-1306/SIH-2026-AICTE.git
+git clone https://github.com/Mayuresh-1306/SIH-2026-AICTE.git SIH-26-AICTE
 cd SIH-26-AICTE
 
 # 2. Install dependencies
@@ -192,13 +198,13 @@ npm install
 npx tsc --noEmit
 
 # 4. Run automated regression & acceptance test suites
-# Full retrofitted regression suite (21/21 passed)
+# Full retrofitted regression suite (29/29 passed)
 npx vitest run tests/regression_retrofit_all_deliverables.test.ts
 
 # Acceptance verification suites (22/22 passed)
 npx vitest run tests/verification_t01_t16.test.ts tests/verification_t17_t22.test.ts
 
-# Complete repository suite (310/310 passed across 27 files)
+# Complete repository suite (318/318 passed across 27 files)
 npx vitest run
 
 # 5. Build and launch development server
@@ -215,15 +221,15 @@ Try the full application online without installing anything:
 
 ---
 
-## 🧪 Automated Test Coverage (310 Tests / 27 Suites)
+## 🧪 Automated Test Coverage (318 Tests / 27 Suites)
 
 ```
 Test Files  27 passed (27)
-     Tests  310 passed (310)
+     Tests  318 passed (318)
   Duration  11.36s (100% pass rate, 0 failed, 0 skipped)
 ```
 
-- **`tests/regression_retrofit_all_deliverables.test.ts` (21 tests):** Verifies all 11 mandatory deliverables end-to-end.
+- **`tests/regression_retrofit_all_deliverables.test.ts` (29 tests):** Verifies all 11 mandatory deliverables end-to-end.
 - **`tests/verification_t01_t16.test.ts` (16 tests):** Acceptance checks T01–T16 (tenant isolation, scrutiny scope-lock, human-only decisions, timer acceleration).
 - **`tests/verification_t17_t22.test.ts` (6 tests):** Acceptance checks T17–T22 (authorized reverts, statutory notices, DSC signatures, compliance certificates).
 - **`tests/policy/routing.test.ts` (37 tests):** Comprehensive route engine predicate tests across Table 2.3.
@@ -249,4 +255,4 @@ Test Files  27 passed (27)
   - `origin`: `https://github.com/Mayuresh-1306/SIH-2026-AICTE.git` (Tracked master)
   - `personal`: `https://github.com/Parth-Chavan-15/SIH-2026-AICTE.git` (Backup deployment mirror)
 - **Live Deployment**: [https://niyamsetu-aicte.onrender.com](https://niyamsetu-aicte.onrender.com)
-- **Status**: Production-Grade Prototype (100% PS 26262 Coverage | 310/310 Tests Passing)
+- **Status**: High-Fidelity Transactional Prototype with In-Memory State Engines (AY 2026–27 | 318/318 Tests Passing)

@@ -194,32 +194,56 @@ export async function generateAndSignDecisionDocument(data: {
   page.drawText(leadParagraph.slice(190, 285), { x: 50, y, size: 8, font });
   y -= 20;
 
-  // Approved Course Table
-  page.drawText('COURSE-WISE INTAKE SANCTIONED FOR ACADEMIC YEAR ' + data.academicYear + ':', { x: 50, y, size: 9, font: fontBold });
-  y -= 16;
+  // Normalize document type for case-insensitive robustness
+  const docTypeUpper = (data.documentType || 'EoA').toUpperCase();
+  const normalizedDocType: 'LoA' | 'EoA' | 'LoD' | 'LoR' = docTypeUpper === 'LOA' ? 'LoA'
+    : docTypeUpper === 'EOA' ? 'EoA'
+    : docTypeUpper === 'LOD' ? 'LoD'
+    : 'LoR';
 
-  page.drawRectangle({ x: 50, y: y - 4, width: width - 100, height: 16, color: rgb(0.85, 0.88, 0.92) });
-  page.drawText('Programme', { x: 55, y, size: 8, font: fontBold });
-  page.drawText('Course', { x: 180, y, size: 8, font: fontBold });
-  page.drawText('Level', { x: 370, y, size: 8, font: fontBold });
-  page.drawText('Approved Intake', { x: 440, y, size: 8, font: fontBold });
-  y -= 18;
+  // Approved Course Table (Rendered only for Approval outcomes LoA / EoA)
+  const isApprovalOutcome = normalizedDocType === 'LoA' || normalizedDocType === 'EoA';
+  if (isApprovalOutcome) {
+    page.drawText('COURSE-WISE INTAKE SANCTIONED FOR ACADEMIC YEAR ' + data.academicYear + ':', { x: 50, y, size: 9, font: fontBold });
+    y -= 16;
 
-  for (const c of courses) {
-    const prog = (c.program || 'Engineering & Tech').slice(0, 22);
-    const crse = (c.course || (c as any).courseName || 'Computer Engineering').slice(0, 32);
-    const lvl = (c.level || 'Under Graduate').slice(0, 15);
-    const intake = String(c.approvedIntake || 120);
-    page.drawText(prog, { x: 55, y, size: 8, font });
-    page.drawText(crse, { x: 180, y, size: 8, font });
-    page.drawText(lvl, { x: 370, y, size: 8, font });
-    page.drawText(intake, { x: 460, y, size: 8, font: fontBold });
-    y -= 14;
+    page.drawRectangle({ x: 50, y: y - 4, width: width - 100, height: 16, color: rgb(0.85, 0.88, 0.92) });
+    page.drawText('Programme', { x: 55, y, size: 8, font: fontBold });
+    page.drawText('Course', { x: 180, y, size: 8, font: fontBold });
+    page.drawText('Level', { x: 370, y, size: 8, font: fontBold });
+    page.drawText('Approved Intake', { x: 440, y, size: 8, font: fontBold });
+    y -= 18;
+
+    for (const c of courses) {
+      const prog = (c.program || 'Engineering & Tech').slice(0, 22);
+      const crse = (c.course || (c as any).courseName || 'Computer Engineering').slice(0, 32);
+      const lvl = (c.level || 'Under Graduate').slice(0, 15);
+      const intake = String(c.approvedIntake || 120);
+      page.drawText(prog, { x: 55, y, size: 8, font });
+      page.drawText(crse, { x: 180, y, size: 8, font });
+      page.drawText(lvl, { x: 370, y, size: 8, font });
+      page.drawText(intake, { x: 460, y, size: 8, font: fontBold });
+      y -= 14;
+    }
+    y -= 15;
+  } else {
+    // For LoD or LoR: Render deficiencies / speaking order reasons instead of sanctioned intake
+    const sectionTitle = data.documentType === 'LoD'
+      ? 'RECORDED STATUTORY DEFICIENCIES / DEFICIENCY COMMUNICATION (APH §1.8 / §2.23):'
+      : 'SPEAKING ORDER & STATUTORY GROUNDS FOR REJECTION (AICTE ACT 1987 §10(k)):';
+    page.drawText(sectionTitle, { x: 50, y, size: 9, font: fontBold, color: rgb(0.8, 0.2, 0.1) });
+    y -= 16;
+    page.drawText(data.speakingOrderSummary.slice(0, 95), { x: 55, y, size: 8, font });
+    y -= 12;
+    if (data.speakingOrderSummary.length > 95) {
+      page.drawText(data.speakingOrderSummary.slice(95, 190), { x: 55, y, size: 8, font });
+      y -= 12;
+    }
+    y -= 15;
   }
-  y -= 15;
 
-  // Speaking Order / Conditions Section
-  if (conditions.length > 0) {
+  // Speaking Order / Conditions Section (Applicable conditions rendered)
+  if (isApprovalOutcome && conditions.length > 0) {
     page.drawText('TIME-BOUND STATUTORY COMPLIANCE CONDITIONS & UNDERTAKINGS:', { x: 50, y, size: 9, font: fontBold, color: rgb(0.8, 0.2, 0.1) });
     y -= 14;
     for (let i = 0; i < conditions.length; i++) {
@@ -233,14 +257,14 @@ export async function generateAndSignDecisionDocument(data: {
       page.drawText(`   Clause: ${clause} | Statutory Timeline: ${days} days from issue`, { x: 55, y, size: 7, font: fontBold });
       y -= 14;
     }
-  } else {
+  } else if (isApprovalOutcome) {
     page.drawText(`AUTHORITY SPEAKING ORDER: ${data.speakingOrderSummary}`, { x: 50, y, size: 8, font });
     y -= 20;
   }
 
   y -= 25;
 
-  // Non-Production Digital Signature Stamp & Notice Box
+  // Non-Production Prototype Integrity Seal Box
   page.drawRectangle({
     x: 50,
     y: y - 55,
@@ -251,7 +275,7 @@ export async function generateAndSignDecisionDocument(data: {
     color: rgb(0.99, 0.98, 0.95)
   });
 
-  page.drawText('DEMO DIGITAL SIGNATURE — NOT AN OFFICIAL AICTE SIGNATURE', {
+  page.drawText('PROTOTYPE INTEGRITY SEAL — NOT AN OFFICIAL GOVERNMENT ORDER', {
     x: 60,
     y: y + 2,
     size: 8.5,
@@ -259,14 +283,14 @@ export async function generateAndSignDecisionDocument(data: {
     color: rgb(0.85, 0.2, 0.1)
   });
 
-  const signerName = data.decisionAuthority || 'Member Secretary, AICTE';
+  const signerName = data.decisionAuthority || 'Approval Bureau Authority';
   const designation = data.designation || 'Approval Bureau Authority';
   const signTimestamp = new Date().toISOString();
 
-  page.drawText(`Digitally Signed by: ${signerName} (${designation})`, { x: 60, y: y - 12, size: 7.5, font });
-  page.drawText(`Certificate Authority: NIYAMSETU Prototype Non-Production Test CA`, { x: 60, y: y - 24, size: 7, font });
-  page.drawText(`Signing Algorithm: RSA-SHA256 with HMAC Audit Integrity Seal`, { x: 60, y: y - 36, size: 7, font });
-  page.drawText(`Timestamp: ${signTimestamp} | Status: DEMO TEST SIGNATURE VERIFIED`, { x: 60, y: y - 48, size: 7, font: fontBold, color: rgb(0.1, 0.5, 0.2) });
+  page.drawText(`Digitally Sealed by: ${signerName} (${designation})`, { x: 60, y: y - 12, size: 7.5, font });
+  page.drawText(`Issuer: NIYAMSETU Prototype Non-Production Authority`, { x: 60, y: y - 24, size: 7, font });
+  page.drawText(`Integrity Mechanism: HMAC-SHA256 Audit Seal (Prototype Test Key)`, { x: 60, y: y - 36, size: 7, font });
+  page.drawText(`Timestamp: ${signTimestamp} | Status: DEMO INTEGRITY SEAL VERIFIED`, { x: 60, y: y - 48, size: 7, font: fontBold, color: rgb(0.1, 0.5, 0.2) });
 
   y -= 75;
 
@@ -297,18 +321,18 @@ export async function generateAndSignDecisionDocument(data: {
     decisionAuthority: signerName,
     designation,
     speakingOrderSummary: data.speakingOrderSummary,
-    courses,
-    orderBackedConditions: conditions,
+    courses: isApprovalOutcome ? courses : [],
+    orderBackedConditions: isApprovalOutcome ? conditions : [],
     digitalSignature: {
       isSigned: true,
       signerName,
       signerRole: designation,
-      certificateAuthority: 'NIYAMSETU Prototype Non-Production Test CA',
-      signatureAlgorithm: 'RSA-SHA256 with HMAC-SHA256',
+      certificateAuthority: 'NIYAMSETU Prototype Non-Production Authority',
+      signatureAlgorithm: 'HMAC-SHA256 Prototype Integrity Seal',
       signedAt: signTimestamp,
       integrityHashSha256: integrityHash,
       status: 'DEMO_SIGNATURE_VERIFIED',
-      prominentNotice: 'DEMO DIGITAL SIGNATURE — NOT AN OFFICIAL AICTE SIGNATURE / NOT AN OFFICIAL ORDER'
+      prominentNotice: 'PROTOTYPE DEMONSTRATION DOCUMENT — HMAC-SHA256 INTEGRITY SEAL (NOT AN OFFICIAL AICTE PAdES SIGNATURE)'
     },
     pdfBytesBase64: pdfBase64,
     byteSize: pdfBytes.length
@@ -316,8 +340,8 @@ export async function generateAndSignDecisionDocument(data: {
 
   generatedDocumentsDB.set(docId, metadata);
 
-  // Materialize post-approval obligations in complianceDB ONLY from order-backed conditions!
-  if (conditions.length > 0) {
+  // Materialize post-approval obligations in complianceDB ONLY for approval outcomes (LoA/EoA) with conditions!
+  if (isApprovalOutcome && conditions.length > 0) {
     for (const c of conditions) {
       const obligationId = `OBL-${data.applicationId}-${c.conditionKey}`;
       complianceDB.obligations.set(obligationId, {

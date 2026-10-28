@@ -39,8 +39,8 @@ export const NSWSSimulationView: React.FC = () => {
   const [category, setCategory] = useState<'increase_intake' | 'new_institution' | 'extension_of_approval' | 'closure'>('increase_intake');
   const [program, setProgram] = useState('Engineering and Technology');
   const [level, setLevel] = useState('Under Graduate');
-  const [existingIntake, setExistingIntake] = useState(300);
-  const [proposedIntake, setProposedIntake] = useState(360);
+  const [existingIntake, setExistingIntake] = useState(120);
+  const [proposedIntake, setProposedIntake] = useState(180);
   const [nbaAccredited, setNbaAccredited] = useState(true);
   const [nbaScore, setNbaScore] = useState(680);
   const [region, setRegion] = useState('Western');
