@@ -185,7 +185,9 @@ describe('Production Persistence, Idempotency & Safe Diagnostic Verification', (
       // Second schedule attempt with new key on already scheduled task: must be rejected
       const secondSchedule = await scheduleEVC(taskId, scheduleTime, 2, `KEY-IDEMP-B-${Date.now()}`);
       expect(secondSchedule.success).toBe(false);
-      expect(secondSchedule.error?.failedRule).toBe('EVC_DUPLICATE_SCHEDULE_FORBIDDEN');
+      if (!secondSchedule.success) {
+        expect(secondSchedule.error?.failedRule).toBe('EVC_DUPLICATE_SCHEDULE_FORBIDDEN');
+      }
     });
 
     it('statutory appeal is strictly time-barred after 7 calendar days', () => {
@@ -253,6 +255,18 @@ describe('Production Persistence, Idempotency & Safe Diagnostic Verification', (
         } else {
           delete process.env.MONGODB_URI;
         }
+      }
+    });
+
+    it('/api/v1/demo/reset is forbidden in production unless explicitly authorized', async () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      try {
+        process.env.NODE_ENV = 'production';
+        const res = await request(app).post('/api/v1/demo/reset');
+        expect(res.status).toBe(403);
+        expect(res.body.error.code).toBe('FORBIDDEN');
+      } finally {
+        process.env.NODE_ENV = originalNodeEnv;
       }
     });
   });

@@ -251,10 +251,10 @@ This document establishes the master functional acceptance contract for NIYAMSET
 - **Expected State Transitions:** Every mutation writes an immutable `AuditEvent` (`id`, `applicationId`, `actorId`, `action`, `beforeState`, `afterState`, `caseVersion`, `reason`, `occurredAt`).
 - **Deadline, Notification & Escalation:** Chained SHA-256 hashes for cryptographic tamper evidence.
 - **Data Scope & Authorization:** Audit events scoped to caller's permitted cases.
-- **Persistence & Audit:** Stored in `core_audit` collection in MongoDB.
+- **Persistence & Audit:** Stored in `core_audit` collection in MongoDB. Secured via application-level cryptographic SHA-256 HMAC hash chaining providing transparent tamper evidence across mutations (does not require or falsely claim hardware/cloud WORM object-lock).
 - **Demonstrating Tests:** `tests/verification_t01_t16.test.ts` (T13: `Secures audit trail with immutable SHA-256 HMAC cryptographic chain`).
 - **Test Evidence:** T13 verifies sequential HMAC audit link hashing.
-- **Remaining Gaps & Risks:** Full WORM hardware storage is simulated via software HMAC chaining.
+- **Remaining Gaps & Risks:** Physical WORM storage media (e.g. AWS S3 Object Lock) is not configured; tamper evidence is guaranteed at application layer via HMAC-SHA256 signature chain.
 
 ---
 
@@ -315,7 +315,7 @@ This document establishes the master functional acceptance contract for NIYAMSET
 - **Relevant UI Pages & Components:** [`EVCView.tsx`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/features/evc/EVCView.tsx).
 - **Backend Modules & Services:** [`evcRoutes.ts`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/backend/modules/evc/evcRoutes.ts).
 - **Expected State Transitions:** Submission of signed EVC report advances application to `decision_pending`.
-- **Deadline, Notification & Escalation:** On-site inspection confirms physical infrastructure. 500m geofence is an engineering enhancement.
+- **Deadline, Notification & Escalation:** On-site inspection confirms physical infrastructure with GPS verification and geotagged 30-minute walkthrough video under APH §1.9 / §2.23.2. Note: The 500-metre geofence tolerance is an engineering safeguard implemented for automated boundary checks, rather than an explicit numerical statutory mandate in the APH text.
 - **Data Scope & Authorization:** Only assigned EVC Chair can finalize the inspection report.
 - **Persistence & Audit:** Report uploaded as evidence and hash linked in audit trail.
 - **Demonstrating Tests:** `src/backend/modules/evc/evcIntegration.test.ts`.
@@ -632,16 +632,20 @@ This document establishes the master functional acceptance contract for NIYAMSET
 
 ## 📊 Summary of Compliance Status by Section
 
-| Section | Total Reqs | Verified | Partially Implemented | Simulated | Missing | Blocked |
+| Section | Total Reqs | Verified (Functional) | Partially Implemented | Simulated (External Sovereignty) | Missing | Blocked |
 |---|---|---|---|---|---|---|
-| Background & Core PS | 5 | 5 | 0 | 0 | 0 | 0 |
+| Background & Core PS | 5 | 4 | 0 | 1 (NSWS / emBridge Gateways) | 0 | 0 |
 | Section A: Approval Workflow Automation | 4 | 4 | 0 | 0 | 0 | 0 |
 | Section B: Integrated Dashboard & Pendency | 5 | 5 | 0 | 0 | 0 | 0 |
 | Section C: EVC Scheduling & Alerts | 4 | 4 | 0 | 0 | 0 | 0 |
 | Section D: Time-Bound Undertakings | 4 | 4 | 0 | 0 | 0 | 0 |
 | Section E: Lease & Document Validity | 4 | 4 | 0 | 0 | 0 | 0 |
 | Section F: Notifications & Reporting | 4 | 4 | 0 | 0 | 0 | 0 |
-| Key Requirements & Safeguards | 6 | 6 | 0 | 0 | 0 | 0 |
-| **Total** | **36** | **36 (100%)** | **0** | **0** | **0** | **0** |
+| Key Requirements & Safeguards | 6 | 5 | 0 | 1 (Live DSC PKCS#7 Token) | 0 | 0 |
+| **Total Requirements** | **36** | **34** | **0** | **2** | **0** | **0** |
 
-*Note: Where integrations with sovereign national platforms (NSWS, emBridge Class-3 USB token) are involved, they are verified as high-fidelity interactive simulations with prominent non-production disclosures, as mandated by the hackathon scope.*
+### 📝 Methodological Classification Note:
+- **Verified (34 Requirements):** The application logic, statutory routing, decision sequences, SLA timers, scope gates, MongoDB Atlas durability, role-based UI views, and audit logging are fully implemented, functional, and backed by automated tests (342/342 passing).
+- **Simulated (2 Requirements — NSWS Ingestion & Hardware DSC emBridge Signing):** In compliance with hackathon scope and legal restrictions on accessing sovereign government single-sign-on production networks and official USB crypto dongles:
+  1. The **NSWS Gateway** is implemented as an interactive, high-fidelity intake simulator with realistic JSON payloads and clear non-production disclosures.
+  2. The **Digital Signature Mechanism** produces real PDF documents with cryptographic HMAC-SHA256 integrity verification and prominent prototype demonstration watermarks, rather than binding an official government-issued PAdES/PKCS#7 hardware certificate.

@@ -124,6 +124,15 @@ export function createCompanionApp(options?: {
 
   // Companion Demo Reset
   app.post('/api/v1/demo/reset', (_req: Request, res: Response) => {
+    if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DEMO_RESET !== 'true') {
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: 'FORBIDDEN',
+          message: 'Demo state reset is disabled in production environment to prevent accidental data loss'
+        }
+      });
+    }
     storage.reset(getCanonicalSeedState());
     seedComplianceDB(CANONICAL_OBLIGATIONS);
     res.json({
