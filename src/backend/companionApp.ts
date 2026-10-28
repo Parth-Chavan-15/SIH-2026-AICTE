@@ -56,13 +56,32 @@ export function createCompanionApp(options?: {
   const corePort = createStorageCorePort(storage);
 
   // Public Root Endpoints
+  const getVersionPayload = () => ({
+    status: 'ok',
+    version: '2.5.0',
+    service: 'niyamsetu-aicte',
+    commit: process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || 'bc341e6',
+    environment: process.env.NODE_ENV || 'development',
+    uptimeSeconds: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString()
+  });
+
   app.get('/health', (_req: Request, res: Response) => {
     res.json({
       status: 'alive',
       uptimeSeconds: Math.floor(process.uptime()),
-      commit: process.env.RENDER_GIT_COMMIT || '2beba60',
-      readiness: '/api/v1/ready'
+      commit: process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || 'bc341e6',
+      readiness: '/api/v1/ready',
+      version: '/api/version'
     });
+  });
+
+  app.get('/version', (_req: Request, res: Response) => {
+    res.json(getVersionPayload());
+  });
+
+  app.get('/api/version', (_req: Request, res: Response) => {
+    res.json(getVersionPayload());
   });
 
   // Authentication Middleware for /api/v1 companion routes
@@ -71,6 +90,7 @@ export function createCompanionApp(options?: {
     const publicPrefixes = [
       '/health',
       '/ready',
+      '/version',
       '/auth/login',
       '/timers/',
       '/alerts',

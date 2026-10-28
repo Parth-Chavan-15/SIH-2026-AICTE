@@ -5,19 +5,23 @@ import type {
   ApiResult,
   ApiError
 } from '../../../backend/modules/scrutiny/contracts';
-import {
-  getAllTasks,
-  getTasksForCase,
-  createEVCTask as serviceCreateEVCTask,
-  scheduleEVC as serviceScheduleEVC,
-  submitEVCReport as serviceSubmitEVCReport
-} from '../../../backend/modules/evc/evcService';
-import { makeFakeCorePort, fakeCase, fakeExplanation } from '../../../backend/modules/scrutiny/mockCore';
 
 /**
  * Custom React Hook for Conditional EVC (M2 USP B07).
- * Connects to live endpoints with synthetic in-memory fallback.
+ * Connects to live endpoints with clean client-side fallback.
  */
+const clientFallbackEVCTasks: EVCTask[] = [
+  {
+    id: 'EVC-TASK-SYNTHETIC-01',
+    applicationId: 'APP-2026-001',
+    prerequisiteEventId: 'EVT-PRE-01',
+    policyRevisionId: 'POL-2026-INTAKE-NON-NBA',
+    assigneeIds: ['EVC-EXPERT-WEST-01', 'EVC-EXPERT-WEST-02'],
+    version: 1,
+    status: 'pending'
+  }
+];
+
 export function useEVC(applicationId?: string) {
   const [tasks, setTasks] = useState<EVCTask[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -43,9 +47,11 @@ export function useEVC(applicationId?: string) {
       }
       throw new Error('Fallback to Synthetic EVC');
     } catch {
-      // SYNTHETIC MOCK FALLBACK (Clearly Labeled)
+      // Clean Client Fallback (clearly labeled)
       setIsSynthetic(true);
-      const list = applicationId ? getTasksForCase(applicationId) : getAllTasks();
+      const list = applicationId 
+        ? clientFallbackEVCTasks.filter(t => t.applicationId === applicationId)
+        : clientFallbackEVCTasks;
       setTasks(list);
       setLoading(false);
     }
@@ -55,9 +61,9 @@ export function useEVC(applicationId?: string) {
     fetchTasks();
   }, [fetchTasks]);
 
-function isErrorResult<T>(res: ApiResult<T>): res is { success: false; error: ApiError } {
-  return !res.success || 'error' in res;
-}
+  function isErrorResult<T>(res: ApiResult<T>): res is { success: false; error: ApiError } {
+    return !res.success || 'error' in res;
+  }
 
   const createTask = async (appId: string, expectedVersion: number = 1): Promise<ApiResult<EVCTask>> => {
     setLoading(true);
@@ -83,15 +89,19 @@ function isErrorResult<T>(res: ApiResult<T>): res is { success: false; error: Ap
       setLoading(false);
       return data;
     } catch {
-      const fakePort = makeFakeCorePort({ ...fakeCase, id: appId, version: expectedVersion }, fakeExplanation);
-      const result = await serviceCreateEVCTask(fakePort, appId);
-      if (isErrorResult(result)) {
-        setError(result.error);
-      } else {
-        await fetchTasks();
-      }
+      const newTask: EVCTask = {
+        id: `EVC-${Date.now()}`,
+        applicationId: appId,
+        prerequisiteEventId: 'EVT-PRE-SYNTHETIC',
+        policyRevisionId: 'POL-SYNTHETIC',
+        assigneeIds: ['EVC-EXPERT-SYNTHETIC'],
+        version: expectedVersion,
+        status: 'pending'
+      };
+      clientFallbackEVCTasks.push(newTask);
+      setTasks([...clientFallbackEVCTasks]);
       setLoading(false);
-      return result;
+      return { success: true, data: newTask };
     }
   };
 
@@ -123,14 +133,17 @@ function isErrorResult<T>(res: ApiResult<T>): res is { success: false; error: Ap
       setLoading(false);
       return data;
     } catch {
-      const result = await serviceScheduleEVC(taskId, at, expectedVersion, command.idempotencyKey);
-      if (isErrorResult(result)) {
-        setError(result.error);
-      } else {
-        await fetchTasks();
+      const found = clientFallbackEVCTasks.find(t => t.id === taskId);
+      if (found) {
+        found.scheduledAt = at;
+        found.status = 'scheduled';
+        found.version = expectedVersion + 1;
+        setTasks([...clientFallbackEVCTasks]);
+        setLoading(false);
+        return { success: true, data: found };
       }
       setLoading(false);
-      return result;
+      return { success: false, error: { code: 'NOT_FOUND', message: 'EVC task not found' } };
     }
   };
 
@@ -165,15 +178,16 @@ function isErrorResult<T>(res: ApiResult<T>): res is { success: false; error: Ap
       setLoading(false);
       return data;
     } catch {
-      const fakePort = makeFakeCorePort();
-      const result = await serviceSubmitEVCReport(taskId, command, fakePort);
-      if (isErrorResult(result)) {
-        setError(result.error);
-      } else {
-        await fetchTasks();
+      const found = clientFallbackEVCTasks.find(t => t.id === taskId);
+      if (found) {
+        found.status = 'completed';
+        found.version = expectedVersion + 1;
+        setTasks([...clientFallbackEVCTasks]);
+        setLoading(false);
+        return { success: true, data: found };
       }
       setLoading(false);
-      return result;
+      return { success: false, error: { code: 'NOT_FOUND', message: 'EVC task not found' } };
     }
   };
 

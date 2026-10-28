@@ -20,7 +20,7 @@ Historically, coordinating these regulatory workflows involved fragmented manual
 
 **NiyamSetu (नियमसेतु)** is an automated, secure, and source-grounded regulatory workflow platform engineered specifically for the AICTE Regulation Bureau to:
 1. **Automate Application Routing**: Execute a pure, deterministic Dynamic Route Engine anchored directly to **APH 2024–27 Table 2.3** and **AY 2026–27 Addendum Errata G02**, halting safely to `review_required` on material policy ambiguities ($X=360$, ELP 50%, Hibernation).
-2. **Guarantee Differential Re-Scrutiny Scope-Locks (APH §1.8(g))**: Enforce backend-level immutability where cleared checklist items ($C3, C4$) are permanently locked read-only against modification or re-scrutiny; only flagged deficiencies ($D1, D2$) are unlocked during the 15-day cure window.
+2. **Guarantee Differential Re-Scrutiny Scope-Locks (APH §1.8(g))**: Enforce backend-level immutability where cleared checklist items ($C3, C4$) are permanently locked read-only against modification or re-scrutiny; only flagged deficiencies ($D1, D2$) are unlocked during the 10-day operational turnaround window (Statutory 15-day deposit clock applies post-approval under §2.25(f)).
 3. **Decouple Governance Branches from Main Workflow**: Maintain clean application lifecycles while providing decoupled conditional branches for **Standing Appellate Committee (SAC)** appeals within 7 calendar days under APH §1.11 / §2.24, **Standing Hearing Committee (SHC)** compliance hearings under APH §2.23.3, and **Chapter VII §7.10 Grievances** (rejecting anonymous complaints under §7.10(h)).
 4. **Isolate Regulatory Clocks**: Distinguish pre-approval cure windows from post-approval compliance tracking through an automated **4-Clock Deterministic Timer Engine**, isolating APH §2.25(f) security deposits from initial scrutiny cure windows.
 5. **Ensure Multi-Tier Persistence & Enterprise Durability**: Run on a production **MongoDB Atlas** database across all 11 critical domain models with write-through updates and startup re-hydration, alongside a zero-downtime transactional memory engine for instant evaluation.
@@ -82,7 +82,7 @@ flowchart TD
 
     C --> D["Desk Scrutiny Committee<br/>(6 Statutory Checklist Categories)"]:::processNode
     D -->|Deficiencies Flagged D1, D2| D_LOD["Issue Formal Letter of Deficiency (LoD)<br/>(Statutory Shortcomings Notice APH §1.11 / §2.25c)"]:::decisionNode
-    D_LOD -->|15-Day Cure Window| D1["Differential Re-Scrutiny Scope-Lock<br/>(APH §1.8g: Cleared C3/C4 Locked Read-Only)"]:::branch
+    D_LOD -->|10-Day SLA Cure Window| D1["Differential Re-Scrutiny Scope-Lock<br/>(APH §1.8g: Cleared C3/C4 Locked Read-Only)"]:::branch
     D1 -->|Deficiencies Successfully Cured| D2Check{"Route Requires<br/>EVC?"}
     D -->|All Compliant C1-C6| D2Check
 
@@ -126,6 +126,28 @@ flowchart TD
     N -.->|When Imposed by Order| N3["Clock 3: 30-Year Registered Land Lease Deed (APH §6.17a)"]:::auditNode
     N -.->|When Imposed by Order| N4["Clock 4: Faculty Appointment Undertaking (6-Month Cadre Ratio)"]:::auditNode
 ```
+
+---
+
+## 📚 Authoritative Regulatory Documentation & Modular Workflows
+
+The platform architecture is fully documented in source-linked, modular specifications:
+
+### 1. Regulatory Source Dossier & Mapping
+- **[Source Register](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/regulatory/SOURCE_REGISTER.md)**: Enumeration of statutory acts, APH editions (2024-27, 2026-27 Errata G02), and gazette notifications.
+- **[Rule Mapping Matrix](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/regulatory/RULE_MAPPING_MATRIX.md)**: Clause-by-clause mapping of all 17 core regulatory rules directly to codebase implementations.
+- **[Unverified & Conflicting Rules Analysis](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/regulatory/UNVERIFIED_OR_CONFLICTING_RULES.md)**: Explicit treatment of ambiguous clauses ($X=360$, ELP 50%, Hibernation holds).
+
+### 2. Modular Regulatory Workflows
+- **[01. Chapter I: New Technical Institutions](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/01_chapter_i_new_institution.md)**: LoD $\to$ LoR $\to$ LoA progression, mandatory physical EVC, 10-year Joint FDR.
+- **[02. Chapter II: Self-Disclosure EoA](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/02_chapter_ii_self_disclosure_eoa.md)**: Table 2.3 Row 1 zero-touch annual renewal route.
+- **[03. Chapter II: Scrutiny & EVC Routes](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/03_chapter_ii_scrutiny_and_evc_routes.md)**: Intake expansion, NBA fast-track waiver, site shifting, scope-lock HTTP 409 safeguard.
+- **[04. Chapter II: Table 2.3 Matrix](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/04_chapter_ii_route_matrix.md)**: Complete 21-category statutory matrix preserving category `AA`.
+- **[05. Standing Hearing Committee (SHC)](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/05_shc_compliance.md)**: Opportunity of hearing under §2.23.3, natural justice, interface partitioning.
+- **[06. Chapter-Specific Appeals (SAC)](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/06_chapter_specific_appeals.md)**: Standing Appellate Committee under §1.11 / §2.24 with strict 7-day statute of limitations.
+- **[07. Chapter VII Complaints & Inquiries](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/07_chapter_vii_complaints.md)**: Non-anonymous complaint validation (§7.10h) $\to$ SCSC $\to$ Surprise EVC $\to$ SHC $\to$ Executive Committee.
+- **[08. Post-Approval Compliance & Document Lifecycle](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/08_post_approval_compliance.md)**: §2.25(f) 15-day Joint FDR, Affidavit-3, 30-day statutory bodies, 5-state document engine.
+- **[99. Common End-to-End Platform Architecture](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/99_common_end_to_end_architecture.md)**: Unified platform architecture connecting all 8 routes to core services.
 
 ---
 

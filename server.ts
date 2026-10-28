@@ -41,7 +41,7 @@ const limiter = rateLimit({
   max: 10000, // High ceiling for high-concurrency evaluation and demonstration
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => req.path.startsWith('/api/v1/auth/') || req.path === '/api/v1/ready' || req.path === '/health',
+  skip: (req) => req.path.startsWith('/api/v1/auth/') || req.path === '/api/v1/ready' || req.path === '/health' || req.path === '/api/version' || req.path === '/version' || req.path === '/api/v1/version',
 });
 app.use('/api/', limiter);
 
@@ -100,6 +100,31 @@ if (mongoInit.connected) {
 
 const companion = createCompanionApp(companionStorage ? { storage: companionStorage } : undefined);
 app.use(companion.app);
+
+// Top-Level Diagnostic & Version Endpoints
+app.get('/version', (req, res) => {
+  res.json({
+    status: 'ok',
+    version: '2.5.0',
+    service: 'niyamsetu-aicte',
+    commit: process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || 'bc341e6',
+    environment: process.env.NODE_ENV || 'development',
+    uptimeSeconds: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString()
+  });
+});
+app.get('/api/version', (req, res) => {
+  res.json({
+    status: 'ok',
+    version: '2.5.0',
+    service: 'niyamsetu-aicte',
+    commit: process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || 'bc341e6',
+    environment: process.env.NODE_ENV || 'development',
+    uptimeSeconds: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString()
+  });
+});
+
 
 // Realtime is closed until authenticated, scoped subscriptions have a reviewed adapter.
 io.use((_socket, next) => next(new Error('Realtime subscriptions unavailable')));

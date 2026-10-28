@@ -282,13 +282,18 @@ erDiagram
 
 ## 5. Core Statutory Subsystems
 
-### 5.1 The 5-Route Policy Determination Engine
-Evaluates institute facts against the **AICTE Approval Process Handbook (APH 2024–27)** and **APH 2026–27 Errata (p. 42, G02)**:
-1. **Self-Disclosure Fast-Track EoA:** High-performing institutions with unexpired NBA accreditation and clean compliance records bypass Scrutiny and EVC committees directly to Bureau Adjudication.
-2. **Scrutiny Only:** Routine Extension of Approval (EoA) applications without infrastructure expansion or intake escalation.
-3. **Scrutiny + EVC:** Non-NBA intake expansion or composite infrastructure changes requiring physical on-site inspection.
-4. **EVC + SAC/SHC Hearing Loop:** Cases where EVC uncovers major structural deficiencies, routing the institute through Standing Appellate/Hearing Committees.
-5. **Only EVC (Restoration / Site Shifting):** Punitive restoration or land shifting applications per APH §2.16.1 & §2.17(e) where documentation scrutiny is waived in lieu of mandatory physical site inspection.
+### 5.1 The Dynamic Route Determination Engine & Table 2.3 Matrix
+Evaluates institute facts against the **AICTE Approval Process Handbook (APH 2024–27 Table 2.3)** and **APH 2026–27 Errata (p. 42, G02)** across all 21 statutory categories (preserving category `AA`):
+1. **Self-Disclosure Fast-Track EoA (Table 2.3 Row 1):** High-performing institutions with unexpired NBA accreditation and clean compliance records bypass Scrutiny and EVC committees directly to Executive Committee Adjudication (`docs/workflows/02_chapter_ii_self_disclosure_eoa.md`).
+2. **Scrutiny Only (Table 2.3 Rows 2, 4, 13, 14, 15):** Routine Extension of Approval (EoA), Change in Name, Reduction in Intake, and Closure applications without infrastructure expansion.
+3. **Scrutiny + EVC (Table 2.3 Rows 3, 5, 6, 7, 8, 9, 10, 12, 16):** Non-NBA intake expansion, New Programmes, Extended Campus, or composite infrastructure changes requiring physical or online inspection.
+4. **Direct Physical EVC (Table 2.3 Row 11):** Punitive restoration or land/site shifting applications per APH §2.16.1 & §2.17(e) where preliminary desk scrutiny is waived in lieu of mandatory physical site inspection.
+5. **Decoupled Governance Branches:**
+   - **Standing Hearing Committee (SHC):** Natural justice hearings under §2.23.3 for persistent shortcomings (`docs/workflows/05_shc_compliance.md`).
+   - **Standing Appellate Committee (SAC):** Strict 7-calendar-day statute of limitations under §1.11 & §2.24 (`docs/workflows/06_chapter_specific_appeals.md`).
+   - **Chapter VII Inquiries:** Penal route triggered by non-anonymous verified complaints (`docs/workflows/07_chapter_vii_complaints.md`).
+
+*For full route specifications, see the 9 modular workflow documents in `docs/workflows/` and the exhaustive 21-category matrix in `docs/workflows/04_chapter_ii_route_matrix.md`.*
 
 ### 5.2 Differential Re-Scrutiny & Scope Lock Engine (APH §1.8(g))
 Under statutory clause APH §1.8(g), when an institution submits rectifications for flagged deficiencies during a re-scrutiny session:
@@ -296,11 +301,13 @@ Under statutory clause APH §1.8(g), when an institution submits rectifications 
 - All items verified as compliant in Snapshot v1 are **cryptographically locked**.
 - Attempting to revoke compliance or introduce new arbitrary deficiencies on previously cleared items returns `HTTP 409 Conflict: SCOPE_VIOLATION` with an immutable audit event.
 
-### 5.3 The 4 Statutory Clock Engines
-1. **Faculty Cadre Ratio Undertaking Clock:** 6-month statutory cure window for temporary faculty appointment deficits.
-2. **Fire Safety NOC Clock:** Tracks 1-year statutory certificates and enforces mandatory 60-day advance renewal notification alerts (APH §2.20).
-3. **Registered Land Lease Clock:** Tracks 30-year statutory lease deeds with urgent 15-day escalation alerts prior to expiration.
-4. **University & State DTE Concurrence Clock:** 15-day countdown under APH §2.19(c), enforcing Deemed Concurrence upon expiration.
+### 5.3 Deterministic Multi-Clock Engine (Statutory vs Operational Separation)
+NIYAMSETU strictly disambiguates pre-approval and post-approval timelines:
+1. **Appellate Clock (7 Calendar Days - Statutory):** Strict statute of limitations for preferring an appeal before SAC against rejection speaking orders under APH §1.11 / §2.24.
+2. **Deficiency Turnaround Clock (10 Days - Operational SLA):** Internal operational turnaround SLA for institutions to re-upload rectified evidence under Annexure 7 deficiency intimation.
+3. **Security Deposit & Affidavit-3 Clock (15 Calendar Days - Statutory):** Post-approval timeline under APH §2.25(f) for submitting Joint FDR and Affidavit-3 in the name of the AICTE Regional Officer and Society/Trust.
+4. **State DTE / Affiliating University Concurrence Clock (15 Calendar Days - Statutory):** Countdown under APH §2.19(c), enforcing deemed concurrence upon expiry.
+5. **Post-Approval Obligation Clocks:** 30-day statutory committees notifications (SGRC, ICC, Anti-Ragging), 1-year Fire NOC 60-day advance renewal notification alerts (APH §2.20), and 30-year registered land lease deed countdowns (`docs/workflows/08_post_approval_compliance.md`).
 
 ### 5.4 Tamper-Evident WORM Cryptographic Audit Ledger
 Every state transition, committee observation, stage revert, and cure submission appends an immutable block to the WORM ledger. Each block calculates an HMAC-SHA256 hash using the previous block's hash as salt:

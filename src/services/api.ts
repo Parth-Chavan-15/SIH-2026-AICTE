@@ -720,7 +720,7 @@ class APIService {
       {
         id: 'NOTIF-GIITS-02',
         title: 'Faculty Cadre Ratio Deficiency Flagged (§1.8)',
-        message: 'GIITS Visakhapatnam deficiency cure window open. Cadre ratio deficit (1:2.4 vs 1:2.0) requires additional Associate Professor appointment proof within 15 days.',
+        message: 'GIITS Visakhapatnam deficiency turnaround open. Cadre ratio deficit (1:2.4 vs 1:2.0) requires additional Associate Professor appointment proof within 10-day operational SLA (Statutory 15-day window applies under §2.25(f) post-approval).',
         timestamp: '2026-10-23T12:00:00.000Z',
         isRead: false,
         category: 'Workflow',
@@ -799,7 +799,7 @@ class APIService {
         institutionName: 'Gonna Institute of Information Technology and Sciences (GIITS)',
         region: 'South-Central',
         currentStage: 'Deficiency Communicated',
-        escalationReason: 'Faculty Cadre Ratio deficit (1:2.4) deficiency cure pending > 10 days; approaching 15-day statutory cure deadline under APH §1.8',
+        escalationReason: 'Faculty Cadre Ratio deficit (1:2.4) deficiency cure pending > 7 days; approaching 10-day operational SLA turnaround deadline under APH §1.8 (Statutory 15-day deposit clock applies under §2.25(f))',
         previousAuthority: 'Desk Scrutiny Committee Cell',
         escalatedTo: 'Regional Officer (South-Central Region)',
         escalationTimestamp: '2026-10-23T14:30:00.000Z',
