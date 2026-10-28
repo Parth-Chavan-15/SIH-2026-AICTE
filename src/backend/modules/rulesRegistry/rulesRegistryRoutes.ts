@@ -15,7 +15,16 @@ export function createRulesRegistryRouter(): Router {
 
   // GET /api/v1/rules-registry/rules or /active - List all rules with filters
   const returnRules = (_req: Request, res: Response) => {
-    const rules = getAllRules();
+    const rawRules = getAllRules();
+    const rules = rawRules.map((r) => ({
+      ...r,
+      id: r.ruleId,
+      clause: r.clauseLocator,
+      page: r.physicalPdfPage,
+      document: r.sourceTitle,
+      summary: r.plainLanguageSummary,
+      academicYear: r.academicYearScope
+    }));
     return res.status(200).json({
       success: true,
       data: { rules, count: rules.length }
@@ -26,7 +35,15 @@ export function createRulesRegistryRouter(): Router {
 
   // GET /api/v1/rules-registry/conflicts - List open regulatory conflicts
   router.get('/rules-registry/conflicts', (_req: Request, res: Response) => {
-    const conflicts = getOpenConflicts();
+    const rawConflicts = getOpenConflicts();
+    const conflicts = rawConflicts.map((c) => ({
+      ...c,
+      id: c.ruleId,
+      conflictId: c.ruleId,
+      clause: c.clauseLocator,
+      sources: [c.sourceTitle, c.conflictDetails || 'APH 2024-27 vs Addendum 2026-27'],
+      safeHandlingPath: 'Statutory Conflict Hold: Automatic decisions suspended for policy review'
+    }));
     return res.status(200).json({
       success: true,
       data: { conflicts, count: conflicts.length }
@@ -67,7 +84,16 @@ export function createRulesRegistryRouter(): Router {
   const createDraft = (req: Request, res: Response) => {
     const actor = (req as any).actor as Actor;
     try {
-      const draft = draftNewRule(req.body, actor?.id || req.body.proposedBy || 'admin@aicte.gov.in');
+      const payload = {
+        ...req.body,
+        clauseLocator: req.body.clauseLocator || req.body.clause || 'Clause 2.3.4',
+        physicalPdfPage: req.body.physicalPdfPage || req.body.page || 1,
+        sourceId: req.body.sourceId || 'SRC-APH-2024-27',
+        sourceTitle: req.body.sourceTitle || req.body.document || 'Approval Process Handbook 2024–2027',
+        sourceFile: req.body.sourceFile || 'APH 24–25, 26-27 Handbook(1).pdf',
+        plainLanguageSummary: req.body.plainLanguageSummary || req.body.summary || req.body.title
+      };
+      const draft = draftNewRule(payload, actor?.id || req.body.proposedBy || 'admin@aicte.gov.in');
       return res.status(201).json({
         success: true,
         data: { draft },
@@ -118,7 +144,13 @@ export function createRulesRegistryRouter(): Router {
       const simulation = simulateRouteForFacts(facts);
       return res.status(200).json({
         success: true,
-        data: { simulation },
+        data: {
+          simulation: {
+            ...simulation,
+            routeDecision: simulation
+          },
+          routeDecision: simulation
+        },
         message: 'Route simulation completed without database mutation.'
       });
     } catch (err: any) {

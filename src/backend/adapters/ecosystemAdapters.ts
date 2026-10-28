@@ -49,7 +49,7 @@ export interface DSCVerificationResult {
   verified?: boolean;
   dscSigned: boolean;
   certificateLevel?: 'Class-3 e-Token';
-  tokenType: 'ePass2003Auto USB Cryptographic Token' | 'mSigner Soft Token PKI';
+  tokenType: string;
   certificateAuthority: 'eMudhra Class-3 Corporate Sub CA' | 'NIC CA 2022' | 'Capricorn Sub CA';
   certSerialNumber: string;
   signatoryName: string;
@@ -160,8 +160,16 @@ export function verifyDSCSignature(params: {
   signatoryName?: string;
   signatoryPan?: string;
 }): DSCVerificationResult {
-  if (params.dscSigned === false) {
+  if (params.dscSigned === false || params.tokenType === 'UnsignedDocument') {
     throw new Error('DSC_SIGNATURE_REQUIRED: Under APH §1.4.3 & §2.3.4(a), documents uploaded without Class-3 Digital Signature are strictly invalid.');
+  }
+
+  if (params.tokenType === 'ExpiredToken' || params.signatoryName?.includes('Expired')) {
+    throw new Error('DSC_CERTIFICATE_EXPIRED: The Class-3 certificate on this token expired on 2024-12-31. Valid certificate required under CCA India guidelines and APH §1.4.3.');
+  }
+
+  if (params.tokenType === 'RevokedCert' || params.signatoryName?.includes('Revoked')) {
+    throw new Error('DSC_CERTIFICATE_REVOKED: The cryptographic certificate has been revoked in the Certificate Revocation List (CRL) by Certifying Authority.');
   }
 
   const now = new Date().toISOString();
@@ -176,7 +184,7 @@ export function verifyDSCSignature(params: {
     verified: true,
     dscSigned: true,
     certificateLevel: 'Class-3 e-Token',
-    tokenType: 'ePass2003Auto USB Cryptographic Token',
+    tokenType: params.tokenType || 'ePass2003Auto USB Cryptographic Token',
     certificateAuthority: 'eMudhra Class-3 Corporate Sub CA',
     certSerialNumber: '6A8F-4421-E09B-11D4-99C2',
     signatoryName: params.signatoryName || 'Dr. R. V. Ramana (Authorized Institution Signatory)',

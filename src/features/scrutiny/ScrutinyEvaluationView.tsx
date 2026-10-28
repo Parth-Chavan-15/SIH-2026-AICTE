@@ -288,7 +288,7 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
 
     const result = await signSnapshot('2026-27-v1', itemsPayload);
     if (result.success) {
-      setSignedSuccess(result.data);
+      setSignedSuccess((result as any)?.data ?? result);
 
       // Dynamically update document states according to the scrutiny evaluation
       for (const item of checklistItems) {

@@ -31,7 +31,8 @@ export const PortalImportView: React.FC = () => {
     const fetchFixtures = async () => {
       try {
         const res = await api.getPortalFixtures();
-        setFixtures(res.data?.fixtures || []);
+        const data = (res as any)?.data ?? res;
+        setFixtures(data?.fixtures || (Array.isArray(data) ? data : []));
       } catch (err: any) {
         console.error('Failed to load portal fixtures:', err);
       }
@@ -55,7 +56,7 @@ export const PortalImportView: React.FC = () => {
       }
 
       const res = await api.previewPortalReport(payload);
-      setPreviewData(res.data);
+      setPreviewData((res as any)?.data ?? res);
     } catch (err: any) {
       setErrorMsg(err.message || 'Report preview failed');
     } finally {
@@ -89,7 +90,7 @@ export const PortalImportView: React.FC = () => {
         confirmedDeficiencyItemIds: previewData.extractedDeficiencies?.map((d: any) => d.id) || ['D1', 'D2']
       };
       const res = await api.confirmPortalIngestion(payload);
-      setConfirmedResult(res.data);
+      setConfirmedResult((res as any)?.data ?? res);
       setSuccessMsg('Report ingested successfully! Original report preserved immutable and Scoped Re-Scrutiny task created.');
     } catch (err: any) {
       setErrorMsg(err.message || 'Ingestion confirmation failed');

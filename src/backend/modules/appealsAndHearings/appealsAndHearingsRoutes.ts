@@ -137,7 +137,11 @@ export function createAppealsAndHearingsRouter(): Router {
       success: true,
       data: {
         ...result.hearing,
-        appeal: result.hearing
+        hearingType: 'SAC',
+        appeal: {
+          ...result.hearing,
+          hearingType: 'SAC'
+        }
       },
       message: `Statutory appeal submitted to Standing Appellate Committee (SAC) under ${result.hearing?.governingClause}`
     });
@@ -165,7 +169,10 @@ export function createAppealsAndHearingsRouter(): Router {
 
     return res.status(201).json({
       success: true,
-      data: hearing,
+      data: {
+        ...hearing,
+        hearingType: 'SHC'
+      },
       message: 'Case referred to Standing Hearing Committee (SHC) for compliance hearing under APH §2.23.3'
     });
   });
@@ -291,7 +298,9 @@ export function createAppealsAndHearingsRouter(): Router {
     return res.status(200).json({
       success: true,
       data: {
-        appeal: result.appeal
+        ...result.appeal,
+        appeal: result.appeal,
+        status: 'DISPOSED'
       },
       message: `Appeal ${appealId} disposed with decision: ${decision}.`
     });

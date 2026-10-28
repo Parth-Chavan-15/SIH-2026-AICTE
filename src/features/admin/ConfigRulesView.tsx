@@ -61,9 +61,11 @@ export const ConfigRulesView: React.FC = () => {
   const fetchRegistryData = async () => {
     try {
       const rulesRes = await api.getActiveRules();
-      setRules(rulesRes.data?.rules || []);
+      const rulesList = (rulesRes as any)?.rules || (rulesRes as any)?.data?.rules || (Array.isArray(rulesRes) ? rulesRes : []);
+      setRules(rulesList);
       const conflictsRes = await api.getConflictRegister();
-      setConflicts(conflictsRes.data?.conflicts || []);
+      const conflictsList = (conflictsRes as any)?.conflicts || (conflictsRes as any)?.data?.conflicts || (Array.isArray(conflictsRes) ? conflictsRes : []);
+      setConflicts(conflictsList);
     } catch (err: any) {
       console.error('Failed to load rules registry:', err);
     }
@@ -86,7 +88,7 @@ export const ConfigRulesView: React.FC = () => {
         nbaScore: simNbaScore
       };
       const res = await api.simulateRoute(facts);
-      setSimResult(res.data?.simulation);
+      setSimResult((res as any)?.simulation || (res as any)?.data?.simulation || res);
     } catch (err: any) {
       setErrorMsg(err.message || 'Simulation failed');
     } finally {
@@ -117,8 +119,9 @@ export const ConfigRulesView: React.FC = () => {
         summary: revisedSummary,
         proposedBy: user?.id || 'usr-policy-admin'
       });
-      const diffRes = await api.getRuleDiff(selectedRule.id, draftRes.data?.draft?.id);
-      setDiffData(diffRes.data);
+      const draftId = (draftRes as any)?.draft?.id || (draftRes as any)?.data?.draft?.id;
+      const diffRes: any = await api.getRuleDiff(selectedRule.id, draftId);
+      setDiffData(diffRes?.data ?? diffRes);
       setSuccessMsg('Draft rule revision created. Review diff and confirm publication.');
     } catch (err: any) {
       setErrorMsg(err.message || 'Draft revision creation failed');
@@ -524,7 +527,52 @@ export const ConfigRulesView: React.FC = () => {
                 </div>
                 <p className="text-slate-500 text-[11px]">{cr.description}</p>
                 <div className="text-[10px] text-slate-400 font-mono">
+                <div className="text-[10px] text-slate-400 font-mono">
                   Status: {cr.status} &bull; Category: {cr.category} &bull; Updated by: {cr.updatedBy}
+                </div>
+                {editingConfigRule?.id === cr.id ? (
+                  <div className="pt-2 flex items-center gap-2">
+                    <input
+                      type="number"
+                      className="px-2 py-1 border rounded w-20 text-xs font-mono"
+                      value={newConfigValue}
+                      onChange={(e) => setNewConfigValue(Number(e.target.value))}
+                    />
+                    <button
+                      onClick={async () => {
+                        try {
+                          await updateConfigRule(cr.id, newConfigValue);
+                          setEditingConfigRule(null);
+                          setSuccessMsg(`Updated SLA parameter ${cr.name} to ${newConfigValue} ${cr.unit}`);
+                        } catch (err: any) {
+                          setErrorMsg(err.message || 'Failed to update SLA rule');
+                        }
+                      }}
+                      className="px-2.5 py-1 bg-blue-700 hover:bg-blue-800 text-white rounded text-[11px] font-semibold"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => setEditingConfigRule(null)}
+                      className="px-2 py-1 border border-slate-300 rounded text-[11px] hover:bg-slate-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="pt-2 flex justify-end">
+                    <button
+                      onClick={() => {
+                        setEditingConfigRule(cr);
+                        setNewConfigValue(cr.currentValue);
+                      }}
+                      className="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold flex items-center gap-1"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                      <span>Adjust SLA</span>
+                    </button>
+                  </div>
+                )}
                 </div>
               </div>
             ))}

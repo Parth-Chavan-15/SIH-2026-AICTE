@@ -31,7 +31,7 @@ export const NSWSSimulationView: React.FC = () => {
   const [onboardResult, setOnboardResult] = useState<any>(null);
 
   // DSC state
-  const [tokenType, setTokenType] = useState<'ePass2003Auto' | 'mToken' | 'CryptoSoftToken'>('ePass2003Auto');
+  const [tokenType, setTokenType] = useState<string>('ePass2003Auto');
   const [dscVerified, setDscVerified] = useState<boolean>(false);
 
   // AICTE Form State
@@ -62,7 +62,8 @@ export const NSWSSimulationView: React.FC = () => {
         email,
         simulatedOtp: otp
       });
-      setOnboardResult(res.data);
+      const data = (res as any)?.data ?? res;
+      setOnboardResult(data);
       setCurrentStep(2);
       setSuccessMsg('NSWS Onboarding & PAN KYC verified successfully (Simulated)');
     } catch (err: any) {
@@ -79,11 +80,12 @@ export const NSWSSimulationView: React.FC = () => {
     try {
       const res = await api.verifyDSC(
         `NSWS-DSC-${Date.now()}`,
-        true,
+        tokenType !== 'UnsignedDocument',
         tokenType,
         signatoryName
       );
-      if (res.data?.verified) {
+      const data = (res as any)?.data ?? res;
+      if (data?.verified) {
         setDscVerified(true);
         setCurrentStep(3);
         setSuccessMsg('Class-3 Cryptographic USB Token DSC validated via emBridge gateway (Simulated)');
@@ -115,7 +117,8 @@ export const NSWSSimulationView: React.FC = () => {
         region
       };
       const res = await api.evaluateNSWSRoute(facts);
-      setRouteDecision(res.data?.routeDecision);
+      const data = (res as any)?.data ?? res;
+      setRouteDecision(data?.routeDecision ?? data);
       setCurrentStep(4);
     } catch (err: any) {
       setErrorMsg(err.message || 'Route evaluation failed');
@@ -152,7 +155,8 @@ export const NSWSSimulationView: React.FC = () => {
         }
       };
       const res = await api.submitNSWSApplication(payload);
-      setSubmittedApp(res.data?.application);
+      const data = (res as any)?.data ?? res;
+      setSubmittedApp(data?.application ?? data);
       setCurrentStep(5);
       setSuccessMsg('Application submitted to AICTE Portal and persisted successfully with dynamic route snapshot!');
     } catch (err: any) {
@@ -332,9 +336,12 @@ export const NSWSSimulationView: React.FC = () => {
               value={tokenType}
               onChange={(e: any) => setTokenType(e.target.value)}
             >
-              <option value="ePass2003Auto">ePass2003Auto USB Cryptographic Token (Class-3)</option>
+              <option value="ePass2003Auto">ePass2003Auto USB Cryptographic Token (Class-3 - Valid)</option>
               <option value="mToken">mToken Crypto Identity USB Token</option>
-              <option value="CryptoSoftToken">NIC / eMudhra PKI Software Token</option>
+              <option value="CryptoSoftToken">NIC / eMudhra PKI Software Token (Valid)</option>
+              <option value="ExpiredToken">[Negative Fixture] Expired Token Certificate (Simulate Rejection)</option>
+              <option value="RevokedCert">[Negative Fixture] Revoked Certificate on CRL (Simulate Rejection)</option>
+              <option value="UnsignedDocument">[Negative Fixture] Missing DSC Signature Hash (Simulate Rejection)</option>
             </select>
           </div>
 

@@ -290,8 +290,9 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
     setClosingCompliance(true);
     try {
       const res = await api.closeCompliance(application.id);
-      if (res && res.data) {
-        setComplianceClosedData(res.data);
+      const data = (res as any)?.data ?? res;
+      if (data) {
+        setComplianceClosedData(data);
         addToast({
           type: 'success',
           title: 'Case Compliance Formally Closed',

@@ -157,8 +157,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     setReportsLoading(true);
     try {
       const res = await api.getConsolidatedReports();
-      if (res && res.data) {
-        setReportsData(res.data);
+      const data = (res as any)?.data ?? res;
+      if (data) {
+        setReportsData(data);
       }
     } catch (err) {
       console.error('Failed to load consolidated reports', err);

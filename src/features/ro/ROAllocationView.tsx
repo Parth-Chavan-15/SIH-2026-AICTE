@@ -35,7 +35,7 @@ export const ROAllocationView: React.FC = () => {
   const loadGroups = async () => {
     try {
       const res = await api.getAllocationGroups();
-      setGroups(res.data?.groups || []);
+      setGroups((res as any)?.groups || (res as any)?.data?.groups || (Array.isArray(res) ? res : []));
       if (!selectedCaseId && applications.length > 0) {
         setSelectedCaseId(applications[0].id);
       }
@@ -48,7 +48,7 @@ export const ROAllocationView: React.FC = () => {
     if (!caseId) return;
     try {
       const res = await api.getCaseAssignments(caseId);
-      setCaseAssignments(res.data);
+      setCaseAssignments((res as any)?.data ?? res);
     } catch (err: any) {
       console.error('Failed to load case assignments:', err);
     }

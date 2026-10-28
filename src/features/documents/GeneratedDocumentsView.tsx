@@ -51,7 +51,8 @@ export const GeneratedDocumentsView: React.FC = () => {
   const fetchDocs = async () => {
     try {
       const res = await api.getGeneratedDecisionDocs();
-      setDocsList(res.data?.documents || []);
+      const data = (res as any)?.data ?? res;
+      setDocsList(data?.documents || (Array.isArray(data) ? data : []));
       if (!selectedCaseId && applications.length > 0) {
         setSelectedCaseId(targetAppId || applications[0].id);
       }
@@ -87,7 +88,7 @@ export const GeneratedDocumentsView: React.FC = () => {
     setErrorMsg(null);
     try {
       const res = await api.verifyDocSignature(caseId);
-      setVerificationResult(res.data);
+      setVerificationResult((res as any)?.data ?? res);
     } catch (err: any) {
       setErrorMsg(err.message || 'Signature verification failed');
     } finally {

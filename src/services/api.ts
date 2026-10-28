@@ -1072,6 +1072,13 @@ class APIService {
     });
   }
 
+  public async referShortcomingsToSHC(payload: { caseId: string; institutionName: string; originReportRef: string; shortcomings: string[] }) {
+    return requestJson<any>('/appeals-hearings/refer-shc', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
   public async fileComplaint(payload: { caseId?: string; institutionId: string; complainantName: string; complainantAadhaarOrPan: string; complaintDetails: string; evidenceLinks?: string[]; isAnonymous?: boolean }) {
     return requestJson<any>('/appeals-hearings/complaint', {
       method: 'POST',

@@ -80,6 +80,8 @@ export const AppealsAndHearingsView: React.FC = () => {
     new Date(Date.now() + 5 * 24 * 3600 * 1000).toISOString().split('T')[0]
   );
   const [hearingVenue, setHearingVenue] = useState<string>('https://aicte-hearings.gov.in/room-shc-3');
+  const [originReportRef, setOriginReportRef] = useState<string>('SCR-2026-REP-01');
+  const [shortcomingText, setShortcomingText] = useState<string>('Deficiency communicated per APH §1.8');
 
   // Complaint form state
   const [complainantName, setComplainantName] = useState<string>(
@@ -99,7 +101,8 @@ export const AppealsAndHearingsView: React.FC = () => {
   const fetchData = async () => {
     try {
       const res = await api.getAppealsAndHearings();
-      setData(res.data || { appeals: [], hearings: [], complaints: [] });
+      const payload = (res as any)?.data ?? res;
+      setData(payload || { appeals: [], hearings: [], complaints: [] });
       if (!selectedCaseId && applications.length > 0) {
         setSelectedCaseId(targetAppId || applications[0].id);
         setHearingCaseId(applications[0].id);
@@ -131,7 +134,8 @@ export const AppealsAndHearingsView: React.FC = () => {
         grounds: appealGrounds,
         appellantDscToken
       });
-      setSuccessMsg(`Statutory Appeal ${res.data?.appeal?.id || res.data?.id} successfully lodged with SAC!`);
+      const d = (res as any)?.data ?? res;
+      setSuccessMsg(`Statutory Appeal ${d?.appeal?.id || d?.id} successfully lodged with SAC!`);
       await fetchData();
     } catch (err: any) {
       setErrorMsg(err.message || 'Lodge appeal failed');
@@ -156,10 +160,36 @@ export const AppealsAndHearingsView: React.FC = () => {
         hearingMode: 'VIRTUAL',
         venueOrLink: hearingVenue
       });
-      setSuccessMsg(`Hearing ${res.data?.hearing?.id || res.data?.id} scheduled successfully!`);
+      const d = (res as any)?.data ?? res;
+      setSuccessMsg(`Hearing ${d?.hearing?.id || d?.id} scheduled successfully!`);
       await fetchData();
     } catch (err: any) {
       setErrorMsg(err.message || 'Schedule hearing failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReferShortcomings = async () => {
+    if (!hearingCaseId || !shortcomingText.trim()) {
+      setErrorMsg('Target case and shortcoming description are required.');
+      return;
+    }
+    setLoading(true);
+    setErrorMsg(null);
+    try {
+      const selectedApp = applications.find((a) => a.id === hearingCaseId);
+      const res: any = await api.referShortcomingsToSHC({
+        caseId: hearingCaseId,
+        institutionName: selectedApp?.institutionName || 'Target Institution',
+        originReportRef,
+        shortcomings: [shortcomingText]
+      });
+      const d = res?.data ?? res;
+      setSuccessMsg(`Shortcomings referred to Standing Hearing Committee (SHC Docket ID: ${d?.id || d?.hearing?.id || 'SHC-REF-01'})`);
+      await fetchData();
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Refer to SHC failed');
     } finally {
       setLoading(false);
     }
@@ -185,7 +215,8 @@ export const AppealsAndHearingsView: React.FC = () => {
         complaintDetails,
         isAnonymous: false
       });
-      setSuccessMsg(`Grievance/Complaint ${res.data?.complaint?.id || res.data?.id} recorded under Chapter VII!`);
+      const d = (res as any)?.data ?? res;
+      setSuccessMsg(`Grievance/Complaint ${d?.complaint?.id || d?.id} recorded under Chapter VII!`);
       await fetchData();
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to file complaint');
@@ -271,7 +302,7 @@ export const AppealsAndHearingsView: React.FC = () => {
           }`}
         >
           <Scale className="w-4 h-4" />
-          <span>1. SAC Statutory Appeals (APH §1.11 / §2.24)</span>
+          <span>{isInstitution ? '1. My Statutory Appeals (APH §1.11 / §2.24)' : isCouncil ? '1. SAC Appellate Bench & Dispositions' : '1. SAC Appeals Overview'}</span>
           <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-800">
             {displayedAppeals.length}
           </span>
@@ -286,7 +317,7 @@ export const AppealsAndHearingsView: React.FC = () => {
           }`}
         >
           <Users className="w-4 h-4" />
-          <span>2. SHC Compliance Hearings (APH §2.23.3)</span>
+          <span>{isInstitution ? '2. Hearing Summons & Attendance' : isRO ? '2. SHC Hearing Administration & Docket' : '2. SHC Compliance Hearings'}</span>
           <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800">
             {displayedHearings.length}
           </span>
@@ -301,7 +332,7 @@ export const AppealsAndHearingsView: React.FC = () => {
           }`}
         >
           <MessageSquare className="w-4 h-4" />
-          <span>3. Grievances &amp; SCSC Complaints (Chapter VII)</span>
+          <span>{isInstitution ? '3. Lodge & Track Grievance (Chapter VII)' : isRO ? '3. Chapter VII Grievance Docket' : '3. Grievances & SCSC Complaints'}</span>
           <span className="font-mono text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800">
             {displayedComplaints.length}
           </span>
@@ -594,6 +625,44 @@ export const AppealsAndHearingsView: React.FC = () => {
               >
                 <Calendar className="w-4 h-4" />
                 <span>Schedule Formal Hearing</span>
+              </button>
+              {isRO && (
+                <div className="pt-4 border-t border-slate-100 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-600" />
+                    <h4 className="font-bold text-slate-800 text-xs">Refer Shortcomings to SHC (APH §2.23.3)</h4>
+                  </div>
+                  <div className="space-y-2 text-xs">
+                    <div>
+                      <label className="block font-semibold text-slate-600 mb-0.5">Origin Scrutiny/EVC Report Ref</label>
+                      <input
+                        type="text"
+                        value={originReportRef}
+                        onChange={(e) => setOriginReportRef(e.target.value)}
+                        className="w-full px-2.5 py-1.5 border rounded-lg font-mono text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-slate-600 mb-0.5">Specific Shortcoming Clause</label>
+                      <textarea
+                        rows={2}
+                        value={shortcomingText}
+                        onChange={(e) => setShortcomingText(e.target.value)}
+                        className="w-full px-2.5 py-1.5 border rounded-lg text-xs"
+                      />
+                    </div>
+                    <button
+                      onClick={handleReferShortcomings}
+                      disabled={loading}
+                      className="w-full py-1.5 rounded-lg bg-amber-700 hover:bg-amber-800 text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Refer Case Shortcomings to SHC</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+              <button className="hidden">
               </button>
             </div>
           )}

@@ -166,7 +166,7 @@ export const GovernmentEndpointsView: React.FC = () => {
 
       const elapsed = Math.round(performance.now() - start);
       setLatencyMs(elapsed);
-      setEndpointResult(res);
+      setEndpointResult((res as any)?.data ? res : { success: true, data: res });
     } catch (err: any) {
       const elapsed = Math.round(performance.now() - start);
       setLatencyMs(elapsed);

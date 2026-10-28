@@ -47,8 +47,9 @@ export const EVCView: React.FC<EVCViewProps> = ({ onSelectApplication }) => {
     setFetchingRoster(true);
     try {
       const res = await api.syncCommittee(selectedAppId || 'APP-2026-GIITS', committeeType);
-      if (res?.data?.roster) {
-        const roster = res.data.roster;
+      const data = (res as any)?.data ?? res;
+      if (data?.roster) {
+        const roster = data.roster;
         const chair = roster[0];
         setChairman(chair.name + ' (' + chair.designation + ', ' + chair.organization + ')');
         const otherMembers = roster.slice(1).map((m: any) => m.name + ' (' + (m.specialization || m.designation) + ', ' + m.organization + ')').join(', ');

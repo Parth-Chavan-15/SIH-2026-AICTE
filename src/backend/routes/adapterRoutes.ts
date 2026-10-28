@@ -173,6 +173,16 @@ export function createAdapterRouter(storage: CaseStorage): Router {
           }
         });
       }
+      if (err.message && (err.message.includes('DSC_CERTIFICATE_EXPIRED') || err.message.includes('DSC_CERTIFICATE_REVOKED'))) {
+        const code = err.message.includes('DSC_CERTIFICATE_EXPIRED') ? 'DSC_CERTIFICATE_EXPIRED' : 'DSC_CERTIFICATE_REVOKED';
+        return res.status(422).json({
+          success: false,
+          error: {
+            code,
+            message: err.message
+          }
+        });
+      }
       return res.status(500).json({
         success: false,
         error: { code: 'STORAGE_UNAVAILABLE', message: err.message || 'DSC Verification gateway failed' }
