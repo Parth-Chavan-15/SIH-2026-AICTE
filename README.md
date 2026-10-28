@@ -5,7 +5,8 @@
 [![Live Prototype](https://img.shields.io/badge/Live%20Prototype-niyamsetu--aicte.onrender.com-success?style=for-the-badge&logo=render)](https://niyamsetu-aicte.onrender.com)
 [![Status](https://img.shields.io/badge/Status-High--Fidelity%20Transactional%20Prototype-brightgreen?style=flat-square)](https://niyamsetu-aicte.onrender.com)
 [![Regression Suite](https://img.shields.io/badge/Deliverables%20Suite-38%2F38%20Passed%20(100%25)-brightgreen.svg?style=flat-square)](./tests/regression_retrofit_all_deliverables.test.ts)
-[![Total Test Suite](https://img.shields.io/badge/Total%20Test%20Suite-327%2F327%20Passed%20(100%25)-brightgreen.svg?style=flat-square)](./tests/)
+[![PS Compliance Matrix](https://img.shields.io/badge/PS%2026262%20Matrix-36%2F36%20Traced%20%26%20Verified-brightgreen?style=flat-square)](./docs/PS_COMPLIANCE_MATRIX.md)
+[![Total Test Suite](https://img.shields.io/badge/Total%20Test%20Suite-333%2F333%20Passed%20(100%25)-brightgreen.svg?style=flat-square)](./tests/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict%20(0%20Errors)-blue.svg?style=flat-square)](./tsconfig.json)
 [![Handbook Base](https://img.shields.io/badge/Handbook%20Base-APH%202024--27%20%2B%20Addendum%20G02-orange.svg?style=flat-square)](https://www.aicte-india.org)
 
@@ -111,7 +112,7 @@ flowchart TD
 | **8. Generated Decision Documents** | AICTE Act 1987 §10(k), Official Order Issuance | [`src/backend/modules/decisionDocuments/`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/backend/modules/decisionDocuments/)<br/>[`src/features/documents/`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/features/documents/) | `Deliverable 8` tests (Dynamic PDF rendering, demo digital signing, complianceDB sync) |
 | **9. Timers & Regulatory Clocks** | APH §2.25(f) vs Deficiency Cure Distinction | [`src/backend/modules/compliance/`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/backend/modules/compliance/) | Acceptance tests T10–T12 & `m3_obligations_timers.test.ts` |
 | **10. Removal of Mock Adapters** | Clean architecture; removal of API Setu, DTE, Siebel | [`src/backend/routes/adapterRoutes.ts`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/backend/routes/adapterRoutes.ts) | `Deliverable 10` tests (All 3 excised endpoints return HTTP 404) |
-| **11. Regression Tests & Documentation** | Verification rigour & demonstration clarity | [`tests/regression_retrofit_all_deliverables.test.ts`](file:///c:/Users/parth/Documents/SIH-26-AICTE/tests/regression_retrofit_all_deliverables.test.ts) | 38/38 retrofit tests + 327 total repository tests passing natively |
+| **11. Regression Tests & Documentation** | Verification rigour & demonstration clarity | [`tests/regression_retrofit_all_deliverables.test.ts`](file:///c:/Users/parth/Documents/SIH-26-AICTE/tests/regression_retrofit_all_deliverables.test.ts) | 38/38 retrofit tests + 333 total repository tests passing natively across 28 test suites |
 
 ---
 
@@ -220,7 +221,7 @@ npx vitest run tests/regression_retrofit_all_deliverables.test.ts
 # Acceptance verification suites (22/22 passed)
 npx vitest run tests/verification_t01_t16.test.ts tests/verification_t17_t22.test.ts
 
-# Complete repository suite (327/327 passed across 27 files)
+# Complete repository suite (333/333 passed across 28 files)
 npx vitest run
 
 # 5. Build and launch development server
@@ -237,15 +238,16 @@ Try the full application online without installing anything:
 
 ---
 
-## 🧪 Automated Test Coverage (327 Tests / 27 Suites)
+## 🧪 Automated Test Coverage (333 Tests / 28 Suites)
 
 ```
-Test Files  27 passed (27)
-     Tests  327 passed (327)
+Test Files  28 passed (28)
+     Tests  333 passed (333)
   Duration  12.05s (100% pass rate, 0 failed, 0 skipped)
 ```
 
 - **`tests/regression_retrofit_all_deliverables.test.ts` (38 tests):** Verifies all 11 mandatory deliverables end-to-end, including decision preconditions, outcome alignment, HMAC-SHA256 integrity verification, no cross-case leakage, loopback origin matching, and boundary hold conditions.
+- **`tests/appeals_and_hearings_api.test.ts` (6 tests):** Decoupled statutory appeals (SAC APH §1.11 / §2.24), compliance hearings (SHC APH §2.23.3), and Chapter VII grievances API routes and validation.
 - **`tests/verification_t01_t16.test.ts` (16 tests):** Acceptance checks T01–T16 (tenant isolation, scrutiny scope-lock, human-only decisions, timer acceleration).
 - **`tests/verification_t17_t22.test.ts` (6 tests):** Acceptance checks T17–T22 (authorized reverts, statutory notices, DSC signatures, compliance certificates).
 - **`tests/policy/routing.test.ts` (37 tests):** Comprehensive route engine predicate tests across Table 2.3.
@@ -294,4 +296,4 @@ Test Files  27 passed (27)
   - `origin`: `https://github.com/Mayuresh-1306/SIH-2026-AICTE.git` (Tracked master)
   - `personal`: `https://github.com/Parth-Chavan-15/SIH-2026-AICTE.git` (Backup deployment mirror)
 - **Live Deployment**: [https://niyamsetu-aicte.onrender.com](https://niyamsetu-aicte.onrender.com)
-- **Status**: High-Fidelity Transactional Prototype with In-Memory & MongoDB Persistence Engines (AY 2026–27 | 327/327 Tests Passing)
+- **Status**: High-Fidelity Transactional Prototype with In-Memory & MongoDB Persistence Engines (AY 2026–27 | 333/333 Tests Passing)

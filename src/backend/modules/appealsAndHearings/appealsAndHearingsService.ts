@@ -240,3 +240,55 @@ export function referShortcomingsToSHC(data: {
   hearingsDB.set(hearingId, hearing);
   return hearing;
 }
+
+export function scheduleHearing(data: {
+  caseId: string;
+  hearingType: 'SHC' | 'SAC';
+  committeeMembers: string[];
+  scheduledDate: string;
+  hearingMode: 'VIRTUAL' | 'PHYSICAL';
+  venueOrLink: string;
+  scheduledBy?: string;
+}): HearingRecord {
+  const hearingId = `HEAR-${data.hearingType}-${Date.now().toString().slice(-6)}`;
+  const hearing: HearingRecord = {
+    id: hearingId,
+    type: data.hearingType === 'SAC' ? 'SAC_STATUTORY_APPEAL' : 'SHC_COMPLIANCE_HEARING',
+    caseId: data.caseId,
+    institutionName: data.caseId,
+    referredBy: data.scheduledBy || 'Regional_Officer',
+    referredAt: new Date().toISOString(),
+    governingClause: data.hearingType === 'SAC' ? 'APH Chapter II §2.24' : 'APH Chapter II §2.23.3',
+    triggerEvent: `Hearing scheduled via Regional Office / Council portal`,
+    issuesConsidered: ['Hearing on observed compliance and institution representations'],
+    committeeMembers: data.committeeMembers && data.committeeMembers.length > 0
+      ? data.committeeMembers
+      : ['Dr. V. K. Paul (Chair)', 'Prof. A. S. Pant', 'Adv. S. K. Hegde (Legal Expert)'],
+    hearingDate: data.scheduledDate,
+    status: 'SCHEDULED'
+  };
+
+  hearingsDB.set(hearingId, hearing);
+  return hearing;
+}
+
+export function disposeAppeal(appealId: string, data: {
+  decision: 'RELIEF_GRANTED' | 'REJECTION_UPHELD' | 'REFERRED_TO_SHC';
+  remarks: string;
+  committeeMembers?: string[];
+  disposedBy?: string;
+}): { success: boolean; appeal?: HearingRecord; error?: string } {
+  const appeal = hearingsDB.get(appealId);
+  if (!appeal) {
+    return { success: false, error: `Appeal ${appealId} not found in docket` };
+  }
+  appeal.status = 'DECIDED_BY_COUNCIL';
+  appeal.observations = data.remarks;
+  appeal.recommendation = data.decision === 'RELIEF_GRANTED' ? 'RECOMMEND_APPROVAL'
+    : data.decision === 'REFERRED_TO_SHC' ? 'SEEK_FURTHER_COMPLIANCE' : 'UPHOLD_REJECTION';
+  if (data.committeeMembers && data.committeeMembers.length > 0) {
+    appeal.committeeMembers = data.committeeMembers;
+  }
+  hearingsDB.set(appealId, appeal);
+  return { success: true, appeal };
+}

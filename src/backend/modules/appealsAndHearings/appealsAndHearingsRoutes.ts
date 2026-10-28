@@ -5,6 +5,8 @@ import {
   lodgeComplaint,
   submitStatutoryAppeal,
   referShortcomingsToSHC,
+  scheduleHearing,
+  disposeAppeal,
   hearingsDB,
   complaintsDB
 } from './appealsAndHearingsService';
@@ -13,18 +15,85 @@ import type { Actor } from '../../../shared/contracts';
 export function createAppealsAndHearingsRouter(): Router {
   const router = Router();
 
-  // GET /api/v1/appeals-hearings/overview - List active hearings, appeals, and complaints
-  router.get('/appeals-hearings/overview', (_req: Request, res: Response) => {
+  // Helper to serialize hearings for frontend and API consistency
+  const getAppealsAndHearingsPayload = (caseIdFilter?: string) => {
+    let rawHearings = getAllHearings();
+    let rawComplaints = getAllComplaints();
+
+    if (caseIdFilter) {
+      rawHearings = rawHearings.filter(h => h.caseId === caseIdFilter);
+      rawComplaints = rawComplaints.filter(c => c.caseId === caseIdFilter);
+    }
+
+    const appeals = rawHearings
+      .filter(h => h.type === 'SAC_STATUTORY_APPEAL')
+      .map(h => ({
+        id: h.id,
+        caseId: h.caseId,
+        institutionName: h.institutionName,
+        grounds: h.issuesConsidered?.[0] || h.triggerEvent,
+        appellantDscToken: 'DSC-TOKEN-APPEL-7718',
+        lodgedAt: h.referredAt,
+        status: h.status === 'DECIDED_BY_COUNCIL' ? 'DISPOSED' : (h.status === 'SCHEDULED' ? 'SCHEDULED' : 'LODGED'),
+        recommendation: h.recommendation,
+        observations: h.observations,
+        committeeMembers: h.committeeMembers,
+        governingClause: h.governingClause
+      }));
+
+    const shcHearings = rawHearings
+      .filter(h => h.type !== 'SAC_STATUTORY_APPEAL')
+      .map(h => ({
+        id: h.id,
+        caseId: h.caseId,
+        institutionName: h.institutionName,
+        hearingType: 'SHC',
+        scheduledDate: h.hearingDate || 'Pending Schedule',
+        venueOrLink: 'https://aicte-hearings.gov.in/room-shc-3',
+        status: h.status,
+        committeeMembers: h.committeeMembers,
+        observations: h.observations
+      }));
+
+    const complaints = rawComplaints.map(c => ({
+      id: c.complaintId,
+      caseId: c.caseId,
+      institutionName: c.institutionName,
+      complainantName: c.complainantName,
+      status: c.scscScrutinyStatus === 'ADMISSIBLE' ? 'UNDER_SCSC_REVIEW' : c.scscScrutinyStatus,
+      complaintDetails: c.description,
+      filedAt: c.lodgedAt,
+      isAnonymous: c.isAnonymous
+    }));
+
+    return {
+      appeals,
+      hearings: shcHearings,
+      complaints,
+      summary: {
+        activeHearingsCount: shcHearings.length,
+        activeAppealsCount: appeals.length,
+        activeComplaintsCount: complaints.length
+      }
+    };
+  };
+
+  // GET /api/v1/appeals-hearings AND /api/v1/appeals-hearings/overview
+  router.get('/appeals-hearings', (req: Request, res: Response) => {
+    const caseId = req.query.caseId as string | undefined;
+    const payload = getAppealsAndHearingsPayload(caseId);
     return res.status(200).json({
       success: true,
-      data: {
-        hearings: getAllHearings(),
-        complaints: getAllComplaints(),
-        summary: {
-          activeHearingsCount: hearingsDB.size,
-          activeComplaintsCount: complaintsDB.size
-        }
-      }
+      data: payload
+    });
+  });
+
+  router.get('/appeals-hearings/overview', (req: Request, res: Response) => {
+    const caseId = req.query.caseId as string | undefined;
+    const payload = getAppealsAndHearingsPayload(caseId);
+    return res.status(200).json({
+      success: true,
+      data: payload
     });
   });
 
@@ -157,6 +226,74 @@ export function createAppealsAndHearingsRouter(): Router {
         }
       },
       message: result.message
+    });
+  });
+
+  // POST /api/v1/appeals-hearings/schedule-hearing - Regional Office / Council schedules SHC/SAC hearing
+  router.post('/appeals-hearings/schedule-hearing', (req: Request, res: Response) => {
+    const actor = (req as any).actor as Actor;
+    const { caseId, hearingType, committeeMembers, scheduledDate, hearingMode, venueOrLink } = req.body;
+
+    if (!caseId || !scheduledDate) {
+      return res.status(422).json({
+        success: false,
+        error: { code: 'VALIDATION_FAILED', message: 'caseId and scheduledDate are required to schedule hearing.' }
+      });
+    }
+
+    const hearing = scheduleHearing({
+      caseId,
+      hearingType: hearingType || 'SHC',
+      committeeMembers: committeeMembers || [],
+      scheduledDate,
+      hearingMode: hearingMode || 'VIRTUAL',
+      venueOrLink: venueOrLink || 'https://aicte-hearings.gov.in',
+      scheduledBy: actor?.id || 'Regional_Officer'
+    });
+
+    return res.status(201).json({
+      success: true,
+      data: {
+        hearing,
+        id: hearing.id
+      },
+      message: `Hearing ${hearing.id} scheduled successfully.`
+    });
+  });
+
+  // POST /api/v1/appeals-hearings/appeals/:id/dispose - Council Authority / SAC Bench disposes appeal
+  router.post('/appeals-hearings/appeals/:id/dispose', (req: Request, res: Response) => {
+    const actor = (req as any).actor as Actor;
+    const appealId = req.params.id;
+    const { decision, remarks, committeeMembers } = req.body;
+
+    if (!decision || !remarks) {
+      return res.status(422).json({
+        success: false,
+        error: { code: 'VALIDATION_FAILED', message: 'decision and remarks are required to dispose appeal.' }
+      });
+    }
+
+    const result = disposeAppeal(appealId, {
+      decision,
+      remarks,
+      committeeMembers,
+      disposedBy: actor?.id || 'Council_Authority'
+    });
+
+    if (!result.success) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: result.error || 'Appeal not found.' }
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        appeal: result.appeal
+      },
+      message: `Appeal ${appealId} disposed with decision: ${decision}.`
     });
   });
 

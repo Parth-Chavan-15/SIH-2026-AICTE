@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { api } from '../../services/api';
 import { EVCInspection } from '../../types';
 import { formatDateIndian } from '../../utils/slaCalculator';
 import {
@@ -45,14 +46,9 @@ export const EVCView: React.FC<EVCViewProps> = ({ onSelectApplication }) => {
   const fetchPortalRoster = async (committeeType = 'EVC') => {
     setFetchingRoster(true);
     try {
-      const res = await fetch('/api/v1/adapter/committee-sync/' + (selectedAppId || 'APP-2026-GIITS'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ committeeType })
-      });
-      const json = await res.json();
-      if (json.success && json.data && json.data.roster) {
-        const roster = json.data.roster;
+      const res = await api.syncCommittee(selectedAppId || 'APP-2026-GIITS', committeeType);
+      if (res?.data?.roster) {
+        const roster = res.data.roster;
         const chair = roster[0];
         setChairman(chair.name + ' (' + chair.designation + ', ' + chair.organization + ')');
         const otherMembers = roster.slice(1).map((m: any) => m.name + ' (' + (m.specialization || m.designation) + ', ' + m.organization + ')').join(', ');

@@ -73,9 +73,9 @@ export function createCompanionApp(options?: {
       '/adapter/',
       '/nsws/',
       '/portal-import/',
-      '/allocation/',
-      '/appeals-hearings/',
-      '/rules-registry/'
+      '/allocation',
+      '/appeals-hearings',
+      '/rules-registry'
     ];
     if (publicPrefixes.some(p => req.path.startsWith(p)) || req.path === '/adapter/status') {
       return next();

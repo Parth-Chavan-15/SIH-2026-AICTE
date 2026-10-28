@@ -105,17 +105,6 @@ export const CompetentAuthorityDecisionView: React.FC<CompetentAuthorityDecision
         `Council Statutory Order: ${decisionMode === 'approve' ? 'Unconditional EoA' : decisionMode === 'conditional' ? 'Conditional EoA' : 'Rejected'}. ${decisionReason}`
       );
 
-      // 2. Trigger simulated Siebel write-back
-      try {
-        await fetch('/api/v1/adapter/siebel-writeback/' + activeCase.id, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ currentStage: 'Approval Issued' })
-        });
-      } catch {
-        // optional companion writeback
-      }
-
       const orderRef = `AICTE/${activeCase.region.toUpperCase().slice(0, 4)}/${activeCase.applicationNumber}/EOA-2026-27`;
       setIssuedOrder({
         orderNumber: orderRef,

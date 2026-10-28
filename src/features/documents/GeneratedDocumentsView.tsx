@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../services/api';
+import { getSession } from '../../services/session';
 import {
   FileText,
   Download,
@@ -13,12 +14,31 @@ import {
   ExternalLink,
   RefreshCw,
   Eye,
-  Award
+  Award,
+  Clock,
+  Info
 } from 'lucide-react';
 
 export const GeneratedDocumentsView: React.FC = () => {
   const { applications } = useApp();
-  const [selectedCaseId, setSelectedCaseId] = useState<string>('');
+  const session = getSession();
+  const actor = session?.actor;
+  const isInstitution = Boolean(
+    actor?.roles?.includes('institution') || actor?.id?.startsWith('usr-inst-')
+  );
+  const canGenerate = Boolean(actor?.permissions?.includes('decision.record'));
+
+  // Target application identification for institution scoping
+  const targetAppId = isInstitution
+    ? (actor?.id === 'usr-inst-coep' || (actor as any)?.email === 'principal@coep.ac.in') ? 'APP-2026-COEP'
+      : (actor?.id === 'usr-inst-giits' || (actor as any)?.email === 'principal@giits.ac.in') ? 'APP-2026-GIITS'
+      : (actor?.id === 'usr-inst-pdimtr' || (actor as any)?.email === 'principal@pdimtr.ac.in') ? 'APP-2026-PDIMTR'
+      : (actor?.id === 'usr-inst-apex' || (actor as any)?.email === 'principal@apex.ac.in') ? 'APP-2026-APEX'
+      : (actor?.id === 'usr-inst-batu' || (actor as any)?.email === 'principal@batu.ac.in') ? 'APP-2026-BATU'
+      : (actor?.institutionIds?.[0] ? applications.find(a => a.institutionCode === actor.institutionIds[0] || a.id === actor.institutionIds[0])?.id : null) || applications[0]?.id
+    : null;
+
+  const [selectedCaseId, setSelectedCaseId] = useState<string>(targetAppId || '');
   const [documentType, setDocumentType] = useState<string>('EOA');
   const [docsList, setDocsList] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -33,7 +53,7 @@ export const GeneratedDocumentsView: React.FC = () => {
       const res = await api.getGeneratedDecisionDocs();
       setDocsList(res.data?.documents || []);
       if (!selectedCaseId && applications.length > 0) {
-        setSelectedCaseId(applications[0].id);
+        setSelectedCaseId(targetAppId || applications[0].id);
       }
     } catch (err: any) {
       console.error('Failed to load decision documents:', err);
@@ -42,7 +62,7 @@ export const GeneratedDocumentsView: React.FC = () => {
 
   useEffect(() => {
     fetchDocs();
-  }, []);
+  }, [targetAppId]);
 
   const handleGenerate = async () => {
     if (!activeApp) return;
@@ -75,6 +95,11 @@ export const GeneratedDocumentsView: React.FC = () => {
     }
   };
 
+  // Filter documents: institutions only see their own official orders
+  const displayedDocs = isInstitution && targetAppId
+    ? docsList.filter((doc) => doc.caseId === targetAppId || (doc.institutionName && activeApp && doc.institutionName.toLowerCase().includes(activeApp.institutionName.toLowerCase().split(' ')[0])))
+    : docsList;
+
   return (
     <div className="space-y-6">
       {/* Disclaimer Banner */}
@@ -104,62 +129,81 @@ export const GeneratedDocumentsView: React.FC = () => {
         </div>
       )}
 
-      {/* Generator Controls */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-          <h3 className="font-bold text-slate-900 text-base">Generate Institute-Specific Decision Document</h3>
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-100 text-blue-800">
-            pdf-lib &bull; SHA-256 Digest
-          </span>
+      {/* Generator Controls - Visible ONLY to authorized Council / Bureau decision makers */}
+      {canGenerate && !isInstitution && (
+        <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <h3 className="font-bold text-slate-900 text-base">Generate Institute-Specific Decision Document</h3>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+              pdf-lib &bull; SHA-256 Digest
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Select Target Application</label>
+              <select
+                value={selectedCaseId}
+                onChange={(e) => setSelectedCaseId(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg bg-white"
+              >
+                {applications.map((app) => (
+                  <option key={app.id} value={app.id}>
+                    {app.id} &bull; {app.institutionName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Document Type</label>
+              <select
+                value={documentType}
+                onChange={(e) => setDocumentType(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg bg-white"
+              >
+                <option value="EOA">Extension of Approval (EoA) / Approval Order</option>
+                <option value="LOA">Letter of Approval (LoA) - New Institution</option>
+                <option value="LOD">Letter of Deficiency (LoD) - Shortcomings Noted</option>
+                <option value="LOR">Letter of Rejection (LoR) - Non-Compliance Order</option>
+              </select>
+            </div>
+
+            <div className="flex items-end">
+              <button
+                onClick={handleGenerate}
+                disabled={loading}
+                className="w-full py-2 px-4 rounded-lg bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs flex items-center justify-center gap-2"
+              >
+                <FileText className="w-4 h-4" />
+                <span>Generate &amp; Digitally Sign PDF</span>
+              </button>
+            </div>
+          </div>
         </div>
+      )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Select Target Application</label>
-            <select
-              value={selectedCaseId}
-              onChange={(e) => setSelectedCaseId(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg bg-white"
-            >
-              {applications.map((app) => (
-                <option key={app.id} value={app.id}>
-                  {app.id} &bull; {app.institutionName}
-                </option>
-              ))}
-            </select>
+      {/* Institutional View Header - For Applicants / Institutions */}
+      {isInstitution && (
+        <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-2">
+          <div className="flex items-center gap-2">
+            <Building className="w-5 h-5 text-blue-700" />
+            <h3 className="font-bold text-slate-900 text-base">
+              My Official AICTE Decision Orders &amp; Dispatched Letters
+            </h3>
           </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 mb-1">Document Type</label>
-            <select
-              value={documentType}
-              onChange={(e) => setDocumentType(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg bg-white"
-            >
-              <option value="EOA">Extension of Approval (EoA) / Approval Order</option>
-              <option value="LOA">Letter of Approval (LoA) - New Institution</option>
-              <option value="LOD">Letter of Deficiency (LoD) - Shortcomings Noted</option>
-              <option value="LOR">Letter of Rejection (LoR) - Non-Compliance Order</option>
-            </select>
-          </div>
-
-          <div className="flex items-end">
-            <button
-              onClick={handleGenerate}
-              disabled={loading}
-              className="w-full py-2 px-4 rounded-lg bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs flex items-center justify-center gap-2"
-            >
-              <FileText className="w-4 h-4" />
-              <span>Generate &amp; Digitally Sign PDF</span>
-            </button>
-          </div>
+          <p className="text-xs text-slate-500">
+            Institutional repository of formal decision letters (EoA, LoA, LoD, LoR) dispatched by AICTE Competent Authority for Academic Year 2026–27. Each document is cryptographically verified against server integrity digests.
+          </p>
         </div>
-      </div>
+      )}
 
       {/* Generated Documents Catalog */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="font-bold text-slate-900 text-sm">Generated Decision Letters Repository</h3>
+          <h3 className="font-bold text-slate-900 text-sm">
+            {isInstitution ? 'Dispatched Decision Documents' : 'Generated Decision Letters Repository'}
+          </h3>
           <button
             onClick={fetchDocs}
             className="text-xs text-blue-700 hover:underline flex items-center gap-1"
@@ -169,9 +213,9 @@ export const GeneratedDocumentsView: React.FC = () => {
           </button>
         </div>
 
-        {docsList && docsList.length > 0 ? (
+        {displayedDocs && displayedDocs.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {docsList.map((doc) => {
+            {displayedDocs.map((doc) => {
               const downloadUrl = api.getDocDownloadUrl(doc.caseId, doc.documentType);
               return (
                 <div
@@ -244,6 +288,22 @@ export const GeneratedDocumentsView: React.FC = () => {
                 </div>
               );
             })}
+          </div>
+        ) : isInstitution ? (
+          <div className="p-8 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-3">
+            <div className="w-12 h-12 mx-auto rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+              <Clock className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <h4 className="font-bold text-slate-800 text-sm">Official Decision Order Pending AICTE Council Dispatch</h4>
+              <p className="text-xs text-slate-500 max-w-md mx-auto">
+                The Competent Authority (AICTE Council / Executive Committee) has not yet dispatched a final decision order for your application ({targetAppId || activeApp?.id}: {activeApp?.institutionName}). Formal decision letters (EoA, LoA, LoD, or LoR) with digital integrity seals are generated and released strictly following Executive Committee evaluation per APH Chapter I/II regulations.
+              </p>
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-600 font-mono text-[11px]">
+              <span>Current Application Status:</span>
+              <strong className="text-slate-800">{activeApp?.currentStage || 'Active Review'}</strong>
+            </div>
           </div>
         ) : (
           <div className="p-8 rounded-xl bg-slate-50 border border-dashed text-center text-xs text-slate-400">
