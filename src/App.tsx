@@ -26,6 +26,11 @@ import { ScrutinyEvaluationView } from './features/scrutiny/ScrutinyEvaluationVi
 import { InstitutionDeficiencyCureView } from './features/institution/InstitutionDeficiencyCureView';
 import { ScrutinyRosterDeclarationView } from './features/scrutiny/ScrutinyRosterDeclarationView';
 import { CompetentAuthorityDecisionView } from './features/ca/CompetentAuthorityDecisionView';
+import { NSWSSimulationView } from './features/nsws/NSWSSimulationView';
+import { PortalImportView } from './features/portalImport/PortalImportView';
+import { ROAllocationView } from './features/ro/ROAllocationView';
+import { AppealsAndHearingsView } from './features/appeals/AppealsAndHearingsView';
+import { GeneratedDocumentsView } from './features/documents/GeneratedDocumentsView';
 
 import { Search, X } from 'lucide-react';
 
@@ -143,9 +148,12 @@ const MainLayout: React.FC = () => {
                 onOpenNewAppModal={() => setShowNewAppModal(true)}
               />
             )}
+            {currentTab === 'inst-nsws' && <NSWSSimulationView />}
             {currentTab === 'inst-deficiencies' && (
               <InstitutionDeficiencyCureView onSelectApplication={(id) => setSelectedAppId(id)} />
             )}
+            {currentTab === 'inst-decision-docs' && <GeneratedDocumentsView />}
+            {currentTab === 'appeals-hearings' && <AppealsAndHearingsView />}
             {currentTab === 'inst-renewals' && <ComplianceView />}
             {currentTab === 'inst-dossier' && <DocumentExpiryView />}
 
@@ -168,26 +176,27 @@ const MainLayout: React.FC = () => {
                 onSelectApplication={(id) => setSelectedAppId(id)}
               />
             )}
+            {currentTab === 'scrutiny-portal-import' && <PortalImportView />}
             {currentTab === 'scrutiny-committee' && (
               <ScrutinyRosterDeclarationView onNavigateToScrutiny={() => setCurrentTab('scrutiny-eval')} />
             )}
 
-            {/* Role 3: EVC Coordinator / Member Pages */}
+            {/* Role 3: EVC Committee Portal */}
             {currentTab === 'evc-queue' && (
               <EVCView onSelectApplication={(id) => setSelectedAppId(id)} />
             )}
             {currentTab === 'evc-inspect' && (
               <EVCView onSelectApplication={(id) => setSelectedAppId(id)} />
             )}
-            {currentTab === 'evc-sac' && (
-              <EVCView onSelectApplication={(id) => setSelectedAppId(id)} />
-            )}
+            {currentTab === 'evc-sac' && <AppealsAndHearingsView />}
             {currentTab === 'evc-reports' && <ReportsView />}
 
             {/* Role 4: Regional / Bureau Officer Pages */}
+            {currentTab === 'ro-allocation' && <ROAllocationView />}
             {currentTab === 'ro-pendency' && (
               <PendencyView onSelectApplication={(id) => setSelectedAppId(id)} />
             )}
+            {currentTab === 'ro-appeals-hearings' && <AppealsAndHearingsView />}
             {currentTab === 'ro-schedule' && (
               <EVCView onSelectApplication={(id) => setSelectedAppId(id)} />
             )}
@@ -208,6 +217,8 @@ const MainLayout: React.FC = () => {
                 onNavigateTab={(tab) => setCurrentTab(tab)}
               />
             )}
+            {currentTab === 'ca-decision-docs' && <GeneratedDocumentsView />}
+            {currentTab === 'ca-appeals' && <AppealsAndHearingsView />}
             {currentTab === 'ca-gazette' && <ReportsView />}
             {currentTab === 'ca-dispatch' && <GovernmentEndpointsView />}
 

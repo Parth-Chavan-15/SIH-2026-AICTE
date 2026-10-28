@@ -110,14 +110,39 @@ export function createScrutinyRouter(corePort?: CorePort): Router {
     return res.status(200).json(result);
   });
 
-  // POST /api/v1/applications/:id/rescrutiny - Reviewer evaluates corrections
-  router.post('/applications/:id/rescrutiny', async (req: Request, res: Response) => {
+  // POST /api/v1/applications/:id/rescrutiny & /api/v1/scrutiny/:id/rescrutiny - Reviewer evaluates corrections
+  router.post(['/applications/:id/rescrutiny', '/scrutiny/:id/rescrutiny'], async (req: Request, res: Response) => {
+    if (Array.isArray(req.body.items) && !req.body.outcomes) {
+      req.body.outcomes = req.body.items.map((i: any) => ({
+        itemId: i.itemId || i.id,
+        result: (i.status === 'COMPLIANT' || i.result === 'accepted' || i.status === 'accepted') ? 'accepted' : 'deficient',
+        reason: i.remarks || i.reason || 'Re-scrutiny outcome'
+      }));
+    }
     if (Array.isArray(req.body.outcomes)) {
       req.body.outcomes = req.body.outcomes.map((o: any) => ({
         ...o,
-        result: o.result || o.status || 'accepted'
+        itemId: o.itemId || o.id,
+        result: (o.status === 'COMPLIANT' || o.result === 'accepted' || o.status === 'accepted') ? 'accepted' : 'deficient'
       }));
     }
+    if (!req.body.idempotencyKey) {
+      req.body.idempotencyKey = `RESCRUTINY-${req.params.id}-${Date.now()}`;
+    }
+    if (!req.body.snapshotId) {
+      const latest = getLatestSnapshot(req.params.id);
+      req.body.snapshotId = latest?.id || `SNAP-${req.params.id}-R1`;
+    }
+    try {
+      const app = await port.getApplication(req.params.id);
+      if (app && typeof app.version === 'number') {
+        req.body.expectedVersion = app.version;
+      }
+    } catch {}
+    if (typeof req.body.expectedVersion !== 'number') {
+      req.body.expectedVersion = 1;
+    }
+
     const parsed = RescrutinyCommandSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(422).json({
@@ -132,7 +157,7 @@ export function createScrutinyRouter(corePort?: CorePort): Router {
     const result = await rescrutinize(port, req.params.id, parsed.data);
     if (!result.success) {
       const code = result.error.code as string;
-      const status = code === 'SCOPE_VIOLATION' || code === 'VERSION_CONFLICT' ? 409
+      const status = code === 'SCOPE_VIOLATION' || code === 'RE_SCRUTINY_SCOPE_VIOLATION' || code === 'VERSION_CONFLICT' ? 409
         : code === 'NOT_FOUND' ? 404
         : 400;
       return res.status(status).json(result);

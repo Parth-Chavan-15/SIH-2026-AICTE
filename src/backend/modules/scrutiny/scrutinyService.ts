@@ -302,7 +302,10 @@ export async function submitCorrection(
     };
   }
 
-  const snapshot = snapshotsById.get(command.snapshotId);
+  let snapshot = snapshotsById.get(command.snapshotId);
+  if (!snapshot) {
+    snapshot = getLatestSnapshot(applicationId);
+  }
   if (!snapshot) {
     return {
       success: false,

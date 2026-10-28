@@ -372,13 +372,13 @@ export const RegulatoryStudioView: React.FC = () => {
     flash('Advanced regulatory clock by +60 Days! Enters Fire NOC 60-day advance renewal alert window.');
   };
 
-  // Stage 8 Siebel Writeback & 6-Authority Dispatch Runner
-  const handleSiebelWriteback = async () => {
+  // Stage 8 Decision Document & Digital Signing Runner
+  const handleGenerateDecisionDoc = async () => {
     setLoading(true);
     try {
-      const res = await api.triggerSiebelWriteback(activeCase?.id || 'APP-2026-COEP-001', 'Approval Issued');
+      const res = await api.generateDecisionDoc(activeCase?.id || 'APP-2026-COEP-001', 'EOA');
       setApiResponse(res);
-      flash('Downstream Siebel CRM updated & 6-Authority Statutory Distribution Packet dispatched!');
+      flash('Institute-specific Decision Letter (EoA) generated & digitally signed with Non-Production Test Certificate!');
     } catch (err: any) {
       setApiResponse({ error: err.message });
       flash(err.message, 'error');
@@ -958,21 +958,21 @@ export const RegulatoryStudioView: React.FC = () => {
               </div>
             )}
 
-            {/* STAGE 8 INTERACTIVE CONSOLE: DOWNSTREAM WRITEBACK & WORM */}
+            {/* STAGE 8 INTERACTIVE CONSOLE: DECISION DOCUMENT & DIGITAL SIGNING */}
             {activeStage === 8 && (
               <div className="space-y-4">
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-900">
-                      Downstream Siebel Write-Back & 6-Authority Bulk Dispatch:
+                      Institute-Specific Decision Letter & Demo Digital Signature:
                     </span>
                     <button
-                      onClick={handleSiebelWriteback}
+                      onClick={handleGenerateDecisionDoc}
                       disabled={loading}
                       className="px-3 py-1.5 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold flex items-center gap-1.5"
                     >
                       <Send className="w-3.5 h-3.5" />
-                      <span>Execute Siebel Write-Back</span>
+                      <span>Generate Signed EoA PDF</span>
                     </button>
                   </div>
 

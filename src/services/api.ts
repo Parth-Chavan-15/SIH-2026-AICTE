@@ -995,22 +995,153 @@ class APIService {
     });
   }
 
-  // --- Adapter 3: API Setu External Statutory Registries Hub ---
-  public async getExternalRegistries(caseId: string) {
-    return requestJson<any>(`/adapter/external-registries/${encodeURIComponent(caseId)}`);
-  }
-
-  // --- Adapter 4: Affiliating University & State DTE 15-Day NOC Concurrence Tracker ---
-  public async getConcurrence(caseId: string) {
-    return requestJson<any>(`/adapter/concurrence/${encodeURIComponent(caseId)}`);
-  }
-
-  // --- Adapter 5: Downstream Siebel Status Write-Back & 6-Authority Bulk Dispatch ---
-  public async triggerSiebelWriteback(caseId: string, currentStage?: string) {
-    return requestJson<any>(`/adapter/siebel-writeback/${encodeURIComponent(caseId)}`, {
+  // --- Deliverable 1: Interactive NSWS -> AICTE Application Simulation ---
+  public async onboardNSWS(payload: any) {
+    return requestJson<any>('/nsws/onboard', {
       method: 'POST',
-      body: JSON.stringify({ currentStage })
+      body: JSON.stringify(payload)
     });
+  }
+
+  public async evaluateNSWSRoute(facts: any) {
+    return requestJson<any>('/nsws/evaluate-route', {
+      method: 'POST',
+      body: JSON.stringify({ facts })
+    });
+  }
+
+  public async submitNSWSApplication(payload: any) {
+    return requestJson<any>('/nsws/submit', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
+  // --- Deliverable 3: Regional Office Desk Allocation ---
+  public async getAllocationGroups() {
+    return requestJson<any>('/allocation/groups');
+  }
+
+  public async getCaseAssignments(caseId: string) {
+    return requestJson<any>(`/allocation/assignments/${encodeURIComponent(caseId)}`);
+  }
+
+  public async assignCase(payload: { caseId: string; groupType: 'DESK_SCRUTINY' | 'EVC'; groupId: string; officerId: string; reason: string }) {
+    return requestJson<any>('/allocation/assign', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
+  // --- Deliverable 4: Existing AICTE Portal Ingestion & Deficiency Extraction ---
+  public async getPortalFixtures() {
+    return requestJson<any>('/portal-import/fixtures');
+  }
+
+  public async previewPortalReport(payload: { fixtureId?: string; fileContent?: string; fileName?: string }) {
+    return requestJson<any>('/portal-import/preview', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
+  public async confirmPortalIngestion(payload: any) {
+    return requestJson<any>('/portal-import/confirm', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
+  // --- Deliverable 6: Appeals (SAC), Hearings (SHC), & Complaints (PGRC/SCSC) ---
+  public async getAppealsAndHearings(caseId?: string) {
+    const qs = caseId ? `?caseId=${encodeURIComponent(caseId)}` : '';
+    return requestJson<any>(`/appeals-hearings${qs}`);
+  }
+
+  public async lodgeAppeal(payload: { caseId: string; institutionId: string; grounds: string; appellantDscToken: string }) {
+    return requestJson<any>('/appeals-hearings/appeal', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
+  public async scheduleHearing(payload: { caseId: string; hearingType: 'SHC' | 'SAC'; committeeMembers: string[]; scheduledDate: string; hearingMode: 'VIRTUAL' | 'PHYSICAL'; venueOrLink: string }) {
+    return requestJson<any>('/appeals-hearings/schedule-hearing', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
+  public async fileComplaint(payload: { caseId?: string; institutionId: string; complainantName: string; complainantAadhaarOrPan: string; complaintDetails: string; evidenceLinks?: string[]; isAnonymous?: boolean }) {
+    return requestJson<any>('/appeals-hearings/complaint', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
+  public async disposeAppeal(appealId: string, payload: { decision: 'RELIEF_GRANTED' | 'REJECTION_UPHELD' | 'REFERRED_TO_SHC'; remarks: string; committeeMembers: string[] }) {
+    return requestJson<any>(`/appeals-hearings/appeals/${encodeURIComponent(appealId)}/dispose`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
+  // --- Deliverable 7: Active Rules & Routing Registry (Role 6) ---
+  public async getActiveRules(academicYear?: string) {
+    const qs = academicYear ? `?academicYear=${encodeURIComponent(academicYear)}` : '';
+    return requestJson<any>(`/rules-registry/active${qs}`);
+  }
+
+  public async simulateRoute(facts: any) {
+    return requestJson<any>('/rules-registry/simulate-route', {
+      method: 'POST',
+      body: JSON.stringify({ facts })
+    });
+  }
+
+  public async createRuleRevision(payload: any) {
+    return requestJson<any>('/rules-registry/revisions', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
+  public async getRuleDiff(ruleId: string, draftId?: string) {
+    const qs = draftId ? `?draftId=${encodeURIComponent(draftId)}` : '';
+    return requestJson<any>(`/rules-registry/rules/${encodeURIComponent(ruleId)}/diff${qs}`);
+  }
+
+  public async publishRuleRevision(ruleId: string, payload: { reason: string; approvedBy: string }) {
+    return requestJson<any>(`/rules-registry/rules/${encodeURIComponent(ruleId)}/publish`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
+  public async getConflictRegister() {
+    return requestJson<any>('/rules-registry/conflicts');
+  }
+
+  // --- Deliverable 8: Generated Decision Documents & Demo Digital Signing ---
+  public async getGeneratedDecisionDocs(caseId?: string) {
+    const qs = caseId ? `?caseId=${encodeURIComponent(caseId)}` : '';
+    return requestJson<any>(`/decision-docs${qs}`);
+  }
+
+  public async generateDecisionDoc(caseId: string, documentType?: string) {
+    return requestJson<any>(`/decision-docs/generate/${encodeURIComponent(caseId)}`, {
+      method: 'POST',
+      body: JSON.stringify({ documentType })
+    });
+  }
+
+  public async verifyDocSignature(caseId: string) {
+    return requestJson<any>(`/decision-docs/verify-signature/${encodeURIComponent(caseId)}`);
+  }
+
+  public getDocDownloadUrl(caseId: string, documentType?: string) {
+    const qs = documentType ? `?docType=${encodeURIComponent(documentType)}` : '';
+    return `/api/v1/decision-docs/download/${encodeURIComponent(caseId)}${qs}`;
   }
 }
 

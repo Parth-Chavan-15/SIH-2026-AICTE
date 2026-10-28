@@ -147,20 +147,15 @@ describe('T17–T22 Acceptance Verification Suite (100% PS 26262 & Ecosystem Har
     expect(signedRes.body.data.statutoryCompliance).toContain('APH §1.4.3');
   });
 
-  // --- T21: External Statutory Registries Hub & Committee Selection Sync ---
-  it('T21: Provides external statutory registries data and committee auto-selection sync', async () => {
+  // --- T21: Removed API Setu Verification & Committee Selection Sync ---
+  it('T21: Verifies API Setu removal (404) and automated committee selection sync', async () => {
     const { cookie } = await loginAs('ro.western@aicte.gov.in');
 
-    // 1. External Registries Hub (NBA, NAAC, IIC, APAAR, Anti-Ragging, Feedback)
+    // 1. External Registries Hub (Removed per Deliverable 10 - must return 404)
     const regRes = await request(app)
       .get('/api/v1/adapter/external-registries/APP-2026-COEP')
       .set('Cookie', cookie);
-    expect(regRes.status).toBe(200);
-    expect(regRes.body.success).toBe(true);
-    expect(regRes.body.data.adapterType).toBe('SIMULATED_ADAPTER');
-    expect(regRes.body.data.nbaRegistry.status).toBe('VALID_ACCREDITATION');
-    expect(regRes.body.data.moeInnovationCouncil.annualActivityStarRating).toBeGreaterThanOrEqual(4);
-    expect(regRes.body.data.antiRaggingPortal.complianceStatus).toBe('100%_FILED');
+    expect(regRes.status).toBe(404);
 
     // 2. Automated Committee Selection Sync
     const commRes = await request(app)
@@ -175,8 +170,8 @@ describe('T17–T22 Acceptance Verification Suite (100% PS 26262 & Ecosystem Har
     expect(commRes.body.data.unbiasedDeclarationComplete).toBe(true);
   });
 
-  // --- T22: Consolidated Reporting Hub, Siebel Write-Back & Case Closure ---
-  it('T22: Provides consolidated 6-category reports, downstream Siebel write-back, and authorized case closure', async () => {
+  // --- T22: Consolidated Reporting Hub, Siebel Removal & Case Closure ---
+  it('T22: Provides consolidated 6-category reports, verifies Siebel removal (404), and authorized case closure', async () => {
     const { cookie } = await loginAs('ro.western@aicte.gov.in');
 
     // 1. Consolidated 6-Category Reporting Hub
@@ -189,16 +184,13 @@ describe('T17–T22 Acceptance Verification Suite (100% PS 26262 & Ecosystem Har
     expect(repRes.body.data.applicationAgeingDistribution).toBeDefined();
     expect(Object.keys(repRes.body.data.sixCategoryReports).length).toBe(6);
 
-    // 2. Downstream Siebel Write-Back & 6-Authority Dispatch
+    // 2. Downstream Siebel Write-Back (Removed per Deliverable 10 - must return 404)
     const siebelRes = await request(app)
       .post('/api/v1/adapter/siebel-writeback/APP-2026-COEP')
       .set('Cookie', cookie)
       .set('Origin', 'http://localhost:3000')
       .send({ currentStage: 'Approval Issued' });
-    expect(siebelRes.status).toBe(200);
-    expect(siebelRes.body.success).toBe(true);
-    expect(siebelRes.body.data.adapterType).toBe('SIMULATED_ADAPTER');
-    expect(siebelRes.body.data.sixAuthorityDistributionList.length).toBe(6);
+    expect(siebelRes.status).toBe(404);
 
     // 3. Authorized Case & Obligation Closure
     const closeRes = await request(app)

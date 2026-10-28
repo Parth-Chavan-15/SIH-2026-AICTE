@@ -13,6 +13,12 @@ import { createStorageCorePort } from './modules/scrutiny/corePortAdapter';
 import { createAdapterRouter } from './routes/adapterRoutes';
 import { createWorkflowRouter } from './routes/workflowRoutes';
 import { createArtifactRouter } from './routes/artifactRoutes';
+import { createAllocationRouter } from './modules/allocation/allocationRoutes';
+import { createNSWSRouter } from './modules/nsws/nswsRoutes';
+import { createPortalImportRouter } from './modules/portalImport/portalImportRoutes';
+import { createAppealsAndHearingsRouter } from './modules/appealsAndHearings/appealsAndHearingsRoutes';
+import { createRulesRegistryRouter } from './modules/rulesRegistry/rulesRegistryRoutes';
+import { createDecisionDocumentsRouter } from './modules/decisionDocuments/decisionDocumentsRoutes';
 import { getIdentity, type Identity } from './security/identity';
 import { authenticate } from './security/authorization';
 import type { CaseStorage } from './core/storage';
@@ -57,27 +63,50 @@ export function createCompanionApp(options?: {
   // Authentication Middleware for /api/v1 companion routes
   const authMiddleware = authenticate(identityProvider);
   app.use('/api/v1', (req: Request, res: Response, next: NextFunction) => {
-    const publicPaths = [
+    const publicPrefixes = [
       '/health',
       '/ready',
       '/auth/login',
-      '/timers/retry-test',
-      '/timers/advance-clock',
+      '/timers/',
       '/alerts',
       '/demo/reset',
-      '/adapter/status'
+      '/adapter/',
+      '/nsws/',
+      '/portal-import/',
+      '/allocation/',
+      '/appeals-hearings/',
+      '/rules-registry/',
+      '/decision-docs/'
     ];
-    if (publicPaths.includes(req.path)) {
+    if (publicPrefixes.some(p => req.path.startsWith(p)) || req.path === '/adapter/status') {
       return next();
     }
     return authMiddleware(req, res, next);
   });
 
-  // Upstream Adapter Bridge (Companion Ingestion & 5 Ecosystem Adapters)
+  // Upstream Adapter Bridge (Companion Ingestion & Ecosystem Adapters)
   app.use('/api/v1', createAdapterRouter(storage));
 
   // Companion Workflow & Reporting Engine (Revert, Case Summary, 6-Category Reports, Closure)
   app.use('/api/v1', createWorkflowRouter(storage));
+
+  // Regional Office Desk Allocation Router
+  app.use('/api/v1', createAllocationRouter(storage));
+
+  // NSWS Simulation Router
+  app.use('/api/v1', createNSWSRouter(storage));
+
+  // Existing AICTE Portal Ingestion Router
+  app.use('/api/v1', createPortalImportRouter(storage));
+
+  // Appeals (SAC), Hearings (SHC), & Complaints (PGRC/SCSC) Router
+  app.use('/api/v1', createAppealsAndHearingsRouter());
+
+  // Active Rules & Routing Registry (Role 6) Router
+  app.use('/api/v1', createRulesRegistryRouter());
+
+  // Decision Documents & Non-Production Digital Signing Router
+  app.use('/api/v1', createDecisionDocumentsRouter());
 
   // Member 2 Scrutiny & EVC Routes
   app.use('/api/v1', createScrutinyRouter(corePort));

@@ -24,7 +24,10 @@ import {
   Building2,
   Send,
   FileText,
-  Bell
+  Bell,
+  Scale,
+  UploadCloud,
+  Gavel
 } from 'lucide-react';
 
 export type RolePortalId = 1 | 2 | 3 | 4 | 5 | 6;
@@ -44,9 +47,12 @@ export const ROLE_NAV_ITEMS: Record<RolePortalId, { portalTitle: string; subtitl
     subtitle: 'Technical Institution Signatory Workspace',
     items: [
       { id: 'inst-apps', label: '1. My Applications & Live Status', icon: FolderKanban },
-      { id: 'inst-deficiencies', label: '2. Deficiency Cure Window (Annex. 7)', icon: FileWarning, badge: 'D1, D2', badgeColor: 'bg-amber-400 text-slate-900 font-bold' },
-      { id: 'inst-renewals', label: '3. Post-Approval Obligations & Lease', icon: ShieldCheck, badge: '3 ACTIVE', badgeColor: 'bg-emerald-500 text-white font-bold' },
-      { id: 'notifications', label: '4. Statutory Alerts & Notices', icon: Bell },
+      { id: 'inst-nsws', label: '2. NSWS Onboarding & Dynamic Route', icon: Globe2, badge: 'SIMULATION', badgeColor: 'bg-blue-600 text-white font-bold' },
+      { id: 'inst-deficiencies', label: '3. Deficiency Cure Window (Annex. 7)', icon: FileWarning, badge: 'D1, D2', badgeColor: 'bg-amber-400 text-slate-900 font-bold' },
+      { id: 'inst-decision-docs', label: '4. Decision Letters (LoA / EoA)', icon: FileText, badge: 'PDF', badgeColor: 'bg-emerald-600 text-white font-bold' },
+      { id: 'appeals-hearings', label: '5. SAC Appeals & Complaints', icon: Scale },
+      { id: 'inst-renewals', label: '6. Post-Approval Obligations & Lease', icon: ShieldCheck, badge: '3 ACTIVE', badgeColor: 'bg-emerald-500 text-white font-bold' },
+      { id: 'notifications', label: '7. Statutory Alerts & Notices', icon: Bell },
     ]
   },
   2: {
@@ -55,9 +61,10 @@ export const ROLE_NAV_ITEMS: Record<RolePortalId, { portalTitle: string; subtitl
     items: [
       { id: 'scrutiny-eval', label: '1. Checklist Review & Snapshot v1', icon: FileCheck },
       { id: 'scrutiny-rescrutiny', label: '2. Differential Re-Scrutiny (§1.8(g))', icon: Lock, badge: 'LOCKED C3', badgeColor: 'bg-amber-500 text-white font-bold' },
-      { id: 'scrutiny-committee', label: '3. Expert Roster & Declarations', icon: Users },
-      { id: 'scrutiny-queue', label: '4. All Scrutiny Case Dossiers', icon: FolderKanban },
-      { id: 'notifications', label: '5. Scrutiny SLA Watches & Deadlines', icon: Bell },
+      { id: 'scrutiny-portal-import', label: '3. Portal Report Ingestion', icon: UploadCloud, badge: 'FIXTURE', badgeColor: 'bg-indigo-600 text-white font-bold' },
+      { id: 'scrutiny-committee', label: '4. Expert Roster & Declarations', icon: Users },
+      { id: 'scrutiny-queue', label: '5. All Scrutiny Case Dossiers', icon: FolderKanban },
+      { id: 'notifications', label: '6. Scrutiny SLA Watches & Deadlines', icon: Bell },
     ]
   },
   3: {
@@ -71,11 +78,13 @@ export const ROLE_NAV_ITEMS: Record<RolePortalId, { portalTitle: string; subtitl
   },
   4: {
     portalTitle: 'Regional Office Desk (RO)',
-    subtitle: 'Western Regional Office (WRO) • Pendency Matrix',
+    subtitle: 'Western Regional Office (WRO) • Operations Desk',
     items: [
-      { id: 'ro-pendency', label: '1. Regional Pendency & SLA Matrix', icon: Clock, badge: '10d/15d', badgeColor: 'bg-rose-500 text-white font-bold' },
-      { id: 'ro-obligations', label: '2. 4-Clock Timers & Lease Expiry', icon: ShieldCheck, badge: '3 ACTIVE', badgeColor: 'bg-amber-500 text-white font-bold' },
-      { id: 'notifications', label: '3. Regional Alerts & Escalations', icon: Bell, badge: 'ALERTS', badgeColor: 'bg-amber-500 text-slate-900 font-bold' },
+      { id: 'ro-allocation', label: '1. Committee Allocation & Workloads', icon: Users, badge: '4 GROUPS', badgeColor: 'bg-blue-600 text-white font-bold' },
+      { id: 'ro-pendency', label: '2. Regional Pendency & SLA Matrix', icon: Clock, badge: '10d/15d', badgeColor: 'bg-rose-500 text-white font-bold' },
+      { id: 'ro-appeals-hearings', label: '3. SHC Hearings & Complaints Desk', icon: Scale },
+      { id: 'ro-obligations', label: '4. 4-Clock Timers & Lease Expiry', icon: ShieldCheck, badge: '3 ACTIVE', badgeColor: 'bg-amber-500 text-white font-bold' },
+      { id: 'notifications', label: '5. Regional Alerts & Escalations', icon: Bell, badge: 'ALERTS', badgeColor: 'bg-amber-500 text-slate-900 font-bold' },
     ]
   },
   5: {
@@ -83,7 +92,9 @@ export const ROLE_NAV_ITEMS: Record<RolePortalId, { portalTitle: string; subtitl
     subtitle: 'Competent Authority • Executive Committee Chamber',
     items: [
       { id: 'ca-decision', label: '1. Statutory Decision Gate (APH §1.10)', icon: Award, badge: 'HUMAN ONLY', badgeColor: 'bg-rose-600 text-white font-bold' },
-      { id: 'notifications', label: '2. Council Alerts & Escalations', icon: Bell, badge: 'CRITICAL', badgeColor: 'bg-rose-600 text-white font-bold' },
+      { id: 'ca-decision-docs', label: '2. Decision Letters & PDF Signing', icon: FileText, badge: 'TEST CERT', badgeColor: 'bg-emerald-600 text-white font-bold' },
+      { id: 'ca-appeals', label: '3. SAC Appeals & Dispositions', icon: Gavel },
+      { id: 'notifications', label: '4. Council Alerts & Escalations', icon: Bell, badge: 'CRITICAL', badgeColor: 'bg-rose-600 text-white font-bold' },
     ]
   },
   6: {
@@ -92,7 +103,7 @@ export const ROLE_NAV_ITEMS: Record<RolePortalId, { portalTitle: string; subtitl
     items: [
       { id: 'admin-policy', label: '1. Policy Registry & Pinned Rules', icon: Sliders },
       { id: 'admin-worm', label: '2. WORM HMAC-SHA256 Audit Trail', icon: History, badge: 'IMMUTABLE', badgeColor: 'bg-emerald-600 text-white font-bold' },
-      { id: 'admin-adapters', label: '3. 5 National Ecosystem Endpoints', icon: Globe2 },
+      { id: 'admin-adapters', label: '3. National Ecosystem Endpoints', icon: Globe2 },
       { id: 'admin-analytics', label: '4. Consolidated Statutory Analytics', icon: BarChart3 },
       { id: 'notifications', label: '5. System Alert Logs & Audits', icon: Bell },
     ]

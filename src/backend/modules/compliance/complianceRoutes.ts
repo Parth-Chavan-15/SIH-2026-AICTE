@@ -21,6 +21,18 @@ export function createComplianceRouter(): Router {
     res.json({ success: true, data: obligations });
   });
 
+  // GET /api/v1/compliance/obligations/:caseId - Obligations for case
+  router.get('/compliance/obligations/:caseId', (req: Request, res: Response) => {
+    const caseId = req.params.caseId;
+    const obligations = Array.from(complianceDB.obligations.values())
+      .filter((o: any) => o.caseId === caseId || o.applicationId === caseId)
+      .map((o: any) => ({
+        ...o,
+        caseId: o.caseId || o.applicationId
+      }));
+    res.json({ success: true, data: { obligations, count: obligations.length } });
+  });
+
   // POST /api/v1/obligations/:id/upload - Upload evidence (Leaves status as 'submitted')
   router.post('/obligations/:id/upload', requirePermission('document.submit'), (req: Request, res: Response) => {
     const obligation = complianceDB.obligations.get(req.params.id);

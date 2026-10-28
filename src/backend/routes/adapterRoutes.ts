@@ -4,10 +4,7 @@ import type { Application, Actor } from '../../shared/contracts';
 import { applicationSchema } from '../../shared/schemas';
 import {
   getCommitteeRoster,
-  verifyDSCSignature,
-  getExternalRegistriesData,
-  getConcurrenceTracker,
-  executeSiebelWriteback
+  verifyDSCSignature
 } from '../adapters/ecosystemAdapters';
 
 export function createAdapterRouter(storage: CaseStorage): Router {
@@ -134,11 +131,10 @@ export function createAdapterRouter(storage: CaseStorage): Router {
     return res.status(200).json({
       success: true,
       data: {
-        nswsBridge: { status: 'CONNECTED', lastSync: new Date().toISOString(), mode: 'COMPANION_LAYER' },
-        siebelCrmBridge: { status: 'CONNECTED', lastSync: new Date().toISOString(), schemaVersion: '2026-27' },
-        mSignerGateway: { status: 'ACTIVE', provider: 'AICTESigner v3.2', dscValidation: 'ENABLED' },
-        apiSetuGateway: { status: 'CONNECTED', registries: ['NBA', 'NAAC', 'NIRF', 'IIC', 'APAAR_ABC', 'ANTI_RAGGING'] },
-        concurrenceTimerBridge: { status: 'ACTIVE', prescribedTimelineDays: 15, rule: 'APH §2.19(c)' }
+        nswsSimulation: { status: 'ACTIVE', mode: 'SIMULATED_INTEGRATION', notice: 'Interactive NSWS to AICTE simulation' },
+        mSignerGateway: { status: 'ACTIVE', provider: 'emBridge / DSC Sim', dscValidation: 'ENABLED' },
+        committeeRosterGateway: { status: 'ACTIVE', provider: 'AICTE Central Portal Sync', mode: 'SIMULATED' },
+        dynamicRouteEngine: { status: 'ACTIVE', source: 'APH 2024-27 & Addendum 2026-27 Errata G02' }
       }
     });
   });
@@ -153,7 +149,7 @@ export function createAdapterRouter(storage: CaseStorage): Router {
     });
   });
 
-  // 2. POST /api/v1/adapter/dsc-verify - AICTESigner / mSigner Class-3 DSC Verification Gateway
+  // 2. POST /api/v1/adapter/dsc-verify - emBridge / Class-3 DSC Verification Gateway
   router.post('/adapter/dsc-verify', (req: Request, res: Response) => {
     try {
       const result = verifyDSCSignature({
@@ -182,34 +178,6 @@ export function createAdapterRouter(storage: CaseStorage): Router {
         error: { code: 'STORAGE_UNAVAILABLE', message: err.message || 'DSC Verification gateway failed' }
       });
     }
-  });
-
-  // 3. GET /api/v1/adapter/external-registries/:caseId - API Setu External Registries Hub
-  router.get('/adapter/external-registries/:caseId', (req: Request, res: Response) => {
-    const registries = getExternalRegistriesData(req.params.caseId);
-    return res.status(200).json({
-      success: true,
-      data: registries
-    });
-  });
-
-  // 4. GET /api/v1/adapter/concurrence/:caseId - 15-Day University & DTE NOC Concurrence Tracker
-  router.get('/adapter/concurrence/:caseId', (req: Request, res: Response) => {
-    const concurrence = getConcurrenceTracker(req.params.caseId);
-    return res.status(200).json({
-      success: true,
-      data: concurrence
-    });
-  });
-
-  // 5. POST /api/v1/adapter/siebel-writeback/:caseId - Downstream Siebel Writeback & 6-Authority Dispatch
-  router.post('/adapter/siebel-writeback/:caseId', (req: Request, res: Response) => {
-    const currentStage = req.body.currentStage || 'Approval Issued';
-    const writeback = executeSiebelWriteback(req.params.caseId, currentStage);
-    return res.status(200).json({
-      success: true,
-      data: writeback
-    });
   });
 
   return router;

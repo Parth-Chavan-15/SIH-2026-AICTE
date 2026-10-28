@@ -110,6 +110,9 @@ export function createCaseService(storage: CaseStorage, dependencies: { scrutiny
         }
         if (app.version !== command.expectedVersion) throw new CoreError('VERSION_CONFLICT', 'Stale case version', app.version);
         if (app.route.result !== 'selected' || !app.policyRevisionId) throw new CoreError('POLICY_REVIEW_REQUIRED', 'Reviewed policy route required');
+        if (app.route.policyRevisionId !== app.policyRevisionId || app.route.session !== app.session || app.route.category !== app.category) {
+          throw new CoreError('POLICY_REVIEW_REQUIRED', 'Case and route revision/session/category must agree');
+        }
         const policy = await unit.policy(app.policyRevisionId);
         const checked = policyRevisionSchema.safeParse(policy);
         if (!checked.success || checked.data.id !== app.policyRevisionId || app.route.policyRevisionId !== app.policyRevisionId || app.route.session !== app.session || app.route.category !== app.category || checked.data.status !== 'approved' || checked.data.source.reviewState !== 'reviewed' || checked.data.session !== app.session || checked.data.category !== app.category) {

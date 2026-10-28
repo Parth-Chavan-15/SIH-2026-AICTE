@@ -71,37 +71,37 @@ const ENDPOINTS_LIST: EndpointMeta[] = [
     badge: 'CCA INDIA'
   },
   {
-    id: 'registries',
-    name: '3. API Setu / External Statutory Registries Hub',
-    shortName: 'API Setu Registries Hub',
+    id: 'allocation',
+    name: '3. Regional Office Operations Desk Allocation',
+    shortName: 'RO Operations Allocation',
     method: 'GET',
-    path: '/api/v1/adapter/external-registries/:caseId',
-    authority: 'API Setu / MeitY & National Academic Registries',
-    citation: 'APH G02 p. 42, §2.1(a), §6.51, §6.53',
-    description: 'Real-time telemetry from NBA, NAAC/UGC, NIRF, MoE IIC, Academic Bank of Credits (ABC/APAAR), and Anti-Ragging portals.',
-    badge: 'API SETU'
+    path: '/api/v1/allocation/groups',
+    authority: 'AICTE Regional Office Operations Desk',
+    citation: 'APH §1.8(a), §1.9 & RO Manual',
+    description: 'Active Desk Scrutiny and EVC committee groups, real memberships, capacities, workloads, and auditable assignment history.',
+    badge: 'RO ALLOCATION'
   },
   {
-    id: 'concurrence',
-    name: '4. Affiliating University & State DTE 15-Day NOC Concurrence',
-    shortName: '15-Day NOC Concurrence',
-    method: 'GET',
-    path: '/api/v1/adapter/concurrence/:caseId',
-    authority: 'State DTE & Affiliating University Portal',
-    citation: 'APH §1.4.5 & §2.19(c) (p. 26)',
-    description: 'Tracks statutory 15-day concurrence window and automatically activates Deemed Concurrence upon expiration.',
-    badge: 'APH §2.19(c)'
-  },
-  {
-    id: 'writeback',
-    name: '5. Downstream Siebel CRM Write-Back & 6-Authority Bulk Dispatch',
-    shortName: 'Siebel Write-Back & 6-Authority',
+    id: 'portalImport',
+    name: '4. Existing AICTE Portal Ingestion & Deficiency Extraction',
+    shortName: 'Portal Report Ingestion',
     method: 'POST',
-    path: '/api/v1/adapter/siebel-writeback/:caseId',
-    authority: 'AICTE Siebel Core CRM & National Dispatch',
-    citation: 'APH §2.25 & AICTE Act §11',
-    description: 'Synchronizes case state back to AICTE Siebel CRM and executes automated cryptographic dispatch to all 6 statutory authorities.',
-    badge: 'APH §2.25'
+    path: '/api/v1/portal-import/preview',
+    authority: 'AICTE Central Approval Repository',
+    citation: 'APH §1.8(g) Scoped Re-Scrutiny',
+    description: 'Ingests prior downloaded PDF/JSON scrutiny reports, previews extracted fields/deficiencies with confidence scoring, and prepares scoped re-scrutiny.',
+    badge: 'APH §1.8(g)'
+  },
+  {
+    id: 'decisionDoc',
+    name: '5. Standards-Compliant PDF Decision Generation & Demo Signing',
+    shortName: 'PDF Decision Generator',
+    method: 'POST',
+    path: '/api/v1/decision-docs/generate/:caseId',
+    authority: 'AICTE Council Executive Committee (Act §10(k))',
+    citation: 'APH §1.10, §2.25 & Act §10(k)',
+    description: 'Renders official LoA/EoA/LoD/LoR PDF with non-production test certificate digital signature, verified digest, and order-backed post-approval conditions.',
+    badge: 'ACT §10(k)'
   }
 ];
 
@@ -156,12 +156,12 @@ export const GovernmentEndpointsView: React.FC = () => {
           'ePass2003Auto USB Cryptographic Token',
           'Dr. D. N. Sonawane'
         );
-      } else if (selectedEndpointId === 'registries') {
-        res = await api.getExternalRegistries(caseId);
-      } else if (selectedEndpointId === 'concurrence') {
-        res = await api.getConcurrence(caseId);
-      } else if (selectedEndpointId === 'writeback') {
-        res = await api.triggerSiebelWriteback(caseId, 'Approval Issued');
+      } else if (selectedEndpointId === 'allocation') {
+        res = await api.getAllocationGroups();
+      } else if (selectedEndpointId === 'portalImport') {
+        res = await api.previewPortalReport({ fixtureId: 'GIITS-2026-REPORT' });
+      } else if (selectedEndpointId === 'decisionDoc') {
+        res = await api.generateDecisionDoc(caseId);
       }
 
       const elapsed = Math.round(performance.now() - start);

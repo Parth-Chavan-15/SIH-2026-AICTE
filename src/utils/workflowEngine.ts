@@ -111,37 +111,32 @@ export function getEligibleNextStages(
       ];
 
     case 'EVC Inspection Completed':
-      if (routeType === 'Scrutiny + EVC + SAC/SHC') {
-        return [
-          {
-            stage: 'SAC / SHC Review',
-            actionLabel: 'Refer to Standing Appellate Committee',
-            actionType: 'advance',
-            requiresMandatoryReason: false,
-            requiredRole: ['bureau_officer', 'admin'],
-            description: 'Standing Hearing / Appellate Committee review for contentious items',
-          },
-        ];
-      } else {
-        return [
-          {
-            stage: 'Executive Committee Approval',
-            actionLabel: 'Recommend for EC Approval',
-            actionType: 'advance',
-            requiresMandatoryReason: false,
-            requiredRole: ['bureau_officer', 'regional_officer', 'admin'],
-            description: 'Forward positive EVC recommendations to AICTE Executive Committee',
-          },
-          {
-            stage: 'Deficiency Communicated',
-            actionLabel: 'Return for Rectification',
-            actionType: 'return',
-            requiresMandatoryReason: true,
-            requiredRole: ['bureau_officer', 'regional_officer', 'admin'],
-            description: 'EVC found remediable deficiencies; request college response',
-          },
-        ];
-      }
+      return [
+        {
+          stage: 'Executive Committee Approval',
+          actionLabel: 'Recommend for EC Approval',
+          actionType: 'advance',
+          requiresMandatoryReason: false,
+          requiredRole: ['bureau_officer', 'regional_officer', 'admin'],
+          description: 'Forward positive EVC recommendations to AICTE Executive Committee',
+        },
+        {
+          stage: 'Deficiency Communicated',
+          actionLabel: 'Return for Rectification',
+          actionType: 'return',
+          requiresMandatoryReason: true,
+          requiredRole: ['bureau_officer', 'regional_officer', 'admin'],
+          description: 'EVC found remediable deficiencies; request college response',
+        },
+        {
+          stage: 'SAC / SHC Review',
+          actionLabel: 'Conditional Referral to SHC Hearing (APH §2.23.3)',
+          actionType: 'return',
+          requiresMandatoryReason: true,
+          requiredRole: ['bureau_officer', 'regional_officer', 'admin'],
+          description: 'Standing Hearing Committee conditional review for contentious infrastructure shortcomings',
+        },
+      ];
 
     case 'SAC / SHC Review':
       return [
@@ -183,8 +178,19 @@ export function getEligibleNextStages(
         },
       ];
 
-    case 'Approval Issued':
     case 'Application Rejected':
+      return [
+        {
+          stage: 'SAC / SHC Review',
+          actionLabel: 'File Statutory Appeal to SAC (APH §1.11 / §2.24)',
+          actionType: 'advance',
+          requiresMandatoryReason: true,
+          requiredRole: ['institution', 'admin'],
+          description: 'Standing Appellate Committee statutory appeal within 7 calendar days of rejection notice',
+        },
+      ];
+
+    case 'Approval Issued':
       return [];
 
     default:
