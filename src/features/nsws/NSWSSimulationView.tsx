@@ -190,6 +190,7 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({ onSelect
   const [nbaScore, setNbaScore] = useState(680);
   const [region, setRegion] = useState('Western');
   const [builtUpAreaSqM, setBuiltUpAreaSqM] = useState(14500);
+  const [isCustomizingForm, setIsCustomizingForm] = useState(false);
 
   // Route evaluation and final submission result
   const [routeDecision, setRouteDecision] = useState<any>(null);
@@ -198,6 +199,7 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({ onSelect
   // Apply canonical preset
   const applyPreset = (preset: CollegePreset) => {
     setSelectedPresetId(preset.id);
+    setIsCustomizingForm(false);
     setPan(preset.pan);
     setSignatoryName(preset.signatory);
     setMobile(preset.mobile);
@@ -604,113 +606,192 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({ onSelect
             <div className="flex items-center gap-2">
               <Building className="w-5 h-5 text-blue-600" />
               <h3 className="font-bold text-slate-900 text-base">AICTE Portal Application Form Simulation</h3>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-semibold">
+                AY 2026-27 Intake Norms
+              </span>
             </div>
-            <span className="text-xs text-slate-500">AY 2026-27 Intake Norms</span>
+            {selectedPresetId && (
+              <button
+                onClick={() => setIsCustomizingForm(!isCustomizingForm)}
+                className="text-xs text-blue-600 hover:text-blue-800 font-medium underline"
+              >
+                {isCustomizingForm ? 'Lock to Preset Defaults' : 'Customize Scenario Values'}
+              </button>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Institution Legal Name</label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border rounded-lg bg-slate-50 focus:bg-white"
-                value={institutionName}
-                onChange={(e) => setInstitutionName(e.target.value)}
-              />
-            </div>
+          {!isCustomizingForm && selectedPresetId ? (
+            /* Read-Only Structured Benchmark Summary Cards */
+            <div className="space-y-4">
+              <div className="p-3 bg-emerald-50/70 rounded-xl border border-emerald-200 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <span className="text-xs font-semibold text-emerald-900">
+                    Pre-Populated Canonical Preset: {activePreset.name}
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono font-bold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded">
+                  VERIFIED DATA IMMUTABLE
+                </span>
+              </div>
 
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Application Category</label>
-              <select
-                className="w-full px-3 py-2 border rounded-lg bg-slate-50 focus:bg-white text-xs"
-                value={category}
-                onChange={(e: any) => setCategory(e.target.value)}
-              >
-                <option value="increase_intake">Increase in Intake in Existing Program (Table 2.3)</option>
-                <option value="new_institution">Setting up New Technical Institution (Chapter I)</option>
-                <option value="extension_of_approval">Extension of Approval (EoA Regular / Self-Disclosure)</option>
-                <option value="closure">Closure of Program / Institution (Chapter II §2.18)</option>
-              </select>
-            </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                  <span className="text-[11px] text-slate-500 block mb-1">Institution Legal Name</span>
+                  <span className="font-bold text-slate-900 block text-sm">{institutionName}</span>
+                  <span className="text-[10px] text-slate-500 font-mono mt-1 block">Region: {region} (Regional Office)</span>
+                </div>
 
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Academic Program</label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border rounded-lg bg-slate-50 focus:bg-white"
-                value={program}
-                onChange={(e) => setProgram(e.target.value)}
-              />
-            </div>
+                <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                  <span className="text-[11px] text-slate-500 block mb-1">Application Category & Level</span>
+                  <span className="font-bold text-slate-900 block capitalize">
+                    {category.replace(/_/g, ' ')} &bull; {level}
+                  </span>
+                  <span className="text-[10px] text-blue-700 font-medium mt-1 block">Program: {program}</span>
+                </div>
 
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">AICTE Region</label>
-              <select
-                className="w-full px-3 py-2 border rounded-lg bg-slate-50 focus:bg-white text-xs"
-                value={region}
-                onChange={(e) => setRegion(e.target.value)}
-              >
-                <option value="Western">Western Regional Office (Mumbai)</option>
-                <option value="South-Central">South-Central Regional Office (Hyderabad)</option>
-                <option value="North-Western">North-Western Regional Office (Chandigarh)</option>
-                <option value="Southern">Southern Regional Office (Chennai)</option>
-              </select>
-            </div>
+                <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                  <span className="text-[11px] text-slate-500 block mb-1">Intake Expansion Request</span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="font-mono text-slate-600">{existingIntake} Existing Seats</span>
+                    <span className="text-slate-400">&rarr;</span>
+                    <span className="font-bold font-mono text-slate-900 text-sm">{proposedIntake} Proposed Seats</span>
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-blue-100 text-blue-800">
+                      +{proposedIntake - existingIntake} Seats
+                    </span>
+                  </div>
+                </div>
 
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Existing Approved Intake (Seats)</label>
-              <input
-                type="number"
-                className="w-full px-3 py-2 border rounded-lg font-mono bg-slate-50 focus:bg-white"
-                value={existingIntake}
-                onChange={(e) => setExistingIntake(Number(e.target.value))}
-              />
+                <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                  <span className="text-[11px] text-slate-500 block mb-1">NBA Accreditation & Built-up Area</span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span
+                      className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
+                        nbaAccredited
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                          : 'bg-slate-200 text-slate-700'
+                      }`}
+                    >
+                      {nbaAccredited ? `NBA Accredited (${nbaScore}/1000)` : 'Non-NBA Course'}
+                    </span>
+                    <span className="text-slate-500 font-mono text-[11px]">
+                      {builtUpAreaSqM.toLocaleString()} m&sup2; Built-Up
+                    </span>
+                  </div>
+                  {nbaAccredited && nbaScore >= 650 && (
+                    <span className="text-[10px] text-emerald-700 font-semibold block mt-1">
+                      &bull; Eligible for EVC Exemption under APH Errata p. 42
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
-
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Proposed Intake (Seats)</label>
-              <input
-                type="number"
-                className="w-full px-3 py-2 border rounded-lg font-mono bg-slate-50 focus:bg-white"
-                value={proposedIntake}
-                onChange={(e) => setProposedIntake(Number(e.target.value))}
-              />
-            </div>
-
-            <div className="flex items-center gap-3 pt-3">
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={nbaAccredited}
-                  onChange={(e) => setNbaAccredited(e.target.checked)}
-                  className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4"
-                />
-                <span className="font-semibold text-slate-700 text-xs">NBA Accredited Course (Score ≥ 650 for Fast-Track)</span>
-              </label>
-            </div>
-
-            {nbaAccredited && (
+          ) : (
+            /* Editable Form when User Toggles Custom Mode */
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">NBA Score (Out of 1000 - APH Threshold ≥ 650)</label>
+                <label className="block font-semibold text-slate-700 mb-1">Institution Legal Name</label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border rounded-lg bg-slate-50 focus:bg-white"
+                  value={institutionName}
+                  onChange={(e) => setInstitutionName(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Application Category</label>
+                <select
+                  className="w-full px-3 py-2 border rounded-lg bg-slate-50 focus:bg-white text-xs"
+                  value={category}
+                  onChange={(e: any) => setCategory(e.target.value)}
+                >
+                  <option value="increase_intake">Increase in Intake in Existing Program (Table 2.3)</option>
+                  <option value="new_institution">Setting up New Technical Institution (Chapter I)</option>
+                  <option value="extension_of_approval">Extension of Approval (EoA Regular / Self-Disclosure)</option>
+                  <option value="closure">Closure of Program / Institution (Chapter II §2.18)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Academic Program</label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border rounded-lg bg-slate-50 focus:bg-white"
+                  value={program}
+                  onChange={(e) => setProgram(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">AICTE Region</label>
+                <select
+                  className="w-full px-3 py-2 border rounded-lg bg-slate-50 focus:bg-white text-xs"
+                  value={region}
+                  onChange={(e) => setRegion(e.target.value)}
+                >
+                  <option value="Western">Western Regional Office (Mumbai)</option>
+                  <option value="South-Central">South-Central Regional Office (Hyderabad)</option>
+                  <option value="North-Western">North-Western Regional Office (Chandigarh)</option>
+                  <option value="Southern">Southern Regional Office (Chennai)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Existing Approved Intake (Seats)</label>
                 <input
                   type="number"
                   className="w-full px-3 py-2 border rounded-lg font-mono bg-slate-50 focus:bg-white"
-                  value={nbaScore}
-                  onChange={(e) => setNbaScore(Number(e.target.value))}
+                  value={existingIntake}
+                  onChange={(e) => setExistingIntake(Number(e.target.value))}
                 />
               </div>
-            )}
 
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Total Built-up Area (Sq. Meters)</label>
-              <input
-                type="number"
-                className="w-full px-3 py-2 border rounded-lg font-mono bg-slate-50 focus:bg-white"
-                value={builtUpAreaSqM}
-                onChange={(e) => setBuiltUpAreaSqM(Number(e.target.value))}
-              />
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Proposed Intake (Seats)</label>
+                <input
+                  type="number"
+                  className="w-full px-3 py-2 border rounded-lg font-mono bg-slate-50 focus:bg-white"
+                  value={proposedIntake}
+                  onChange={(e) => setProposedIntake(Number(e.target.value))}
+                />
+              </div>
+
+              <div className="flex items-center gap-3 pt-3">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={nbaAccredited}
+                    onChange={(e) => setNbaAccredited(e.target.checked)}
+                    className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4"
+                  />
+                  <span className="font-semibold text-slate-700 text-xs">NBA Accredited Course (Score ≥ 650 for Fast-Track)</span>
+                </label>
+              </div>
+
+              {nbaAccredited && (
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">NBA Score (Out of 1000 - APH Threshold ≥ 650)</label>
+                  <input
+                    type="number"
+                    className="w-full px-3 py-2 border rounded-lg font-mono bg-slate-50 focus:bg-white"
+                    value={nbaScore}
+                    onChange={(e) => setNbaScore(Number(e.target.value))}
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Total Built-up Area (Sq. Meters)</label>
+                <input
+                  type="number"
+                  className="w-full px-3 py-2 border rounded-lg font-mono bg-slate-50 focus:bg-white"
+                  value={builtUpAreaSqM}
+                  onChange={(e) => setBuiltUpAreaSqM(Number(e.target.value))}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="flex justify-between pt-3 border-t border-slate-100">
             <button
@@ -783,13 +864,39 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({ onSelect
               </div>
               {routeDecision.skippedStages?.length > 0 && (
                 <div className="pt-2 border-t border-slate-200">
-                  <span className="text-slate-500 block text-[11px]">Skipped Stages (By Statutory Rule):</span>
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    {routeDecision.skippedStages.map((sk: string, i: number) => (
-                      <span key={i} className="line-through text-slate-400 font-mono text-[10px] bg-slate-100 px-2 py-0.5 rounded">
-                        {sk}
-                      </span>
-                    ))}
+                  <span className="text-slate-500 block text-[11px] font-medium mb-1.5">
+                    Statutorily Waived / Skipped Stages:
+                  </span>
+                  <div className="space-y-1.5">
+                    {routeDecision.skippedStages.map((sk: any, i: number) => {
+                      const stageName = typeof sk === 'object' ? (sk.stage || 'evc') : sk;
+                      const reason = typeof sk === 'object' ? sk.reason : '';
+                      const ruleId = typeof sk === 'object' ? sk.ruleId : '';
+                      const sourceLocator = typeof sk === 'object' ? sk.sourceLocator : '';
+                      return (
+                        <div
+                          key={i}
+                          className="flex flex-wrap items-center gap-2 p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-xs"
+                        >
+                          <span className="line-through text-slate-400 font-mono font-bold text-[11px]">
+                            {String(stageName).replace(/_/g, ' ')}
+                          </span>
+                          <span className="text-[10px] bg-emerald-200 text-emerald-900 font-mono font-bold px-1.5 py-0.5 rounded">
+                            {ruleId || 'EXEMPT'}
+                          </span>
+                          {sourceLocator && (
+                            <span className="text-[10px] text-emerald-700 font-semibold">
+                              {sourceLocator}
+                            </span>
+                          )}
+                          {reason && (
+                            <span className="text-[11px] text-slate-600 truncate max-w-[280px]">
+                              &mdash; {reason}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

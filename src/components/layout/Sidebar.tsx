@@ -47,62 +47,62 @@ export const ROLE_NAV_ITEMS: Record<RolePortalId, { portalTitle: string; subtitl
     subtitle: 'Technical Institution Signatory Workspace',
     items: [
       { id: 'inst-apps', label: '1. My Applications & Live Status', icon: FolderKanban },
-      { id: 'inst-nsws', label: '2. NSWS Onboarding & Dynamic Route', icon: Globe2, badge: 'SIMULATION', badgeColor: 'bg-blue-600 text-white font-bold' },
-      { id: 'inst-deficiencies', label: '3. Deficiency Cure Window (Annex. 7)', icon: FileWarning, badge: 'D1, D2', badgeColor: 'bg-amber-400 text-slate-900 font-bold' },
-      { id: 'inst-decision-docs', label: '4. Decision Letters (LoA / EoA)', icon: FileText, badge: 'PDF', badgeColor: 'bg-emerald-600 text-white font-bold' },
-      { id: 'appeals-hearings', label: '5. SAC Appeals & Complaints', icon: Scale },
-      { id: 'inst-renewals', label: '6. Post-Approval Obligations & Lease', icon: ShieldCheck, badge: '3 ACTIVE', badgeColor: 'bg-emerald-500 text-white font-bold' },
-      { id: 'notifications', label: '7. Statutory Alerts & Notices', icon: Bell },
+      { id: 'inst-nsws', label: '2. NSWS Onboarding & Dynamic Route', icon: Globe2 },
+      { id: 'inst-deficiencies', label: '3. Deficiency Responses & Document Cures', icon: FileWarning },
+      { id: 'inst-decision-docs', label: '4. Decision Letters (LoA / EoA)', icon: FileText },
+      { id: 'inst-renewals', label: '5. Post-Approval Obligations & Undertakings', icon: ShieldCheck },
+      { id: 'appeals-hearings', label: '6. Standing Appellate Committee (SAC)', icon: Scale },
+      { id: 'notifications', label: '7. Official Notices & Deadline Alerts', icon: Bell },
     ]
   },
   2: {
     portalTitle: 'Scrutiny Committee Cell',
-    subtitle: 'Desk Review • Roster 2-SOC1770029225',
+    subtitle: 'Desk Review • Expert Review Panel',
     items: [
-      { id: 'scrutiny-eval', label: '1. Checklist Review & Snapshot v1', icon: FileCheck },
-      { id: 'scrutiny-rescrutiny', label: '2. Differential Re-Scrutiny (§1.8(g))', icon: Lock, badge: 'LOCKED C3', badgeColor: 'bg-amber-500 text-white font-bold' },
-      { id: 'scrutiny-portal-import', label: '3. Portal Report Ingestion', icon: UploadCloud, badge: 'FIXTURE', badgeColor: 'bg-indigo-600 text-white font-bold' },
+      { id: 'scrutiny-eval', label: '1. Desk Scrutiny Evaluation & Deficiencies', icon: FileCheck },
+      { id: 'scrutiny-rescrutiny', label: '2. Differential Re-Scrutiny (Locked C3)', icon: Lock },
+      { id: 'scrutiny-portal-import', label: '3. Portal Report Ingestion', icon: UploadCloud },
       { id: 'scrutiny-committee', label: '4. Expert Roster & Declarations', icon: Users },
-      { id: 'scrutiny-queue', label: '5. All Scrutiny Case Dossiers', icon: FolderKanban },
-      { id: 'notifications', label: '6. Scrutiny SLA Watches & Deadlines', icon: Bell },
+      { id: 'scrutiny-queue', label: '5. Assigned Application Queue', icon: FolderKanban },
+      { id: 'notifications', label: '6. Scrutiny SLA Timers & Deadlines', icon: Bell },
     ]
   },
   3: {
     portalTitle: 'EVC Committee Portal',
-    subtitle: 'Expert Visit & Inspection Panel',
+    subtitle: 'Expert Visit & Physical Inspection Panel',
     items: [
-      { id: 'evc-inspect', label: '1. Campus Inspections & Telemetry', icon: MapPin, badge: 'NBA SKIP', badgeColor: 'bg-emerald-500 text-white font-bold' },
-      { id: 'evc-reports', label: '2. Signed Inspection Reports (§1.9)', icon: FileText },
-      { id: 'notifications', label: '3. EVC Inspection Reminders', icon: Bell },
+      { id: 'evc-inspect', label: '1. Campus Inspections & Telemetry', icon: MapPin },
+      { id: 'evc-reports', label: '2. Signed Inspection Reports', icon: FileText },
+      { id: 'notifications', label: '3. Inspection Deadlines & Alerts', icon: Bell },
     ]
   },
   4: {
     portalTitle: 'Regional Office Desk (RO)',
     subtitle: 'Western Regional Office (WRO) • Operations Desk',
     items: [
-      { id: 'ro-allocation', label: '1. Committee Allocation & Workloads', icon: Users, badge: '4 GROUPS', badgeColor: 'bg-blue-600 text-white font-bold' },
-      { id: 'ro-pendency', label: '2. Regional Pendency & SLA Matrix', icon: Clock, badge: '10d/15d', badgeColor: 'bg-rose-500 text-white font-bold' },
-      { id: 'ro-appeals-hearings', label: '3. SHC Hearings & Complaints Desk', icon: Scale },
-      { id: 'ro-obligations', label: '4. 4-Clock Timers & Lease Expiry', icon: ShieldCheck, badge: '3 ACTIVE', badgeColor: 'bg-amber-500 text-white font-bold' },
-      { id: 'notifications', label: '5. Regional Alerts & Escalations', icon: Bell, badge: 'ALERTS', badgeColor: 'bg-amber-500 text-slate-900 font-bold' },
+      { id: 'ro-allocation', label: '1. Committee Allocation & Workloads', icon: Users },
+      { id: 'ro-pendency', label: '2. Regional Pendency & SLA Matrix', icon: Clock },
+      { id: 'ro-appeals-hearings', label: '3. Standing Hearing Committee (SHC)', icon: Scale },
+      { id: 'ro-obligations', label: '4. Post-Approval Compliance & 4-Clock Timers', icon: ShieldCheck },
+      { id: 'notifications', label: '5. Regional Alerts & Escalations', icon: Bell },
     ]
   },
   5: {
     portalTitle: 'Approval Bureau & Council',
     subtitle: 'Competent Authority • Executive Committee Chamber',
     items: [
-      { id: 'ca-decision', label: '1. Statutory Decision Gate (APH §1.10)', icon: Award, badge: 'HUMAN ONLY', badgeColor: 'bg-rose-600 text-white font-bold' },
-      { id: 'ca-decision-docs', label: '2. Decision Letters & PDF Signing', icon: FileText, badge: 'TEST CERT', badgeColor: 'bg-emerald-600 text-white font-bold' },
+      { id: 'ca-decision', label: '1. Statutory Decision Gate', icon: Award },
+      { id: 'ca-decision-docs', label: '2. Decision Letters & PDF Signing', icon: FileText },
       { id: 'ca-appeals', label: '3. SAC Appeals & Dispositions', icon: Gavel },
-      { id: 'notifications', label: '4. Council Alerts & Escalations', icon: Bell, badge: 'CRITICAL', badgeColor: 'bg-rose-600 text-white font-bold' },
+      { id: 'notifications', label: '4. Council Alerts & Escalations', icon: Bell },
     ]
   },
   6: {
     portalTitle: 'Central Policy Administration',
     subtitle: 'Policy Engine & WORM Governance',
     items: [
-      { id: 'admin-policy', label: '1. Policy Registry & Pinned Rules', icon: Sliders },
-      { id: 'admin-worm', label: '2. WORM HMAC-SHA256 Audit Trail', icon: History, badge: 'IMMUTABLE', badgeColor: 'bg-emerald-600 text-white font-bold' },
+      { id: 'admin-policy', label: '1. Policy Registry & Dynamic Rules', icon: Sliders },
+      { id: 'admin-worm', label: '2. WORM Cryptographic Audit Trail', icon: History },
       { id: 'admin-adapters', label: '3. National Ecosystem Endpoints', icon: Globe2 },
       { id: 'admin-analytics', label: '4. Consolidated Statutory Analytics', icon: BarChart3 },
       { id: 'notifications', label: '5. System Alert Logs & Audits', icon: Bell },
@@ -127,6 +127,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const session = getSession();
   const activeActor = session?.actor;
+  const { applications, notifications, complianceItems, auditLog } = useApp();
 
   // Determine active role portal (1-6) - Priority order: Institution -> Regional -> Bureau -> EVC -> Reviewer -> Admin
   const roleNumber: RolePortalId = 
@@ -138,6 +139,48 @@ export const Sidebar: React.FC<SidebarProps> = ({
     6;
 
   const currentPortal = ROLE_NAV_ITEMS[roleNumber] || ROLE_NAV_ITEMS[4];
+
+  // Derive dynamic context-aware badges without hardcoded counts
+  const getDynamicBadge = (itemId: string): { text: string | number; color?: string } | null => {
+    if (itemId === 'inst-apps') {
+      return applications.length > 0 ? { text: applications.length, color: 'bg-blue-600 text-white font-bold' } : null;
+    }
+    if (itemId === 'inst-deficiencies') {
+      const defCount = applications.filter(a => a.currentStage === 'Deficiency Communicated' || a.documents?.some(d => d.status === 'Rejected')).length;
+      return defCount > 0 ? { text: defCount, color: 'bg-amber-400 text-slate-900 font-bold' } : null;
+    }
+    if (itemId === 'inst-renewals' || itemId === 'ro-obligations') {
+      const pendingObl = complianceItems.filter(i => i.status !== 'Verified').length;
+      return pendingObl > 0 ? { text: pendingObl, color: 'bg-amber-400 text-slate-900 font-bold' } : null;
+    }
+    if (itemId === 'notifications') {
+      const unread = notifications.filter(n => !n.isRead).length;
+      return unread > 0 ? { text: unread, color: 'bg-rose-600 text-white font-bold' } : null;
+    }
+    if (itemId === 'scrutiny-eval') {
+      const pendingScrutiny = applications.filter(a => a.currentStage === 'Scrutiny in Progress' || a.currentStage === 'Application Submitted').length;
+      return pendingScrutiny > 0 ? { text: pendingScrutiny, color: 'bg-amber-400 text-slate-900 font-bold' } : null;
+    }
+    if (itemId === 'scrutiny-rescrutiny') {
+      const pendingRescrutiny = applications.filter(a => a.currentStage === 'Deficiency Communicated').length;
+      return pendingRescrutiny > 0 ? { text: pendingRescrutiny, color: 'bg-amber-400 text-slate-900 font-bold' } : null;
+    }
+    if (itemId === 'evc-inspect') {
+      const pendingEVC = applications.filter(a => a.currentStage === 'EVC Scheduled' || a.currentStage === 'Scrutiny Cleared').length;
+      return pendingEVC > 0 ? { text: pendingEVC, color: 'bg-purple-600 text-white font-bold' } : null;
+    }
+    if (itemId === 'ca-decision') {
+      const pendingDec = applications.filter(a => a.currentStage === 'Executive Committee Approval' || a.currentStage === 'EVC Inspection Completed').length;
+      return pendingDec > 0 ? { text: pendingDec, color: 'bg-rose-600 text-white font-bold' } : null;
+    }
+    if (itemId === 'admin-worm') {
+      return auditLog.length > 0 ? { text: auditLog.length, color: 'bg-emerald-600 text-white font-bold' } : null;
+    }
+    if (itemId === 'inst-nsws') {
+      return { text: 'SIM', color: 'bg-blue-500/40 text-blue-200 font-bold' };
+    }
+    return null;
+  };
 
   return (
     <>
@@ -153,10 +196,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         className={`fixed top-0 bottom-0 left-0 z-35 flex flex-col text-slate-200 transition-all duration-300 ease-in-out ${
           isMobile
             ? isOpen
-              ? 'w-[272px] translate-x-0'
-              : '-translate-x-full w-[272px]'
+              ? 'w-[288px] translate-x-0'
+              : '-translate-x-full w-[288px]'
             : isOpen
-            ? 'w-[260px] translate-x-0 static'
+            ? 'w-[288px] translate-x-0 static'
             : 'w-[68px] translate-x-0 static'
         }`}
         style={{
@@ -224,6 +267,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {currentPortal.items.map((item) => {
             const Icon = item.icon;
             const isActive = currentTab === item.id;
+            const dynamicBadge = getDynamicBadge(item.id);
 
             return (
               <button
@@ -233,7 +277,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   if (isMobile) onToggle();
                 }}
                 title={!isOpen ? item.label : undefined}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all group ${
                   isActive
                     ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-600/30 ring-1 ring-blue-400/40'
                     : 'text-slate-300 hover:bg-white/[0.06] hover:text-white'
@@ -245,15 +289,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <Icon className="w-4 h-4" />
                 </div>
                 {isOpen && (
-                  <span className="truncate flex-1 text-left">{item.label}</span>
+                  <div className="flex-1 flex items-center justify-between min-w-0 gap-1.5 overflow-hidden">
+                    <span className="truncate text-left text-xs">{item.label}</span>
+                    <span className="text-[9px] font-mono text-slate-400/70 px-1 py-0.2 rounded bg-white/5 border border-white/10 shrink-0">
+                      {item.id}
+                    </span>
+                  </div>
                 )}
-                {isOpen && item.badge !== undefined && (
+                {isOpen && dynamicBadge && (
                   <span
-                    className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono min-w-[18px] text-center ${
-                      item.badgeColor || 'bg-white/10 text-slate-300'
+                    className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono min-w-[18px] text-center shrink-0 ${
+                      dynamicBadge.color || 'bg-white/10 text-slate-300'
                     }`}
                   >
-                    {item.badge}
+                    {dynamicBadge.text}
                   </span>
                 )}
               </button>

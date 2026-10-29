@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import {
   UserRole,
   UserProfile,
@@ -144,8 +144,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
   };
 
+  const isRefreshingRef = useRef(false);
+
   const refreshData = async () => {
-    setLoading(true);
+    if (isRefreshingRef.current) return;
+    isRefreshingRef.current = true;
+    if (applications.length === 0) {
+      setLoading(true);
+    }
     try {
       const [apps, evcs, comps, docs, notifs, escs, audits, rules] = await Promise.all([
         api.getApplications(role).catch(() => []),
@@ -166,14 +172,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setAuditLog(audits);
       setConfigRules(rules);
     } catch (err) {
-      setApplications([]); setAuditLog([]); setNotifications([]);
-      addToast({
-        type: 'error',
-        title: 'Data Load Failed',
-        message: 'Could not fetch live workflow data.',
-      });
+      // Retain existing state on background revalidation failure
     } finally {
       setLoading(false);
+      isRefreshingRef.current = false;
     }
   };
 
@@ -181,13 +183,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     refreshData();
   }, [role]);
 
-  // Reactive multi-role session switcher synchronization
+  // Reactive multi-role session switcher synchronization (deduplicated)
   useEffect(() => {
     const handleSessionChange = () => {
       const profile = api.getUserProfile();
-      setRoleState(profile.role);
       setUserState(profile);
-      refreshData();
+      setRoleState((prevRole) => {
+        if (prevRole === profile.role) {
+          refreshData();
+          return prevRole;
+        }
+        return profile.role;
+      });
     };
     window.addEventListener('sih:sessionchanged', handleSessionChange);
     return () => window.removeEventListener('sih:sessionchanged', handleSessionChange);

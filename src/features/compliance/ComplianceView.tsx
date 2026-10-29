@@ -53,13 +53,13 @@ export const ComplianceView: React.FC = () => {
         return item.institutionName.includes('BATU') || item.applicationId.includes('BATU');
       }
       if (actorId === 'usr-inst-pdimtr' || email === 'principal@pdimtr.ac.in') {
-        return item.institutionName.includes('PDIMTR') || item.institutionName.includes('Prerna');
+        return item.institutionName.includes('PDIMTR') || item.institutionName.includes('Prerna') || item.applicationId.includes('PDIMTR');
       }
       if (actorId === 'usr-inst-coep' || email === 'principal@coep.ac.in') {
-        return item.institutionName.includes('COEP') || item.institutionName.includes('PDIMTR');
+        return item.institutionName.includes('COEP') || item.applicationId.includes('COEP');
       }
       if (actorId === 'usr-inst-giits' || email === 'principal@giits.ac.in') {
-        return item.institutionName.includes('GIITS') || item.institutionName.includes('Gonna');
+        return item.institutionName.includes('GIITS') || item.institutionName.includes('Gonna') || item.applicationId.includes('GIITS');
       }
       
       return true;
@@ -74,6 +74,11 @@ export const ComplianceView: React.FC = () => {
     const matchesStatus = filterStatus === 'All' || item.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
+
+  const totalCount = scopedItems.length;
+  const verifiedCount = scopedItems.filter((i) => i.status === 'Verified').length;
+  const pendingCount = scopedItems.filter((i) => i.status === 'Pending Evidence' || i.status === 'Submitted').length;
+  const overdueCount = scopedItems.filter((i) => i.isOverdue || i.status === 'Overdue').length;
 
   const handleUploadSubmit = async () => {
     if (!uploadTarget || !evidenceFileName.trim()) return;
@@ -91,15 +96,51 @@ export const ComplianceView: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Role-Tailored Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-            Institutional Compliance & Undertaking Monitoring
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+              {isInstitution
+                ? 'My Statutory Compliance & Post-Approval Obligations'
+                : 'Regional Compliance & Post-Approval Oversight'}
+            </h2>
+            <span
+              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                isInstitution
+                  ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                  : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+              }`}
+            >
+              <ShieldCheck className="w-3 h-3" />
+              {isInstitution ? 'Applicant Filing Desk' : 'RO Regional Monitoring'}
+            </span>
+          </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Tracking post-approval affidavits, cadre ratios, safety provisions, and PwD accessibility norms
+            {isInstitution
+              ? 'Fulfill mandated post-approval affidavits, lease renewals, fire safety certificates, and faculty undertakings'
+              : 'Monitor compliance undertakings, 4-clock outbox deadlines, and verify institutional proof submissions'}
           </p>
+        </div>
+      </div>
+
+      {/* KPI Metric Summary Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
+          <span className="text-[11px] font-medium text-slate-500 block">Total Monitored</span>
+          <span className="text-lg font-bold text-slate-900 mt-0.5 block font-mono">{totalCount}</span>
+        </div>
+        <div className="p-3.5 bg-emerald-50/60 rounded-xl border border-emerald-200 shadow-2xs">
+          <span className="text-[11px] font-medium text-emerald-700 block">Verified Compliant</span>
+          <span className="text-lg font-bold text-emerald-800 mt-0.5 block font-mono">{verifiedCount}</span>
+        </div>
+        <div className="p-3.5 bg-amber-50/60 rounded-xl border border-amber-200 shadow-2xs">
+          <span className="text-[11px] font-medium text-amber-700 block">Action / Evidence Pending</span>
+          <span className="text-lg font-bold text-amber-800 mt-0.5 block font-mono">{pendingCount}</span>
+        </div>
+        <div className="p-3.5 bg-rose-50/60 rounded-xl border border-rose-200 shadow-2xs">
+          <span className="text-[11px] font-medium text-rose-700 block">Overdue Filings</span>
+          <span className="text-lg font-bold text-rose-800 mt-0.5 block font-mono">{overdueCount}</span>
         </div>
       </div>
 
@@ -109,7 +150,11 @@ export const ComplianceView: React.FC = () => {
           <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
           <input
             type="text"
-            placeholder="Search undertakings by institution, condition title, or application number..."
+            placeholder={
+              isInstitution
+                ? 'Search conditions, document titles, or application number...'
+                : 'Search undertakings by institution, condition title, or application number...'
+            }
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -136,7 +181,7 @@ export const ComplianceView: React.FC = () => {
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
-                <th className="py-3 px-4">Institution & Case ID</th>
+                {!isInstitution && <th className="py-3 px-4">Institution & Case ID</th>}
                 <th className="py-3 px-4">Regulatory Condition</th>
                 <th className="py-3 px-4">Due Date & SLA</th>
                 <th className="py-3 px-4">Evidence Status</th>
@@ -145,16 +190,33 @@ export const ComplianceView: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredItems.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="py-3.5 px-4">
-                    <p className="font-bold text-slate-900">{item.institutionName}</p>
-                    <span className="font-mono text-[11px] text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded mt-0.5 inline-block">
-                      {item.applicationNumber}
-                    </span>
+              {filteredItems.length === 0 ? (
+                <tr>
+                  <td colSpan={isInstitution ? 5 : 6} className="py-12 text-center text-slate-500">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <ShieldCheck className="w-8 h-8 text-slate-300" />
+                      <p className="font-semibold text-slate-700">No Compliance Obligations Found</p>
+                      <p className="text-[11px] text-slate-400 max-w-sm">
+                        {isInstitution
+                          ? 'All post-approval undertakings and documentation requirements are fully satisfied or none are currently scheduled for your institution.'
+                          : 'No regional compliance records match your active search and status filter criteria.'}
+                      </p>
+                    </div>
                   </td>
+                </tr>
+              ) : (
+                filteredItems.map((item) => (
+                  <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                    {!isInstitution && (
+                      <td className="py-3.5 px-4">
+                        <p className="font-bold text-slate-900">{item.institutionName}</p>
+                        <span className="font-mono text-[11px] text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded mt-0.5 inline-block">
+                          {item.applicationNumber}
+                        </span>
+                      </td>
+                    )}
 
-                  <td className="py-3.5 px-4 max-w-[280px]">
+                    <td className="py-3.5 px-4 max-w-[280px]">
                     <p className="font-bold text-slate-800">{item.conditionTitle}</p>
                     <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
                       {item.description}
@@ -238,7 +300,7 @@ export const ComplianceView: React.FC = () => {
                       )}
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>
