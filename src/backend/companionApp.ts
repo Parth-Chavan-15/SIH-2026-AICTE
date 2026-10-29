@@ -22,6 +22,27 @@ import { createDecisionDocumentsRouter } from './modules/decisionDocuments/decis
 import { getIdentity, type Identity } from './security/identity';
 import { authenticate } from './security/authorization';
 import type { CaseStorage } from './core/storage';
+import { execSync } from 'child_process';
+
+let cachedCommitSha: string | null = null;
+export function resolveCommitSha(): string {
+  if (cachedCommitSha) return cachedCommitSha;
+  if (process.env.RENDER_GIT_COMMIT) {
+    cachedCommitSha = process.env.RENDER_GIT_COMMIT;
+    return cachedCommitSha;
+  }
+  if (process.env.GIT_COMMIT) {
+    cachedCommitSha = process.env.GIT_COMMIT;
+    return cachedCommitSha;
+  }
+  try {
+    cachedCommitSha = execSync('git rev-parse HEAD', { encoding: 'utf-8', timeout: 1000 }).trim();
+    return cachedCommitSha;
+  } catch {
+    cachedCommitSha = 'd806694';
+    return cachedCommitSha;
+  }
+}
 
 export interface CompanionAppInstance {
   app: Express;
@@ -60,7 +81,8 @@ export function createCompanionApp(options?: {
     status: 'ok',
     version: '2.5.0',
     service: 'niyamsetu-aicte',
-    commit: process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || 'bc341e6',
+    commit: resolveCommitSha(),
+    nodeVersion: process.version,
     environment: process.env.NODE_ENV || 'development',
     uptimeSeconds: Math.floor(process.uptime()),
     timestamp: new Date().toISOString()
@@ -70,7 +92,7 @@ export function createCompanionApp(options?: {
     res.json({
       status: 'alive',
       uptimeSeconds: Math.floor(process.uptime()),
-      commit: process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || 'bc341e6',
+      commit: resolveCommitSha(),
       readiness: '/api/v1/ready',
       version: '/api/version'
     });
@@ -81,6 +103,10 @@ export function createCompanionApp(options?: {
   });
 
   app.get('/api/version', (_req: Request, res: Response) => {
+    res.json(getVersionPayload());
+  });
+
+  app.get('/api/v1/version', (_req: Request, res: Response) => {
     res.json(getVersionPayload());
   });
 

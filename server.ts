@@ -56,7 +56,7 @@ app.use((req, res, next) => {
 // Seamlessly provides zero-downtime canonical in-memory fallback when offline.
 import { initMongoDatabase } from './src/backend/persistence/mongoInit.ts';
 import { createMongoStorage } from './src/backend/persistence/mongoCore.ts';
-import { createCompanionApp } from './src/backend/companionApp.ts';
+import { createCompanionApp, resolveCommitSha } from './src/backend/companionApp.ts';
 
 const mongoInit = await initMongoDatabase(process.env.MONGODB_URI);
 
@@ -98,32 +98,42 @@ if (mongoInit.connected) {
   console.log('🛡️ Companion Application running with Zero-Downtime Canonical Memory Storage.');
 }
 
+// Top-Level Diagnostic & Version Endpoints
+const getTopVersionPayload = () => ({
+  status: 'ok',
+  version: '2.5.0',
+  service: 'niyamsetu-aicte',
+  commit: resolveCommitSha(),
+  nodeVersion: process.version,
+  environment: process.env.NODE_ENV || 'development',
+  uptimeSeconds: Math.floor(process.uptime()),
+  timestamp: new Date().toISOString()
+});
+
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'alive',
+    uptimeSeconds: Math.floor(process.uptime()),
+    commit: resolveCommitSha(),
+    readiness: '/api/v1/ready',
+    version: '/api/version'
+  });
+});
+
+app.get('/version', (req, res) => {
+  res.json(getTopVersionPayload());
+});
+
+app.get('/api/version', (req, res) => {
+  res.json(getTopVersionPayload());
+});
+
+app.get('/api/v1/version', (req, res) => {
+  res.json(getTopVersionPayload());
+});
+
 const companion = createCompanionApp(companionStorage ? { storage: companionStorage } : undefined);
 app.use(companion.app);
-
-// Top-Level Diagnostic & Version Endpoints
-app.get('/version', (req, res) => {
-  res.json({
-    status: 'ok',
-    version: '2.5.0',
-    service: 'niyamsetu-aicte',
-    commit: process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || 'bc341e6',
-    environment: process.env.NODE_ENV || 'development',
-    uptimeSeconds: Math.floor(process.uptime()),
-    timestamp: new Date().toISOString()
-  });
-});
-app.get('/api/version', (req, res) => {
-  res.json({
-    status: 'ok',
-    version: '2.5.0',
-    service: 'niyamsetu-aicte',
-    commit: process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || 'bc341e6',
-    environment: process.env.NODE_ENV || 'development',
-    uptimeSeconds: Math.floor(process.uptime()),
-    timestamp: new Date().toISOString()
-  });
-});
 
 
 // Realtime is closed until authenticated, scoped subscriptions have a reviewed adapter.
