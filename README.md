@@ -1,18 +1,27 @@
-# NIYAMSETU (नियमसेतु)
+<h1 align="center">NIYAMSETU <sub>नियमसेतु</sub></h1>
 
-**AICTE approval and compliance workflows, made clear and traceable.**
+<p align="center"><strong>Clear, traceable AICTE approval and compliance workflows.</strong></p>
+<p align="center"><sub>Smart India Hackathon 2026 &nbsp;•&nbsp; AICTE Problem Statement 26262 &nbsp;•&nbsp; Academic Year 2026–27</sub></p>
 
-**Smart India Hackathon 2026 · AICTE Problem Statement 26262 · Academic Year 2026–27**
+<p align="center">
+  <a href="https://niyamsetu-aicte.onrender.com"><img alt="Live prototype" src="https://img.shields.io/badge/Live%20Prototype-Explore%20Now-008C8C?style=for-the-badge" /></a>
+  <a href="./docs/PS_COMPLIANCE_MATRIX.md"><img alt="36 requirements traced" src="https://img.shields.io/badge/Requirements-36%20Traced-0B2F54?style=for-the-badge" /></a>
+  <a href="./tests/"><img alt="388 tests reported passing" src="https://img.shields.io/badge/Tests-388%20Reported%20Passing-16834B?style=for-the-badge" /></a>
+</p>
 
-[![Live prototype](https://img.shields.io/badge/Live-Prototype-008C8C?style=flat-square)](https://niyamsetu-aicte.onrender.com)
-[![Requirements](https://img.shields.io/badge/PS%2026262-36%20requirements%20traced-0B2F54?style=flat-square)](./docs/PS_COMPLIANCE_MATRIX.md)
-[![Tests](https://img.shields.io/badge/Tests-388%20reported%20passing-008C8C?style=flat-square)](./tests/)
+<p align="center">
+  <a href="https://niyamsetu-aicte.onrender.com">🚀 Live demo</a> &nbsp;·&nbsp;
+  <a href="./docs/workflows/README.md">📖 Workflow documentation</a> &nbsp;·&nbsp;
+  <a href="./docs/PS_COMPLIANCE_MATRIX.md">✅ Requirements matrix</a>
+</p>
 
-**[Try the live prototype](https://niyamsetu-aicte.onrender.com)** · **[Explore the documentation](./docs/workflows/README.md)** · **[View the requirements matrix](./docs/PS_COMPLIANCE_MATRIX.md)**
+<p align="center"><img src="docs/assets/niyamsetu-main-ui.png" width="920" alt="NiyamSetu application interface" /></p>
 
-![NIYAMSETU application interface](docs/assets/niyamsetu-main-ui.png)
+<p align="center"><strong>🧩 22 application categories &nbsp; | &nbsp; 👥 6 workspaces &nbsp; | &nbsp; 🗺️ 11 workflow diagrams</strong></p>
 
-## Overview
+---
+
+## 🏛️ Overview
 
 The All India Council for Technical Education (AICTE) manages approvals for thousands of technical institutions. Applications, scrutiny, inspections, decisions, and later compliance checks often involve separate processes.
 
@@ -20,38 +29,40 @@ The All India Council for Technical Education (AICTE) manages approvals for thou
 
 It supports new institutions, annual Extensions of Approval (EoA), intake changes, new programmes, site changes, restoration of intake, and other documented categories. Routes vary by application type and supporting evidence; a visit or hearing is required only when the applicable rules call for one.
 
-## What makes NiyamSetu different
+## ✨ Core capabilities
 
 | Core capability | What it means |
 |---|---|
-| **Explainable rule-based routing** | Selects among Routes 1–5 using a recorded rule version, with a **“Why this route?”** explanation. Unclear cases (including `X=360`, ELP 50%, and hibernation) stop at `review_required` for human review. |
-| **Scope-locked re-scrutiny** | Rechecks only notified deficiencies. Previously cleared items stay read-only with SHA-256 integrity checks; unauthorized edits are rejected (`HTTP 409`). |
-| **Human decision authority** | Council-authorized personnel review and release LoA/EoA decisions. Demo PDFs include HMAC-SHA256 seals; software does not approve cases by itself. |
-| **Approval-to-compliance continuity** | Links order conditions to deadlines, evidence uploads, renewals, and audit records after approval. |
+| 🧭 **Explainable rule-based routing** | Selects among Routes 1–5 using a recorded rule version, with a **“Why this route?”** explanation. Unclear cases (including `X=360`, ELP 50%, and hibernation) stop at `review_required` for human review. |
+| 🔒 **Scope-locked re-scrutiny** | Rechecks only notified deficiencies. Previously cleared items stay read-only with SHA-256 integrity checks; unauthorized edits are rejected (`HTTP 409`). |
+| ⚖️ **Human decision authority** | Council-authorized personnel review and release LoA/EoA decisions. Demo PDFs include HMAC-SHA256 seals; software does not approve cases by itself. |
+| 📅 **Approval-to-compliance continuity** | Links order conditions to deadlines, evidence uploads, renewals, and audit records after approval. |
 
-### Additional engineering capabilities
+### 🛠️ Additional engineering capabilities
 
-- **22-category coverage:** Chapter I new institutions plus 21 Chapter II Table 2.3 categories, with conditional scrutiny and Expert Visit Committee (EVC) routes.
-- **Simulated single-window intake:** Pre-filled National Single Window System (NSWS) data and Class-3 Digital Signature Certificate (DSC) token checks.
-- **Protected evidence:** Separate applicant records, expert notes, and decision drafts; SHA-256 evidence digests.
-- **EVC inspection controls:** Demonstration GPS geofence (500 m), timestamped walkthrough video, and inspection reports.
-- **Deadline and escalation controls:** Separate scrutiny/cure timers, seven-day Standing Appellate Committee (SAC) appeals, and post-approval clocks.
-- **Guided evaluation:** Pre-seeded cases and scenarios across six role-specific workspaces.
+- 🧩 **22-category coverage:** Chapter I new institutions plus 21 Chapter II Table 2.3 categories, with conditional scrutiny and Expert Visit Committee (EVC) routes.
+- 🔗 **Simulated single-window intake:** Pre-filled National Single Window System (NSWS) data and Class-3 Digital Signature Certificate (DSC) token checks.
+- 🗂️ **Protected evidence:** Separate applicant records, expert notes, and decision drafts; SHA-256 evidence digests.
+- 📍 **EVC inspection controls:** Demonstration GPS geofence (500 m), timestamped walkthrough video, and inspection reports.
+- ⏱️ **Deadline and escalation controls:** Separate scrutiny/cure timers, seven-day Standing Appellate Committee (SAC) appeals, and post-approval clocks.
+- 🎯 **Guided evaluation:** Pre-seeded cases and scenarios across six role-specific workspaces.
 
-## How an application moves through the system
+## 🔄 Approval-to-compliance workflow
 
 **Intake → rule-based route → required scrutiny or visit → authorized decision → applicable compliance obligations → audit history.** Hearings, appeals, grievances, and re-scrutiny are conditional branches, not mandatory steps for every case.
 
 The complete architecture below retains the detailed decision paths, exception handling, statutory references, and post-approval branches from the source README.
 
+**Color guide:** 🟦 Intake and evaluation · 🟪 Conditional review · 🟧 Authorized decision · 🟩 Issued order · 🟨 Compliance tracking
+
 ```mermaid
 flowchart TD
-    classDef startNode fill:#1e3a8a,stroke:#3b82f6,stroke-width:2px,color:#fff;
-    classDef processNode fill:#0f172a,stroke:#475569,stroke-width:1.5px,color:#f8fafc;
-    classDef branch fill:#312e81,stroke:#6366f1,stroke-width:1.5px,color:#fff;
-    classDef decisionNode fill:#831843,stroke:#ec4899,stroke-width:2px,color:#fff;
-    classDef docNode fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
-    classDef auditNode fill:#1c1917,stroke:#f59e0b,stroke-width:1.5px,color:#fbbf24;
+    classDef startNode fill:#EAF4FC,stroke:#0B2F54,stroke-width:2px,color:#0B2F54;
+    classDef processNode fill:#E8F8F5,stroke:#008C8C,stroke-width:1.5px,color:#075953;
+    classDef branch fill:#F2ECFF,stroke:#6941A5,stroke-width:1.5px,color:#452479;
+    classDef decisionNode fill:#FFF1E6,stroke:#CC5200,stroke-width:2px,color:#803400;
+    classDef docNode fill:#E5F7EA,stroke:#16834B,stroke-width:2px,color:#08522D;
+    classDef auditNode fill:#FFF8D9,stroke:#C99716,stroke-width:1.5px,color:#6D4E00;
 
     A["1. Application Intake Simulation<br/>(NSWS Ingestion + DSC Simulation)"]:::startNode --> B["2. Dynamic Route Engine<br/>(APH 2024-27 Table 2.3 + Errata G02)"]:::processNode
     
@@ -104,22 +115,22 @@ flowchart TD
     N -.->|When Imposed| N4["Clock 4: Faculty Appointment Undertaking (6 Months)"]:::auditNode
 ```
 
-## Detailed regulatory route diagrams
+## 🗺️ Regulatory route diagrams
 
 The following **ten original Mermaid diagrams (A–J)** preserve the route-specific logic and decision paths. Open only the route you need; the diagrams are collapsed to keep the README readable.
 
 For category-to-diagram mappings and tests, see the [Route-to-Diagram Matrix](./docs/workflows/ROUTE_TO_DIAGRAM_MATRIX.md).
 
 <details>
-<summary><strong>Diagram A · New technical institution (Chapter I)</strong></summary>
+<summary><strong>🏛️ Diagram A · New technical institution (Chapter I)</strong></summary>
 
 APH Chapter I §§1.8–1.10: document scrutiny, physical EVC, Executive Committee consideration, and Council ratification.
 
 ```mermaid
 flowchart TD
-    classDef step fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#fff;
-    classDef decision fill:#831843,stroke:#ec4899,stroke-width:2px,color:#fff;
-    classDef terminal fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
+    classDef step fill:#EAF4FC,stroke:#0B2F54,stroke-width:1.5px,color:#0B2F54;
+    classDef decision fill:#FFF1E6,stroke:#CC5200,stroke-width:2px,color:#803400;
+    classDef terminal fill:#E5F7EA,stroke:#16834B,stroke-width:2px,color:#08522D;
 
     A["Chapter I New Institution Intake<br/>(Land, Society/Trust, Building Plan, DPR)"]:::step --> B["Desk Scrutiny Committee<br/>(Original Document Verification)"]:::step
     B -->|Deficiencies Noted| B_LOD["Issue Letter of Deficiency (LoD)<br/>(Cure window enabled)"]:::decision
@@ -139,15 +150,15 @@ flowchart TD
 </details>
 
 <details>
-<summary><strong>Diagram B · Self-disclosure EoA</strong></summary>
+<summary><strong>🔁 Diagram B · Self-disclosure EoA</strong></summary>
 
 APH §2.4, Chapter II Table 2.3 Row 1: an eligible existing institution can follow the streamlined route.
 
 ```mermaid
 flowchart LR
-    classDef step fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#fff;
-    classDef decision fill:#831843,stroke:#ec4899,stroke-width:2px,color:#fff;
-    classDef terminal fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
+    classDef step fill:#EAF4FC,stroke:#0B2F54,stroke-width:1.5px,color:#0B2F54;
+    classDef decision fill:#FFF1E6,stroke:#CC5200,stroke-width:2px,color:#803400;
+    classDef terminal fill:#E5F7EA,stroke:#16834B,stroke-width:2px,color:#08522D;
 
     A["Institutional Self-Disclosure Filing<br/>(Annual Compliance & Mandatory Affidavits)"]:::step --> B["Automated AICTE Portal Consistency Check<br/>(Affidavit Integrity & Zero Penalty Record)"]:::step
     B -->|Anomaly / Penalty Detected| C["Escalate to RO Desk Scrutiny<br/>(Exit Fast-Track Route)"]:::decision
@@ -159,15 +170,15 @@ flowchart LR
 </details>
 
 <details>
-<summary><strong>Diagram C · Scrutiny-only routes</strong></summary>
+<summary><strong>📋 Diagram C · Scrutiny-only routes</strong></summary>
 
 Table 2.3 Rows 2, 4, 8, 9-NBA, 10, 12, 15–20: scrutiny without an EVC when applicable.
 
 ```mermaid
 flowchart TD
-    classDef step fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#fff;
-    classDef decision fill:#831843,stroke:#ec4899,stroke-width:2px,color:#fff;
-    classDef terminal fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
+    classDef step fill:#EAF4FC,stroke:#0B2F54,stroke-width:1.5px,color:#0B2F54;
+    classDef decision fill:#FFF1E6,stroke:#CC5200,stroke-width:2px,color:#803400;
+    classDef terminal fill:#E5F7EA,stroke:#16834B,stroke-width:2px,color:#08522D;
 
     A["Application Filing (e.g. NBA Intake Increase,<br/>Name Change, Division Mergers)"]:::step --> B["RO Desk Scrutiny Committee Allocation"]:::step
     B --> C["Desk Scrutiny Evaluation<br/>(Evaluates NBA Status, NOCs, State Approvals)"]:::step
@@ -183,15 +194,15 @@ flowchart TD
 </details>
 
 <details>
-<summary><strong>Diagram D · Scrutiny followed by EVC</strong></summary>
+<summary><strong>🔎 Diagram D · Scrutiny followed by EVC</strong></summary>
 
 Rows 3, 5, 9-Non-NBA, 6, 11, 13, 21: document scrutiny and then a required inspection.
 
 ```mermaid
 flowchart TD
-    classDef step fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#fff;
-    classDef decision fill:#831843,stroke:#ec4899,stroke-width:2px,color:#fff;
-    classDef terminal fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
+    classDef step fill:#EAF4FC,stroke:#0B2F54,stroke-width:1.5px,color:#0B2F54;
+    classDef decision fill:#FFF1E6,stroke:#CC5200,stroke-width:2px,color:#803400;
+    classDef terminal fill:#E5F7EA,stroke:#16834B,stroke-width:2px,color:#08522D;
 
     A["Application Filing<br/>(Non-NBA Intake Expansion / New Courses)"]:::step --> B["Desk Scrutiny Committee Verification"]:::step
     B -->|Deficiencies Identified| C["Letter of Deficiency (LoD) & Cure"]:::decision
@@ -208,15 +219,15 @@ flowchart TD
 </details>
 
 <details>
-<summary><strong>Diagram E · Direct or category-specific EVC</strong></summary>
+<summary><strong>📍 Diagram E · Direct or category-specific EVC</strong></summary>
 
 Site shifting (Row 14) or restoration of intake (Row 7): a visit is central to evaluation.
 
 ```mermaid
 flowchart TD
-    classDef step fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#fff;
-    classDef decision fill:#831843,stroke:#ec4899,stroke-width:2px,color:#fff;
-    classDef terminal fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
+    classDef step fill:#EAF4FC,stroke:#0B2F54,stroke-width:1.5px,color:#0B2F54;
+    classDef decision fill:#FFF1E6,stroke:#CC5200,stroke-width:2px,color:#803400;
+    classDef terminal fill:#E5F7EA,stroke:#16834B,stroke-width:2px,color:#08522D;
 
     A["Application Intake: Shifting of Site (Row 14)<br/>or Restoration of Penalized Intake (Row 7)"]:::step --> B["RO Administrative Completeness Verification"]:::step
     B --> C["Direct EVC Panel Constituted & Scheduled<br/>(Site Inspection is Primary Regulatory Condition)"]:::step
@@ -232,16 +243,16 @@ flowchart TD
 </details>
 
 <details>
-<summary><strong>Diagram F · Deficiency and differential re-scrutiny</strong></summary>
+<summary><strong>🔒 Diagram F · Deficiency and differential re-scrutiny</strong></summary>
 
 APH §1.8(g): cleared items are locked; only deficiencies are re-examined.
 
 ```mermaid
 flowchart TD
-    classDef step fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#fff;
-    classDef locked fill:#312e81,stroke:#6366f1,stroke-width:1.5px,color:#fff;
-    classDef unlocked fill:#831843,stroke:#ec4899,stroke-width:2px,color:#fff;
-    classDef terminal fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
+    classDef step fill:#EAF4FC,stroke:#0B2F54,stroke-width:1.5px,color:#0B2F54;
+    classDef locked fill:#F2ECFF,stroke:#6941A5,stroke-width:1.5px,color:#452479;
+    classDef unlocked fill:#FFF1E6,stroke:#CC5200,stroke-width:2px,color:#803400;
+    classDef terminal fill:#E5F7EA,stroke:#16834B,stroke-width:2px,color:#08522D;
 
     A["Initial Scrutiny Report Completed<br/>(Checklist Items: C1, C2, C3, C4, C5, C6)"]:::step --> B{"Scrutiny Findings"}
     B -->|C3, C4 Passed| C["Cleared Items Permanently Scope-Locked<br/>(Read-only, SHA-256 Digest Frozen)"]:::locked
@@ -261,15 +272,15 @@ flowchart TD
 </details>
 
 <details>
-<summary><strong>Diagram G · Standing Hearing Committee (SHC)</strong></summary>
+<summary><strong>👥 Diagram G · Standing Hearing Committee (SHC)</strong></summary>
 
 APH §2.23.3: opportunity to address unresolved shortcomings before a decision.
 
 ```mermaid
 flowchart TD
-    classDef step fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#fff;
-    classDef decision fill:#831843,stroke:#ec4899,stroke-width:2px,color:#fff;
-    classDef terminal fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
+    classDef step fill:#EAF4FC,stroke:#0B2F54,stroke-width:1.5px,color:#0B2F54;
+    classDef decision fill:#FFF1E6,stroke:#CC5200,stroke-width:2px,color:#803400;
+    classDef terminal fill:#E5F7EA,stroke:#16834B,stroke-width:2px,color:#08522D;
 
     A["Unresolved Deficiency from Scrutiny or EVC"]:::step --> B["RO Issues Formal SHC Hearing Notice<br/>(Dates, Shortcomings & Required Representatives)"]:::step
     B --> C["Standing Hearing Committee (SHC) Session<br/>(Quorum: Senior Academician, Legal Expert, RO)"]:::step
@@ -284,15 +295,15 @@ flowchart TD
 </details>
 
 <details>
-<summary><strong>Diagram H · Standing Appellate Committee (SAC)</strong></summary>
+<summary><strong>⚖️ Diagram H · Standing Appellate Committee (SAC)</strong></summary>
 
 APH §§1.11 and 2.24: appeal handling with a seven-day filing window.
 
 ```mermaid
 flowchart TD
-    classDef step fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#fff;
-    classDef decision fill:#831843,stroke:#ec4899,stroke-width:2px,color:#fff;
-    classDef terminal fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
+    classDef step fill:#EAF4FC,stroke:#0B2F54,stroke-width:1.5px,color:#0B2F54;
+    classDef decision fill:#FFF1E6,stroke:#CC5200,stroke-width:2px,color:#803400;
+    classDef terminal fill:#E5F7EA,stroke:#16834B,stroke-width:2px,color:#08522D;
 
     A["Council Issues Letter of Rejection (LoR)<br/>(Speaking Order Communicated with Timestamp)"]:::step --> B{"Appeal Lodged within 7 Calendar Days?"}
     B -->|No: Day 8 or Later| C["Appeal Time-Barred by Statute<br/>(Server Rejection: SAC_APPEAL_TIME_BARRED)"]:::decision
@@ -308,15 +319,15 @@ flowchart TD
 </details>
 
 <details>
-<summary><strong>Diagram I · Complaints and grievances</strong></summary>
+<summary><strong>✉️ Diagram I · Complaints and grievances</strong></summary>
 
 APH Chapter VII §7.10: identity screening, fact finding, and any applicable Council action.
 
 ```mermaid
 flowchart TD
-    classDef step fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#fff;
-    classDef decision fill:#831843,stroke:#ec4899,stroke-width:2px,color:#fff;
-    classDef terminal fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
+    classDef step fill:#EAF4FC,stroke:#0B2F54,stroke-width:1.5px,color:#0B2F54;
+    classDef decision fill:#FFF1E6,stroke:#CC5200,stroke-width:2px,color:#803400;
+    classDef terminal fill:#E5F7EA,stroke:#16834B,stroke-width:2px,color:#08522D;
 
     A["Grievance / Complaint Received via Public Grievance Portal"]:::step --> B{"Complainant Identity Verified?<br/>(APH §7.10h Anonymous Filter)"}
     B -->|Anonymous / Unverified| C["Dismissed Server-Side at Intake<br/>(APH §7.10h: Anonymous Complaints Barred)"]:::decision
@@ -332,15 +343,15 @@ flowchart TD
 </details>
 
 <details>
-<summary><strong>Diagram J · Post-approval compliance</strong></summary>
+<summary><strong>📅 Diagram J · Post-approval compliance</strong></summary>
 
 Order-linked obligations: Joint FDR, Fire NOC, land-lease validity, and faculty undertakings.
 
 ```mermaid
 flowchart TD
-    classDef step fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#fff;
-    classDef clock fill:#1c1917,stroke:#f59e0b,stroke-width:1.5px,color:#fbbf24;
-    classDef terminal fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
+    classDef step fill:#EAF4FC,stroke:#0B2F54,stroke-width:1.5px,color:#0B2F54;
+    classDef clock fill:#FFF8D9,stroke:#C99716,stroke-width:1.5px,color:#6D4E00;
+    classDef terminal fill:#E5F7EA,stroke:#16834B,stroke-width:2px,color:#08522D;
 
     A["Official Approval Order Generated (LoA / EoA)"]:::step --> B["Post-Approval Compliance Engine Materialization<br/>(Extracts Statutory Conditions into Independent Clocks)"]:::step
     
@@ -361,28 +372,28 @@ flowchart TD
 
 </details>
 
-## Six workspaces
+## 👥 Six role-based workspaces
 
 Each role sees only the cases and actions it is permitted to access. The listed addresses are **demonstration accounts**, not official government accounts; the source README lists `password123` for the demo environment.
 
 | Workspace | Demo account | Main tasks and safeguards |
 |---|---|---|
-| **Institution / Applicant** | `principal@coep.ac.in` or `principal@pdimtr.ac.in` | Applications, intake simulation, deficiency responses, compliance tracking. Access limited to the institution; confidential review notes remain hidden. |
-| **Desk Scrutiny Reviewer** | `scrutiny.reviewer@aicte.gov.in` | Assigned queue, document checks, deficiency findings, and report sign-off. Cannot reopen cleared items or issue approval orders. |
-| **Expert Visit Committee** | `evc.chair@aicte.gov.in` | Scheduled visits, simulated location/video evidence, facility checklist, and signed inspection report. Assigned panels only. |
-| **Regional Office** | `ro.officer@aicte.gov.in` | Workload allocation, committee assignments, SHC hearings, and escalations. Assignment capacity and hearing quorum are checked. |
-| **Approval Bureau / Council** | `bureau.approval@aicte.gov.in` | Decision docket, speaking orders, SAC appeals, and document release. Final decisions require authorized human action. |
-| **Policy Administration** | `admin@aicte.gov.in` | National statistics, rule versions, conflict simulation, and audit history. Rule changes require a recorded rationale. |
+| 🏫 **Institution / Applicant** | `principal@coep.ac.in` or `principal@pdimtr.ac.in` | Applications, intake simulation, deficiency responses, compliance tracking. Access limited to the institution; confidential review notes remain hidden. |
+| 🔍 **Desk Scrutiny Reviewer** | `scrutiny.reviewer@aicte.gov.in` | Assigned queue, document checks, deficiency findings, and report sign-off. Cannot reopen cleared items or issue approval orders. |
+| 📍 **Expert Visit Committee** | `evc.chair@aicte.gov.in` | Scheduled visits, simulated location/video evidence, facility checklist, and signed inspection report. Assigned panels only. |
+| 🗃️ **Regional Office** | `ro.officer@aicte.gov.in` | Workload allocation, committee assignments, SHC hearings, and escalations. Assignment capacity and hearing quorum are checked. |
+| ⚖️ **Approval Bureau / Council** | `bureau.approval@aicte.gov.in` | Decision docket, speaking orders, SAC appeals, and document release. Final decisions require authorized human action. |
+| 🛠️ **Policy Administration** | `admin@aicte.gov.in` | National statistics, rule versions, conflict simulation, and audit history. Rule changes require a recorded rationale. |
 
-## Five-minute demo walkthrough
+## 🎬 Five-minute demo walkthrough
 
-1. **Institution:** Open `APP-2026-COEP`; review status, five sample notices, and the rule explanation for its NBA-based inspection waiver. Applicant views exclude internal deliberations.
-2. **Scrutiny:** Open `APP-2026-GIITS` and see how cleared items (`C3`, `C4`) stay locked while flagged deficiencies can be addressed.
-3. **EVC:** Inspect the GIITS visit checklist, simulated coordinates, and 30-minute video evidence. Submit the report; the case moves to `decision_pending`, not automatic approval.
-4. **Approval Bureau:** Review `APP-2026-PDIMTR`, prepare an EoA document, inspect its HMAC-SHA256 demonstration seal and watermark, then view the resulting obligations.
-5. **Policy Admin:** Explore six KPI cards, six charts labeled as demonstration data, and the versioned rules and conflict sandbox.
+1. 🏫 **Institution:** Open `APP-2026-COEP`; review status, five sample notices, and the rule explanation for its NBA-based inspection waiver. Applicant views exclude internal deliberations.
+2. 🔍 **Scrutiny:** Open `APP-2026-GIITS` and see how cleared items (`C3`, `C4`) stay locked while flagged deficiencies can be addressed.
+3. 📍 **EVC:** Inspect the GIITS visit checklist, simulated coordinates, and 30-minute video evidence. Submit the report; the case moves to `decision_pending`, not automatic approval.
+4. ⚖️ **Approval Bureau:** Review `APP-2026-PDIMTR`, prepare an EoA document, inspect its HMAC-SHA256 demonstration seal and watermark, then view the resulting obligations.
+5. 🛠️ **Policy Admin:** Explore six KPI cards, six charts labeled as demonstration data, and the versioned rules and conflict sandbox.
 
-## Technology at a glance
+## 🧱 Technology at a glance
 
 | Layer | Technology | Purpose |
 |---|---|---|
@@ -393,9 +404,9 @@ Each role sees only the cases and actions it is permitted to access. The listed 
 | Security | HttpOnly cookies, SHA-256 evidence hashes, HMAC-SHA256 seals | Access separation and tamper-evident records |
 | Verification | Vitest, Supertest, strict TypeScript | Source reports 388 tests across 35 suites and 38 deliverable regression checks |
 
-## Run locally
+## 🚀 Run locally
 
-**Prerequisites:** Node.js 20 or 22 LTS and npm 9+. The source README describes a built-in memory mode that does not require local MongoDB configuration.
+**Prerequisites:** Node.js 20 or 22 LTS and npm 9+. The built-in demonstration memory mode does not require local MongoDB configuration.
 
 ```bash
 git clone https://github.com/Mayuresh-1306/SIH-2026-AICTE.git SIH-26-AICTE
@@ -409,7 +420,7 @@ npm run dev
 
 Open **http://localhost:3000** or use the [hosted prototype](https://niyamsetu-aicte.onrender.com).
 
-## Testing and safeguards
+## 🧪 Testing and safeguards
 
 The uploaded README reports **388 passing tests in 35 suites** (recorded run: 14.22 seconds). This is a source-reported result, not a fresh verification of the current repository. Key suites cover:
 
@@ -427,9 +438,11 @@ The uploaded README reports **388 passing tests in 35 suites** (recorded run: 14
 
 The source also reports benchmark targets/results of **NSWS transitions under 35 ms, route evaluation under 10 ms, and docket loads under 10 ms**, as well as tab switching under 1 ms. Consult the [performance verification](./docs/performance/PERFORMANCE_VERIFICATION.md) for supporting context.
 
-## Prototype scope and limitations
+## 🔐 Prototype scope and limitations
 
-NiyamSetu is a **demonstration prototype**, not an AICTE production system:
+> [!IMPORTANT]
+> **Demonstration prototype — not an official AICTE production service.** Government integrations, signing, inspections, and outgoing notices are simulated as described below.
+
 
 - **NSWS and portal intake:** The three-step onboarding and `/api/v1/nsws/prefill` interface use simulated integration data; no live government systems are connected.
 - **DSC signing:** Class-3 USB-token/emBridge checks are emulated; they are not live NIC or eMudhra PKI signing.
@@ -439,7 +452,7 @@ NiyamSetu is a **demonstration prototype**, not an AICTE production system:
 
 Rules and obligations remain conditional on the applicable case and order. Ambiguous policies are flagged for authorized review rather than resolved automatically.
 
-## Supporting documentation
+## 📚 Supporting documentation
 
 | Document | Covers |
 |---|---|
