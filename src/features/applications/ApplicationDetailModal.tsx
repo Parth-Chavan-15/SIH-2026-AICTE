@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Application, WorkflowStage, DocumentItem } from '../../types';
-import { SLABadge, StageBadge, PriorityBadge } from '../../components/common/StatusBadge';
+import { SLABadge, StageBadge } from '../../components/common/StatusBadge';
 import { formatDateIndian } from '../../utils/slaCalculator';
 import { getEligibleNextStages, validateWorkflowTransition } from '../../utils/workflowEngine';
 import { api } from '../../services/api';
@@ -9,7 +9,7 @@ import { getSession } from '../../services/session';
 import { CaseSummaryNoticesModal } from './CaseSummaryNoticesModal';
 import {
   X,
-  Building,
+  Building2,
   CheckCircle2,
   CheckCircle,
   AlertTriangle,
@@ -32,14 +32,24 @@ import {
   Upload,
   Check,
   Ban,
-  Radio,
-  FileSignature
+  MoreVertical,
+  Sliders
 } from 'lucide-react';
 
 interface ApplicationDetailModalProps {
   applicationId: string;
   onClose: () => void;
   onOpenEVCModal?: (appId: string) => void;
+}
+
+export interface RouteLifecycleStage {
+  id: string;
+  title: string;
+  subtitle: string;
+  status: 'COMPLETED' | 'ACTIVE' | 'UPCOMING' | 'WAIVED' | 'CONDITIONAL' | 'REJECTED';
+  badgeText: string;
+  badgeColor: string;
+  annotation?: string;
 }
 
 export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
@@ -55,7 +65,6 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
     complianceItems,
     auditLog,
     transitionStage,
-    addObservation,
     verifyDocument,
     addToast,
   } = useApp();
@@ -63,8 +72,9 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
   // Clean 4-tab dossier navigation
   const [activeTab, setActiveTab] = useState<'overview' | 'documents' | 'evc' | 'compliance'>('overview');
 
-  // Quick Action in-progress state
+  // Action in-progress state
   const [isActioning, setIsActioning] = useState(false);
+  const [showMoreActions, setShowMoreActions] = useState(false);
 
   // Rejection modal state
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -97,10 +107,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
   const [closingCompliance, setClosingCompliance] = useState(false);
   const [complianceClosedData, setComplianceClosedData] = useState<any>(null);
 
-  // New observation state
-  const [newObsComment, setNewObsComment] = useState('');
-  const [newObsType, setNewObsType] = useState<'Observation' | 'Deficiency' | 'Clarification Request' | 'Recommendation'>('Observation');
-  const [newObsMandatory, setNewObsMandatory] = useState(false);
+  // Route policy drawer toggle
   const [showWhyRouteDrawer, setShowWhyRouteDrawer] = useState(false);
 
   // Document correction modal state (GOV.UK style rectification)
@@ -128,60 +135,397 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
     6;
 
   const isInstitution = roleNumber === 1;
-  const canAct = roleNumber >= 2; // Any reviewer, committee member, RO, Bureau officer, or admin can act
+  const canAct = roleNumber >= 2;
   const canRevert = roleNumber >= 4;
 
-  const isPendingScrutiny = application.currentStage === 'Application Submitted' || application.currentStage === 'Draft';
-  const isGIITS = application.id.includes('GIITS') || application.institutionCode === 'INST-NORTH' || application.routeType === 'Scrutiny + EVC';
   const isCOEP = application.id.includes('COEP') || application.institutionCode === 'INST-SOUTH' || application.routeType === 'Scrutiny Only';
+  const isGIITS = application.id.includes('GIITS') || application.institutionCode === 'INST-NORTH' || application.routeType === 'Scrutiny + EVC';
   const isPDIMTR = application.id.includes('PDIMTR') || application.institutionCode === 'INST-WEST' || application.routeType === 'Fast-Track EoA';
   const isAPEX = application.id.includes('APEX') || application.id.includes('Apex') || application.institutionCode === 'INST-APEX' || application.routeType === 'Scrutiny + EVC + SAC/SHC';
   const isBATU = application.id.includes('BATU') || application.institutionCode === 'INST-BATU' || application.routeType === 'Only EVC';
 
-  // Determine intelligent next primary action based on current stage & statutory route
-  const getNextActionConfig = () => {
-    if (application.currentStage === 'Application Submitted' || application.currentStage === 'Draft') {
-      return { target: 'Scrutiny in Progress' as WorkflowStage, label: 'Start Desk Scrutiny', variant: 'green' };
+  // --- Dynamic Route-Specific Lifecycle Generator ---
+  const generateRouteLifecycle = (): RouteLifecycleStage[] => {
+    const cur = application.currentStage;
+
+    // 1. Fast-Track EoA (Table 2.3 Row 1)
+    if (isPDIMTR || application.routeType === 'Fast-Track EoA') {
+      const isDone1 = cur !== 'Application Submitted' && cur !== 'Draft';
+      const isActive1 = cur === 'Application Submitted' || cur === 'Draft';
+      const isDoneCouncil = cur === 'Approval Issued';
+      const isActiveCouncil = cur === 'Executive Committee Approval';
+      return [
+        {
+          id: 'intake',
+          title: '1. Self-Disclosure Intake',
+          subtitle: 'NSWS Ingestion',
+          status: isDone1 ? 'COMPLETED' : isActive1 ? 'ACTIVE' : 'UPCOMING',
+          badgeText: isDone1 ? 'VERIFIED' : 'ACTIVE',
+          badgeColor: isDone1 ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-600 text-white',
+          annotation: 'Table 2.3 Row 1'
+        },
+        {
+          id: 'scrutiny',
+          title: '2. Desk Scrutiny',
+          subtitle: 'Checklist Review',
+          status: 'WAIVED',
+          badgeText: 'BYPASSED',
+          badgeColor: 'bg-purple-100 text-purple-800',
+          annotation: 'Self-Disclosure Renewal'
+        },
+        {
+          id: 'evc',
+          title: '3. Physical EVC',
+          subtitle: 'Campus Audit',
+          status: 'WAIVED',
+          badgeText: 'EXEMPT',
+          badgeColor: 'bg-purple-100 text-purple-800',
+          annotation: 'No Intake Surge'
+        },
+        {
+          id: 'council',
+          title: '4. Executive Committee',
+          subtitle: 'Approval Gate',
+          status: isDoneCouncil ? 'COMPLETED' : isActiveCouncil ? 'ACTIVE' : 'UPCOMING',
+          badgeText: isDoneCouncil ? 'APPROVED' : isActiveCouncil ? 'IN REVIEW' : 'PENDING',
+          badgeColor: isDoneCouncil ? 'bg-emerald-100 text-emerald-800' : isActiveCouncil ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500',
+          annotation: 'APH §2.25'
+        },
+        {
+          id: 'order',
+          title: '5. EoA Order Issued',
+          subtitle: 'Post-Approval Obligations',
+          status: cur === 'Approval Issued' ? 'COMPLETED' : 'UPCOMING',
+          badgeText: cur === 'Approval Issued' ? 'ISSUED' : 'PENDING',
+          badgeColor: cur === 'Approval Issued' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500',
+          annotation: '15d §2.25(f) FDR Clock'
+        }
+      ];
     }
-    if (application.currentStage === 'Scrutiny in Progress') {
-      const nextStage: WorkflowStage = (application.routeType.includes('EVC') || isGIITS || isBATU) ? 'EVC Scheduled' : 'Executive Committee Approval';
-      return { target: nextStage, label: 'Accept & Clear Scrutiny', variant: 'green' };
+
+    // 2. Scrutiny Only (NBA Fast-Track Waiver §2.6(c)(1))
+    if (isCOEP || application.routeType === 'Scrutiny Only') {
+      const isDoneIntake = cur !== 'Application Submitted' && cur !== 'Draft';
+      const isDoneScrutiny = cur === 'Scrutiny Cleared' || cur === 'Executive Committee Approval' || cur === 'Approval Issued';
+      const isActiveScrutiny = cur === 'Scrutiny in Progress' || cur === 'Deficiency Communicated';
+      const isDoneCouncil = cur === 'Approval Issued';
+      const isActiveCouncil = cur === 'Executive Committee Approval';
+      return [
+        {
+          id: 'intake',
+          title: '1. Application Intake',
+          subtitle: 'NSWS Digital Ingestion',
+          status: isDoneIntake ? 'COMPLETED' : 'ACTIVE',
+          badgeText: isDoneIntake ? 'VERIFIED' : 'ACTIVE',
+          badgeColor: isDoneIntake ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-600 text-white',
+          annotation: 'NBA Tier-1 Valid'
+        },
+        {
+          id: 'scrutiny',
+          title: '2. Desk Scrutiny',
+          subtitle: 'Snapshot v1 Checklist',
+          status: isDoneScrutiny ? 'COMPLETED' : isActiveScrutiny ? 'ACTIVE' : 'UPCOMING',
+          badgeText: isDoneScrutiny ? 'CLEARED' : isActiveScrutiny ? 'IN REVIEW' : 'PENDING',
+          badgeColor: isDoneScrutiny ? 'bg-emerald-100 text-emerald-800' : isActiveScrutiny ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500',
+          annotation: '100% Verified C1-C6'
+        },
+        {
+          id: 'evc',
+          title: '3. Physical EVC',
+          subtitle: 'Campus Inspection',
+          status: 'WAIVED',
+          badgeText: 'WAIVED (NBA)',
+          badgeColor: 'bg-purple-100 text-purple-900 border border-purple-300 font-bold',
+          annotation: 'Errata G02 p. 42 §2.6(c)(1)'
+        },
+        {
+          id: 'council',
+          title: '4. Executive Committee',
+          subtitle: 'Council EC Approval Gate',
+          status: isDoneCouncil ? 'COMPLETED' : isActiveCouncil ? 'ACTIVE' : 'UPCOMING',
+          badgeText: isDoneCouncil ? 'APPROVED' : isActiveCouncil ? 'IN REVIEW' : 'PENDING',
+          badgeColor: isDoneCouncil ? 'bg-emerald-100 text-emerald-800' : isActiveCouncil ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500',
+          annotation: 'Human Decision Gate'
+        },
+        {
+          id: 'order',
+          title: '5. Extension of Approval',
+          subtitle: 'Digitally Sealed Order',
+          status: cur === 'Approval Issued' ? 'COMPLETED' : 'UPCOMING',
+          badgeText: cur === 'Approval Issued' ? 'ISSUED' : 'PENDING',
+          badgeColor: cur === 'Approval Issued' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500',
+          annotation: 'AY 2026–27 EoA'
+        }
+      ];
     }
-    if (application.currentStage === 'Deficiency Communicated') {
-      return { target: 'Scrutiny in Progress' as WorkflowStage, label: 'Accept Rectification & Re-Scrutinize', variant: 'blue' };
+
+    // 3. Only EVC (Restoration / Site Shifting §2.16.1)
+    if (isBATU || application.routeType === 'Only EVC') {
+      const isDoneIntake = cur !== 'Application Submitted' && cur !== 'Draft';
+      const isActiveEVC = cur === 'EVC Scheduled' || cur === 'EVC Inspection Completed' || cur === 'Scrutiny Cleared';
+      const isDoneEVC = cur === 'Executive Committee Approval' || cur === 'Approval Issued';
+      const isDoneCouncil = cur === 'Approval Issued';
+      return [
+        {
+          id: 'intake',
+          title: '1. Application Intake',
+          subtitle: 'Restoration / Shifting',
+          status: isDoneIntake ? 'COMPLETED' : 'ACTIVE',
+          badgeText: isDoneIntake ? 'VERIFIED' : 'ACTIVE',
+          badgeColor: isDoneIntake ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-600 text-white',
+          annotation: 'Table 2.3 Row 11'
+        },
+        {
+          id: 'scrutiny',
+          title: '2. Desk Scrutiny',
+          subtitle: 'Preliminary Review',
+          status: 'WAIVED',
+          badgeText: 'WAIVED',
+          badgeColor: 'bg-purple-100 text-purple-800',
+          annotation: 'Waived per §2.16.1'
+        },
+        {
+          id: 'evc',
+          title: '3. Mandatory Physical EVC',
+          subtitle: 'Campus Site Verification',
+          status: isDoneEVC ? 'COMPLETED' : isActiveEVC ? 'ACTIVE' : 'UPCOMING',
+          badgeText: isDoneEVC ? 'INSPECTED' : isActiveEVC ? 'DISPATCHED' : 'PENDING',
+          badgeColor: isDoneEVC ? 'bg-emerald-100 text-emerald-800' : isActiveEVC ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500',
+          annotation: '500m Geo & 30m Video'
+        },
+        {
+          id: 'council',
+          title: '4. Executive Committee',
+          subtitle: 'Competent Authority',
+          status: isDoneCouncil ? 'COMPLETED' : cur === 'Executive Committee Approval' ? 'ACTIVE' : 'UPCOMING',
+          badgeText: isDoneCouncil ? 'APPROVED' : 'PENDING',
+          badgeColor: isDoneCouncil ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500',
+          annotation: 'Council Determination'
+        },
+        {
+          id: 'order',
+          title: '5. Sanction Order',
+          subtitle: 'Restoration Sanctioned',
+          status: cur === 'Approval Issued' ? 'COMPLETED' : 'UPCOMING',
+          badgeText: cur === 'Approval Issued' ? 'ISSUED' : 'PENDING',
+          badgeColor: cur === 'Approval Issued' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500',
+          annotation: 'Post-Restoration Audit'
+        }
+      ];
     }
-    if (application.currentStage === 'Scrutiny Cleared') {
-      const nextStage: WorkflowStage = (application.routeType.includes('EVC') || isGIITS || isBATU) ? 'EVC Scheduled' : 'Executive Committee Approval';
-      return { target: nextStage, label: 'Advance to Next Stage', variant: 'green' };
+
+    // 4. Default / Standard Scrutiny + EVC (e.g. GIITS Non-NBA Surge, New Institutions)
+    const isDoneIntake = cur !== 'Application Submitted' && cur !== 'Draft';
+    const isDoneScrutiny = cur !== 'Application Submitted' && cur !== 'Draft' && cur !== 'Scrutiny in Progress' && cur !== 'Deficiency Communicated';
+    const isActiveScrutiny = cur === 'Scrutiny in Progress' || cur === 'Deficiency Communicated';
+    const isDoneEVC = cur === 'Executive Committee Approval' || cur === 'SAC / SHC Review' || cur === 'Approval Issued' || cur === 'Application Rejected';
+    const isActiveEVC = cur === 'EVC Scheduled' || cur === 'EVC Inspection Completed';
+    const isActiveHearing = cur === 'SAC / SHC Review';
+    const isDoneCouncil = cur === 'Approval Issued' || cur === 'Application Rejected';
+
+    return [
+      {
+        id: 'intake',
+        title: '1. Ingestion',
+        subtitle: 'NSWS / Siebel Hand-off',
+        status: isDoneIntake ? 'COMPLETED' : 'ACTIVE',
+        badgeText: isDoneIntake ? 'VERIFIED' : 'ACTIVE',
+        badgeColor: isDoneIntake ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-600 text-white',
+        annotation: 'Single Window Intake'
+      },
+      {
+        id: 'scrutiny',
+        title: '2. Desk Scrutiny',
+        subtitle: cur === 'Deficiency Communicated' ? 'Deficiencies Flagged' : 'Snapshot v1 Review',
+        status: isDoneScrutiny ? 'COMPLETED' : isActiveScrutiny ? 'ACTIVE' : 'UPCOMING',
+        badgeText: isDoneScrutiny ? 'CLEARED' : cur === 'Deficiency Communicated' ? 'CURE WINDOW' : isActiveScrutiny ? 'IN REVIEW' : 'PENDING',
+        badgeColor: isDoneScrutiny ? 'bg-emerald-100 text-emerald-800' : cur === 'Deficiency Communicated' ? 'bg-amber-500 text-slate-950 font-bold' : isActiveScrutiny ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500',
+        annotation: cur === 'Deficiency Communicated' ? '10d Operational SLA' : 'Checklists & Evidence'
+      },
+      {
+        id: 'evc',
+        title: '3. Physical EVC',
+        subtitle: 'On-Site Inspection',
+        status: isDoneEVC ? 'COMPLETED' : isActiveEVC ? 'ACTIVE' : 'UPCOMING',
+        badgeText: isDoneEVC ? 'INSPECTED' : isActiveEVC ? 'ACTIVE' : 'PENDING',
+        badgeColor: isDoneEVC ? 'bg-emerald-100 text-emerald-800' : isActiveEVC ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500',
+        annotation: 'Mandatory Non-NBA §1.9'
+      },
+      ...(isAPEX || application.routeType.includes('SAC') ? [{
+        id: 'hearing',
+        title: '4. SHC / SAC Hearing',
+        subtitle: 'Quasi-Judicial Recourse',
+        status: (isActiveHearing ? 'ACTIVE' : isDoneCouncil ? 'COMPLETED' : 'CONDITIONAL') as any,
+        badgeText: isActiveHearing ? 'HEARING LISTED' : isDoneCouncil ? 'DISPOSED' : 'RECOURSE',
+        badgeColor: isActiveHearing ? 'bg-amber-500 text-slate-950 font-bold' : 'bg-slate-100 text-slate-600',
+        annotation: 'APH §1.11 / §2.23.3'
+      }] : []),
+      {
+        id: 'council',
+        title: isAPEX ? '5. Council Gate' : '4. Council Gate',
+        subtitle: 'Competent Authority',
+        status: isDoneCouncil ? 'COMPLETED' : cur === 'Executive Committee Approval' ? 'ACTIVE' : 'UPCOMING',
+        badgeText: cur === 'Approval Issued' ? 'APPROVED' : cur === 'Application Rejected' ? 'REJECTED' : cur === 'Executive Committee Approval' ? 'IN REVIEW' : 'PENDING',
+        badgeColor: cur === 'Approval Issued' ? 'bg-emerald-100 text-emerald-800' : cur === 'Application Rejected' ? 'bg-rose-100 text-rose-800' : cur === 'Executive Committee Approval' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500',
+        annotation: 'Human Decision Gate'
+      },
+      {
+        id: 'order',
+        title: isAPEX ? '6. Final Order' : '5. Final Order',
+        subtitle: cur === 'Approval Issued' ? 'Approval Order (EoA)' : cur === 'Application Rejected' ? 'Speaking Order (LoR)' : 'Order Formulation',
+        status: isDoneCouncil ? 'COMPLETED' : 'UPCOMING',
+        badgeText: cur === 'Approval Issued' ? 'ISSUED' : cur === 'Application Rejected' ? 'REJECTED' : 'PENDING',
+        badgeColor: cur === 'Approval Issued' ? 'bg-emerald-600 text-white' : cur === 'Application Rejected' ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-500',
+        annotation: 'HMAC Sealed Binary'
+      }
+    ];
+  };
+
+  const lifecycleStages = generateRouteLifecycle();
+
+  // Determine intelligent next primary action based on current stage, role & statutory route
+  const getPrimaryActionForRole = () => {
+    // 1. Institution Signatory
+    if (isInstitution) {
+      if (application.currentStage === 'Deficiency Communicated') {
+        return {
+          label: 'Submit Rectification (Annexure 7)',
+          variant: 'amber',
+          icon: Upload,
+          handler: () => setActiveTab('documents')
+        };
+      }
+      if (application.currentStage === 'Approval Issued') {
+        return {
+          label: 'Upload §2.25(f) FDR & Affidavit-3',
+          variant: 'emerald',
+          icon: ShieldCheck,
+          handler: () => setActiveTab('compliance')
+        };
+      }
+      return null;
     }
-    if (application.currentStage === 'EVC Scheduled') {
-      return { target: 'EVC Inspection Completed' as WorkflowStage, label: 'Mark EVC Completed', variant: 'green' };
+
+    // 2. Desk Reviewer (Role 2)
+    if (roleNumber === 2) {
+      if (application.currentStage === 'Application Submitted' || application.currentStage === 'Draft') {
+        return {
+          label: 'Start Desk Scrutiny',
+          variant: 'green',
+          icon: CheckCircle2,
+          handler: () => handleQuickAccept('Scrutiny in Progress')
+        };
+      }
+      if (application.currentStage === 'Scrutiny in Progress') {
+        const nextStage: WorkflowStage = (application.routeType.includes('EVC') || isGIITS || isBATU) ? 'EVC Scheduled' : 'Executive Committee Approval';
+        return {
+          label: 'Sign Scrutiny Snapshot v1 & Advance',
+          variant: 'green',
+          icon: CheckCircle2,
+          handler: () => handleQuickAccept(nextStage)
+        };
+      }
+      if (application.currentStage === 'Deficiency Communicated') {
+        return {
+          label: 'Review Cured Submissions (Scope-Locked)',
+          variant: 'blue',
+          icon: CheckCircle2,
+          handler: () => handleQuickAccept('Scrutiny in Progress')
+        };
+      }
     }
-    if (application.currentStage === 'EVC Inspection Completed') {
-      const nextStage: WorkflowStage = (application.routeType.includes('SAC') || isAPEX) ? 'SAC / SHC Review' : 'Executive Committee Approval';
-      return { target: nextStage, label: 'Advance to Committee Review', variant: 'green' };
+
+    // 3. EVC Inspection Panel (Role 3)
+    if (roleNumber === 3) {
+      if (application.currentStage === 'EVC Scheduled') {
+        return {
+          label: 'Record Inspection Telemetry & Video Audit',
+          variant: 'purple',
+          icon: Video,
+          handler: () => {
+            if (onOpenEVCModal) onOpenEVCModal(application.id);
+            else setActiveTab('evc');
+          }
+        };
+      }
+      if (application.currentStage === 'EVC Inspection Completed') {
+        const nextStage: WorkflowStage = (application.routeType.includes('SAC') || isAPEX) ? 'SAC / SHC Review' : 'Executive Committee Approval';
+        return {
+          label: 'Sign EVC Panel Report & Transmit',
+          variant: 'green',
+          icon: CheckCircle2,
+          handler: () => handleQuickAccept(nextStage)
+        };
+      }
     }
-    if (application.currentStage === 'SAC / SHC Review') {
-      return { target: 'Executive Committee Approval' as WorkflowStage, label: 'Advance to Approval Gate', variant: 'green' };
+
+    // 4. Regional Officer (Role 4)
+    if (roleNumber === 4) {
+      if (application.currentStage === 'Scrutiny Cleared' && (application.routeType.includes('EVC') || isGIITS || isBATU)) {
+        return {
+          label: 'Dispatch EVC Inspection Panel',
+          variant: 'blue',
+          icon: Calendar,
+          handler: () => handleQuickAccept('EVC Scheduled')
+        };
+      }
+      if (application.currentStage === 'EVC Inspection Completed' || application.currentStage === 'Scrutiny Cleared') {
+        return {
+          label: 'Transmit Dossier to Approval Bureau',
+          variant: 'green',
+          icon: ArrowRight,
+          handler: () => handleQuickAccept('Executive Committee Approval')
+        };
+      }
     }
-    if (application.currentStage === 'Executive Committee Approval') {
-      return { target: 'Approval Issued' as WorkflowStage, label: 'Grant Approval / Issue EoA', variant: 'emerald' };
+
+    // 5. Competent Authority (Role 5)
+    if (roleNumber === 5 || roleNumber === 6) {
+      if (application.currentStage === 'Executive Committee Approval') {
+        return {
+          label: 'Grant Approval & Formulate Order (APH §1.10)',
+          variant: 'emerald',
+          icon: Award,
+          handler: () => handleQuickAccept('Approval Issued')
+        };
+      }
     }
+
+    // Fallback default action if generic next stage available
+    if (canAct && application.currentStage !== 'Approval Issued' && application.currentStage !== 'Application Rejected') {
+      if (application.currentStage === 'Application Submitted') {
+        return { label: 'Start Desk Scrutiny', variant: 'green', icon: CheckCircle2, handler: () => handleQuickAccept('Scrutiny in Progress') };
+      }
+      if (application.currentStage === 'Scrutiny in Progress') {
+        const nextStage: WorkflowStage = (application.routeType.includes('EVC') || isGIITS || isBATU) ? 'EVC Scheduled' : 'Executive Committee Approval';
+        return { label: 'Accept & Advance Stage', variant: 'green', icon: CheckCircle2, handler: () => handleQuickAccept(nextStage) };
+      }
+      if (application.currentStage === 'EVC Scheduled') {
+        return { label: 'Mark EVC Completed', variant: 'green', icon: CheckCircle2, handler: () => handleQuickAccept('EVC Inspection Completed') };
+      }
+      if (application.currentStage === 'Executive Committee Approval') {
+        return { label: 'Issue Council Approval (EoA)', variant: 'emerald', icon: Award, handler: () => handleQuickAccept('Approval Issued') };
+      }
+    }
+
     return null;
   };
 
-  const nextAction = getNextActionConfig();
+  const primaryAction = getPrimaryActionForRole();
 
   // One-Click Accept & Advance Stage
-  const handleQuickAccept = async () => {
-    if (!nextAction) return;
+  const handleQuickAccept = async (targetStage: WorkflowStage) => {
     setIsActioning(true);
     try {
-      await transitionStage(application.id, nextAction.target, `Accepted & advanced to ${nextAction.target} per APH 2026-27 norms by ${user?.name || 'Authorized Officer'}`);
+      await transitionStage(
+        application.id,
+        targetStage,
+        `Stage advanced to ${targetStage} per APH 2026-27 norms by ${user?.name || 'Authorized Officer'}`
+      );
       addToast({
         type: 'success',
         title: 'Application Stage Advanced',
-        message: `Case moved to ${nextAction.target}. Audit trail recorded.`,
+        message: `Case moved to ${targetStage}. Cryptographic audit trail recorded.`,
       });
     } catch (err: any) {
       addToast({ type: 'error', title: 'Action Failed', message: err.message || 'Workflow transition failed' });
@@ -190,7 +534,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
     }
   };
 
-  // One-Click Flag Deficiencies
+  // Flag Deficiencies Action
   const handleQuickFlagDeficiency = async () => {
     setIsActioning(true);
     try {
@@ -202,8 +546,9 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
       addToast({
         type: 'warning',
         title: 'Deficiencies Communicated',
-        message: 'Applicant notified. Case transitioned to Deficiency Rectification Window.',
+        message: 'Applicant notified. Case transitioned to 10-Day Operational SLA Turnaround Window.',
       });
+      setShowMoreActions(false);
     } catch (err: any) {
       addToast({ type: 'error', title: 'Action Failed', message: err.message || 'Deficiency transition failed' });
     } finally {
@@ -211,7 +556,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
     }
   };
 
-  // One-Click Reject Application
+  // Rejection Confirmation
   const handleConfirmReject = async () => {
     if (!rejectReason.trim()) {
       setRejectError('Specify substantive grounds for rejection under AICTE APH regulations.');
@@ -225,7 +570,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
       addToast({
         type: 'error',
         title: 'Application Formally Rejected',
-        message: 'Rejection order stamped and recorded in the immutable audit log.',
+        message: 'Rejection speaking order stamped and recorded in the immutable audit log.',
       });
     } catch (err: any) {
       setRejectError(err.message || 'Failed to reject application');
@@ -254,6 +599,11 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
       await transitionStage(application.id, selectedTargetStage, mandatoryReason || `Updated to ${selectedTargetStage}`);
       setSelectedTargetStage('');
       setMandatoryReason('');
+      addToast({
+        type: 'success',
+        title: 'Manual Transition Executed',
+        message: `Case moved to ${selectedTargetStage}.`,
+      });
     } catch (e: any) {
       setTransitionError(e.message);
     } finally {
@@ -279,6 +629,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
       await transitionStage(application.id, targetConfig.uiStage, `Reverted: ${revertReason}`);
       setShowRevertModal(false);
       setRevertReason('');
+      setShowMoreActions(false);
     } catch (e: any) {
       setRevertError(e.message || 'Failed to revert stage');
     } finally {
@@ -318,6 +669,11 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
         status,
         status === 'Verified' ? 'Document verified compliant with APH norms.' : 'Deficiency flagged by reviewing officer.'
       );
+      addToast({
+        type: status === 'Verified' ? 'success' : 'warning',
+        title: `Document ${status}`,
+        message: `Status updated for ${docId}.`,
+      });
     } catch (err: any) {
       addToast({ type: 'error', title: 'Verification Failed', message: err.message });
     }
@@ -346,219 +702,320 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95">
+      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-5xl max-h-[94vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95">
         
-        {/* Modal Top Header */}
-        <div className="bg-[#0A2540] text-white p-5 flex items-start justify-between border-b border-slate-700/60">
-          <div>
-            <div className="flex flex-wrap items-center gap-2 mb-1.5">
-              <span className="font-mono text-xs font-bold bg-blue-500/20 text-blue-200 px-2 py-0.5 rounded border border-blue-400/30">
-                {application.applicationNumber}
-              </span>
-              <PriorityBadge priority={application.priority} />
-              
-              {/* Prominently Highlighted Statutory Route Pill */}
-              <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-teal-500/25 text-teal-200 border border-teal-400/50 text-xs font-bold shadow-xs">
-                <Sparkles className="w-3.5 h-3.5 text-teal-300" />
-                <span className="text-[10px] font-mono text-teal-300 uppercase tracking-wider">ROUTE:</span>
-                <span className="text-white uppercase tracking-tight">{application.routeType}</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-black/40 text-teal-200 border border-teal-400/30">
-                  {isCOEP ? '⚡ NBA FAST-TRACK (EVC WAIVED)' : isGIITS ? '🔍 SCRUTINY + EVC' : isPDIMTR ? '📜 SELF-DISCLOSURE' : isAPEX ? '⚖️ EVC + SAC/SHC' : isBATU ? '🚁 ONLY EVC (§2.16.1)' : 'RULE-PINNED'}
+        {/* ==================================================================== */}
+        {/* 1. COMPACT CASE IDENTITY HEADER                                      */}
+        {/* ==================================================================== */}
+        <div className="bg-[#0A2540] text-white p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-700">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center shrink-0 mt-0.5">
+              <Building2 className="w-5 h-5 text-blue-300" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-base sm:text-lg font-bold tracking-tight text-white">
+                  {application.institutionName}
+                </h2>
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-500/20 text-blue-200 border border-blue-400/30">
+                  PID: {application.institutionCode}
+                </span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700">
+                  AY 2026–27
                 </span>
               </div>
+              <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300 mt-1">
+                <span className="font-mono text-slate-400">App No: {application.applicationNumber}</span>
+                <span>&bull;</span>
+                <span>{application.applicationType}</span>
+                <span>&bull;</span>
+                <span className="text-blue-200 font-medium">{application.region} Region</span>
+              </div>
             </div>
-            
-            <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white">
-              {application.institutionName}
-            </h2>
-            <p className="text-xs text-slate-300 mt-0.5">
-              {application.city}, {application.state} &bull; Code: <span className="font-mono text-blue-200">{application.institutionCode}</span> &bull; Region: {application.region} &bull; Program: {application.program}
-            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            <StageBadge stage={application.currentStage} />
+            <SLABadge
+              status={application.slaStatus}
+              overdueDays={application.overdueDays}
+              daysRemaining={Math.max(0, application.stageDeadlineDays - application.elapsedDaysAtStage)}
+            />
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors ml-1"
+              title="Close Case Dossier (ESC)"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* ==================================================================== */}
+        {/* 2. PROMINENT ROUTE SUMMARY & RULE DISCLOSURE BAR                     */}
+        {/* ==================================================================== */}
+        <div className="bg-slate-50 border-b border-slate-200 px-4 sm:px-5 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5">
+            <span className="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-indigo-100 text-indigo-900 border border-indigo-300">
+              APH Table 2.3
+            </span>
+            <span className="text-slate-500 font-medium">Assigned Route:</span>
+            <span className="font-extrabold text-slate-900 bg-white px-2.5 py-0.5 rounded border border-slate-300 shadow-2xs">
+              {application.routeType}
+            </span>
+            {isCOEP && (
+              <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                <Award className="w-3 h-3" /> NBA Tier-1 Valid (Physical EVC Exempt)
+              </span>
+            )}
+            {isGIITS && (
+              <span className="hidden sm:inline-flex text-[11px] font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                Non-NBA Surge (Mandatory EVC)
+              </span>
+            )}
           </div>
 
           <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
-            aria-label="Close modal"
+            onClick={() => setShowWhyRouteDrawer(!showWhyRouteDrawer)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-indigo-700 bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200 transition-colors"
+            title="Inspect governing handbook clauses"
           >
-            <X className="w-5 h-5" />
+            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Why this route?</span>
+            {showWhyRouteDrawer ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
         </div>
 
-        {/* Executive Action Strip (Prominent 1-Click Action Buttons) */}
-        <div className="bg-slate-100 border-b border-slate-200 px-5 py-3 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex flex-wrap items-center gap-3">
-            <div>
-              <span className="text-[10px] text-slate-500 block uppercase font-bold">Current Stage:</span>
-              <StageBadge stage={application.currentStage} />
-            </div>
-
-            <div className="border-l border-slate-300 pl-3">
-              <span className="text-[10px] text-slate-500 block uppercase font-bold">SLA Health:</span>
-              <SLABadge
-                status={application.slaStatus}
-                overdueDays={application.overdueDays}
-                daysRemaining={Math.max(0, application.stageDeadlineDays - application.elapsedDaysAtStage)}
-              />
-            </div>
-
-            <div className="border-l border-slate-300 pl-3 hidden sm:block">
-              <span className="text-[10px] text-slate-500 block uppercase font-bold">Time at Stage:</span>
-              <span className="font-bold text-slate-800">{application.elapsedDaysAtStage} Days (SLA: {application.stageDeadlineDays}d)</span>
-            </div>
-
-            <div className="border-l border-slate-300 pl-3 hidden md:block">
-              <span className="text-[10px] text-slate-500 block uppercase font-bold">Assigned Officer:</span>
-              <span className="font-medium text-slate-800">{application.assignedOfficer}</span>
-            </div>
-          </div>
-
-          {/* Direct 1-Click Action Buttons for Officers & Reviewers */}
-          <div className="flex flex-wrap items-center gap-2">
-            {canAct && application.currentStage !== 'Approval Issued' && application.currentStage !== 'Application Rejected' && (
-              <>
-                {/* Primary Accept / Advance Button */}
-                {nextAction && (
-                  <button
-                    onClick={handleQuickAccept}
-                    disabled={isActioning}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-colors disabled:opacity-50"
-                    title={`Advance application to ${nextAction.target}`}
-                  >
-                    <CheckCircle2 className="w-4 h-4 text-emerald-200" />
-                    <span>{isActioning ? 'Processing...' : nextAction.label}</span>
-                  </button>
-                )}
-
-                {/* Flag Deficiencies Button */}
-                {application.currentStage !== 'Deficiency Communicated' && (
-                  <button
-                    onClick={handleQuickFlagDeficiency}
-                    disabled={isActioning}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-xs transition-colors disabled:opacity-50"
-                    title="Flag deficiencies and open correction window"
-                  >
-                    <AlertTriangle className="w-4 h-4 text-slate-950" />
-                    <span>Flag Deficiencies</span>
-                  </button>
-                )}
-
-                {/* Reject Application Button */}
-                <button
-                  onClick={() => setShowRejectModal(true)}
-                  disabled={isActioning}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-xs transition-colors disabled:opacity-50"
-                  title="Formally reject application per APH non-compliance"
-                >
-                  <XCircle className="w-4 h-4 text-rose-200" />
-                  <span>Reject</span>
-                </button>
-              </>
-            )}
-
-            {/* Return / Revert Button */}
-            {canRevert && (
-              <button
-                onClick={() => setShowRevertModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 transition-colors shadow-2xs"
-                title="Return / Revert application stage per APH §1.8(f)-(g)"
-              >
-                <RotateCcw className="w-3.5 h-3.5 text-slate-600" />
-                <span>Revert Stage</span>
-              </button>
-            )}
-
-            {/* Case Summary & 5 Notices Modal Trigger */}
-            <button
-              onClick={() => setShowCaseSummaryModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors shadow-2xs"
-              title="View Electronic Case Summary & 5 Statutory Notices"
-            >
-              <FileText className="w-3.5 h-3.5 text-indigo-600" />
-              <span>Summary & 5 Notices</span>
-            </button>
-
-            {/* Route policy drawer toggle */}
-            <button
-              onClick={() => setShowWhyRouteDrawer(!showWhyRouteDrawer)}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 text-slate-600 border border-slate-300 transition-colors"
-              title="Inspect policy handbook rules"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-              <span>Route Rules</span>
-              {showWhyRouteDrawer ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Why this Route? Explanatory Policy Drawer */}
+        {/* Expandable "Why this Route?" Statutory Drawer */}
         {showWhyRouteDrawer && (
-          <div className="bg-gradient-to-r from-indigo-50/95 via-blue-50/95 to-slate-50 border-b border-indigo-200/80 p-4 text-xs text-slate-800 animate-in slide-in-from-top-2 duration-200">
+          <div className="bg-gradient-to-r from-indigo-50/90 via-blue-50/80 to-slate-50 border-b border-indigo-200 p-4 text-xs text-slate-800 animate-in slide-in-from-top-2 duration-150">
             <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-sm shrink-0">
-                  <ShieldCheck className="w-5 h-5" />
-                </div>
-                <div className="space-y-1">
-                  <h4 className="font-bold text-indigo-950 text-sm">
-                    Policy Rule Engine &mdash; Selected Route: {application.routeType}
-                  </h4>
-                  <p className="text-slate-600">
-                    Governed by APH 2026–27 Table 1 Policy Matrix and Errata G02 p. 42. Evaluates institution accreditation, intake surge, land title validity, and inspection criteria.
-                  </p>
-                </div>
+              <div className="space-y-1">
+                <h4 className="font-bold text-indigo-950 text-xs uppercase tracking-wide flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                  Statutory Predicate: {application.routeType} (Rule Engine v2026.1)
+                </h4>
+                <p className="text-slate-600 leading-relaxed text-[11px]">
+                  {isCOEP
+                    ? 'Evaluated under APH 2024–27 Table 2.3 Row 9 and AY 2026–27 Addendum Errata G02 p. 42 §2.6(c)(1). Tier-1 NBA score (680) clears desk scrutiny and exempts institution from physical EVC.'
+                    : isGIITS
+                    ? 'Evaluated under APH Table 2.3 Row 3. Proposed intake surge from 120 to 180 seats in unaccredited branch mandates on-site physical verification by a 3-member Expert Visit Committee under §1.9.'
+                    : isPDIMTR
+                    ? 'Evaluated under APH Table 2.3 Row 1 (Annual EoA Renewal on Self-Disclosure). Pre-approval scrutiny and physical inspection waived; post-approval subject to 30-year lease deed compliance.'
+                    : isBATU
+                    ? 'Evaluated under APH §2.16.1 & §2.17(e) (Restoration / Site Shifting). Preliminary desk scrutiny is statutory waived in lieu of immediate mandatory campus physical verification.'
+                    : 'Evaluated against AICTE Approval Process Handbook (APH 2024–27) Table 2.3 matrix and statutory accreditation thresholds.'}
+                </p>
               </div>
               <button
                 onClick={() => setShowWhyRouteDrawer(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                className="text-slate-400 hover:text-slate-600 p-1 shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* 5-Route Comparison Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 mt-3 text-[11px]">
-              <div className={`p-2.5 rounded-xl border ${isPDIMTR ? 'bg-emerald-50 border-emerald-400 font-bold text-emerald-950 ring-1 ring-emerald-400' : 'bg-white/80 border-slate-200 text-slate-500'}`}>
-                <div className="flex items-center justify-between">
-                  <span>1: Fast-Track EoA</span>
-                  <span>{isPDIMTR ? '✅ ACTIVE' : '—'}</span>
-                </div>
-                <p className="text-[10px] text-slate-500 mt-0.5 font-normal">Self-disclosure renewal without intake surge</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-3 pt-3 border-t border-indigo-100 text-[11px]">
+              <div className="bg-white/80 p-2.5 rounded-lg border border-slate-200">
+                <span className="font-bold text-slate-500 uppercase text-[9px] block">Accreditation Benchmark</span>
+                <span className="font-bold text-slate-900 mt-0.5 block">
+                  {isCOEP ? 'NBA Tier-1 (Valid 2028)' : isGIITS ? 'Non-NBA Program' : 'Self-Disclosure'}
+                </span>
               </div>
-              <div className={`p-2.5 rounded-xl border ${isCOEP ? 'bg-emerald-50 border-emerald-400 font-bold text-emerald-950 ring-1 ring-emerald-400' : 'bg-white/80 border-slate-200 text-slate-500'}`}>
-                <div className="flex items-center justify-between">
-                  <span>2: Scrutiny Only</span>
-                  <span>{isCOEP ? '✅ ACTIVE (NBA)' : '—'}</span>
-                </div>
-                <p className="text-[10px] text-slate-500 mt-0.5 font-normal">NBA Tier-1 Valid: EVC waived per Errata p. 42</p>
+              <div className="bg-white/80 p-2.5 rounded-lg border border-slate-200">
+                <span className="font-bold text-slate-500 uppercase text-[9px] block">EVC Requirement</span>
+                <span className="font-bold text-slate-900 mt-0.5 block">
+                  {isCOEP ? 'Waived (NBA Exemption)' : isPDIMTR ? 'Bypassed (Self-Disclosure)' : 'Mandatory Physical EVC'}
+                </span>
               </div>
-              <div className={`p-2.5 rounded-xl border ${isGIITS ? 'bg-emerald-50 border-emerald-400 font-bold text-emerald-950 ring-1 ring-emerald-400' : 'bg-white/80 border-slate-200 text-slate-500'}`}>
-                <div className="flex items-center justify-between">
-                  <span>3: Scrutiny + EVC</span>
-                  <span>{isGIITS ? '✅ ACTIVE' : '—'}</span>
-                </div>
-                <p className="text-[10px] text-slate-500 mt-0.5 font-normal">Non-NBA Intake Surge: EVC Mandatory §1.9</p>
-              </div>
-              <div className={`p-2.5 rounded-xl border ${isAPEX ? 'bg-emerald-50 border-emerald-400 font-bold text-emerald-950 ring-1 ring-emerald-400' : 'bg-white/80 border-slate-200 text-slate-500'}`}>
-                <div className="flex items-center justify-between">
-                  <span>4: EVC + SAC/SHC</span>
-                  <span>{isAPEX ? '✅ ACTIVE' : '—'}</span>
-                </div>
-                <p className="text-[10px] text-slate-500 mt-0.5 font-normal">Appellate hearing queue for aggrieved cases</p>
-              </div>
-              <div className={`p-2.5 rounded-xl border ${isBATU ? 'bg-emerald-50 border-emerald-400 font-bold text-emerald-950 ring-1 ring-emerald-400' : 'bg-white/80 border-slate-200 text-slate-500'}`}>
-                <div className="flex items-center justify-between">
-                  <span>5: Only EVC</span>
-                  <span>{isBATU ? '✅ ACTIVE' : '—'}</span>
-                </div>
-                <p className="text-[10px] text-slate-500 mt-0.5 font-normal">Restoration / Site Shift waives scrutiny (§2.16.1)</p>
+              <div className="bg-white/80 p-2.5 rounded-lg border border-slate-200">
+                <span className="font-bold text-slate-500 uppercase text-[9px] block">Official Artifact</span>
+                <a
+                  href={`/api/v1/cases/${application.id}/intake-evaluation-table`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-bold text-blue-600 hover:underline flex items-center gap-1 mt-0.5"
+                >
+                  <span>Intake Capacity Table</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
               </div>
             </div>
           </div>
         )}
 
-        {/* Clean 4-Tab Navigation */}
-        <div className="border-b border-slate-200 bg-white px-5 flex items-center gap-2 overflow-x-auto">
+        {/* ==================================================================== */}
+        {/* 3. ROUTE-SPECIFIC DYNAMIC LIFECYCLE RAIL                             */}
+        {/* ==================================================================== */}
+        <div className="p-4 sm:p-5 bg-white border-b border-slate-200 space-y-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-900">
+                Route-Specific Lifecycle Pipeline
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-slate-500">Current Milestone:</span>
+              <span className="font-bold text-blue-900 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
+                {application.currentStage}
+              </span>
+              <span className="font-mono text-slate-500 text-[11px]">
+                {application.elapsedDaysAtStage}d elapsed (SLA: {application.stageDeadlineDays}d)
+              </span>
+            </div>
+          </div>
+
+          {/* Dynamic Stages Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5">
+            {lifecycleStages.map((stage) => {
+              const isCompleted = stage.status === 'COMPLETED';
+              const isActive = stage.status === 'ACTIVE';
+              const isWaived = stage.status === 'WAIVED';
+              return (
+                <div
+                  key={stage.id}
+                  className={`p-3 rounded-xl border transition-all flex flex-col justify-between min-h-[82px] ${
+                    isActive
+                      ? 'bg-blue-50/80 border-2 border-blue-600 ring-2 ring-blue-500/20 shadow-xs'
+                      : isCompleted
+                      ? 'bg-emerald-50/60 border-emerald-300 text-emerald-950'
+                      : isWaived
+                      ? 'bg-purple-50/60 border-purple-200 text-purple-900'
+                      : 'bg-slate-50/70 border-slate-200 text-slate-600'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-[9px] font-bold text-slate-400">
+                      {stage.id.toUpperCase()}
+                    </span>
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold ${stage.badgeColor}`}>
+                      {isCompleted && <CheckCircle2 className="w-2.5 h-2.5 inline mr-0.5 -mt-0.5" />}
+                      {stage.badgeText}
+                    </span>
+                  </div>
+
+                  <div>
+                    <h5 className="font-bold text-xs text-slate-900 mt-1 leading-tight">
+                      {stage.title}
+                    </h5>
+                    <p className="text-[10px] text-slate-500 mt-0.5 truncate">
+                      {stage.subtitle}
+                    </p>
+                  </div>
+
+                  <div className="text-[9px] text-slate-400 font-medium pt-1 border-t border-slate-100/80 mt-1">
+                    {stage.annotation}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ==================================================================== */}
+        {/* 4. ROLE-AWARE ACTION CONSOLE (Single Primary Action)                 */}
+        {/* ==================================================================== */}
+        <div className="bg-slate-100/90 border-b border-slate-200 px-4 sm:px-5 py-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            {primaryAction ? (
+              <button
+                onClick={primaryAction.handler}
+                disabled={isActioning}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white shadow-xs transition-all disabled:opacity-50 ${
+                  primaryAction.variant === 'emerald'
+                    ? 'bg-emerald-600 hover:bg-emerald-700'
+                    : primaryAction.variant === 'amber'
+                    ? 'bg-amber-500 hover:bg-amber-600 text-slate-950'
+                    : primaryAction.variant === 'purple'
+                    ? 'bg-purple-600 hover:bg-purple-700'
+                    : primaryAction.variant === 'blue'
+                    ? 'bg-blue-600 hover:bg-blue-700'
+                    : 'bg-emerald-600 hover:bg-emerald-700'
+                }`}
+              >
+                <primaryAction.icon className="w-4 h-4" />
+                <span>{isActioning ? 'Executing...' : primaryAction.label}</span>
+              </button>
+            ) : (
+              <div className="flex items-center gap-2 text-xs text-slate-600 bg-white px-3 py-1.5 rounded-lg border border-slate-200">
+                <Clock className="w-3.5 h-3.5 text-slate-400" />
+                <span>Stage Status: <strong>{application.currentStage}</strong> (No pending action for your role)</span>
+              </div>
+            )}
+          </div>
+
+          {/* Secondary Actions Group */}
+          <div className="flex items-center gap-2">
+            {/* Case Summary & 5 Standard Notices */}
+            <button
+              onClick={() => setShowCaseSummaryModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-white hover:bg-slate-50 text-indigo-700 border border-indigo-200 transition-colors shadow-2xs"
+              title="View Electronic Case Summary & 5 Statutory Notices"
+            >
+              <FileText className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Summary &amp; 5 Notices</span>
+            </button>
+
+            {/* Contextual More Actions Dropdown for Authorized Officers */}
+            {canAct && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowMoreActions(!showMoreActions)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 transition-colors shadow-2xs"
+                >
+                  <MoreVertical className="w-3.5 h-3.5" />
+                  <span>More Actions</span>
+                </button>
+
+                {showMoreActions && (
+                  <div className="absolute right-0 mt-1 w-56 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-20 text-xs">
+                    {application.currentStage !== 'Deficiency Communicated' && (
+                      <button
+                        onClick={handleQuickFlagDeficiency}
+                        className="w-full text-left px-3.5 py-2 hover:bg-amber-50 text-amber-900 flex items-center gap-2 transition-colors"
+                      >
+                        <AlertTriangle className="w-4 h-4 text-amber-600" />
+                        <span>Flag Deficiencies (Annex. 7)</span>
+                      </button>
+                    )}
+
+                    {canRevert && (
+                      <button
+                        onClick={() => {
+                          setShowRevertModal(true);
+                          setShowMoreActions(false);
+                        }}
+                        className="w-full text-left px-3.5 py-2 hover:bg-slate-50 text-slate-800 flex items-center gap-2 transition-colors border-t border-slate-100"
+                      >
+                        <RotateCcw className="w-4 h-4 text-slate-500" />
+                        <span>Revert Stage (APH §1.8)</span>
+                      </button>
+                    )}
+
+                    {application.currentStage !== 'Approval Issued' && application.currentStage !== 'Application Rejected' && (
+                      <button
+                        onClick={() => {
+                          setShowRejectModal(true);
+                          setShowMoreActions(false);
+                        }}
+                        className="w-full text-left px-3.5 py-2 hover:bg-rose-50 text-rose-700 flex items-center gap-2 transition-colors border-t border-slate-100"
+                      >
+                        <XCircle className="w-4 h-4 text-rose-600" />
+                        <span>Reject Application</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ==================================================================== */}
+        {/* 5. CLEAN 4-TAB NAVIGATION BAR                                        */}
+        {/* ==================================================================== */}
+        <div className="border-b border-slate-200 bg-white px-4 sm:px-5 flex items-center gap-2 overflow-x-auto">
           <button
             onClick={() => setActiveTab('overview')}
             className={`py-3 px-3 text-xs font-bold border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
@@ -567,7 +1024,8 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                 : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
             }`}
           >
-            <span>📋 Overview &amp; Route Engine</span>
+            <FileText className="w-4 h-4" />
+            <span>Overview &amp; Statutory Facts</span>
           </button>
           
           <button
@@ -578,7 +1036,8 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                 : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
             }`}
           >
-            <span>📁 Submitted Documents &amp; Checklists</span>
+            <FileCheck className="w-4 h-4" />
+            <span>Documents &amp; Checklists</span>
             <span className="px-1.5 py-0.2 rounded-full bg-slate-100 text-[10px] font-mono text-slate-700">
               {application.documents.length}
             </span>
@@ -592,10 +1051,9 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                 : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
             }`}
           >
-            <span>🚁 Physical Inspection &amp; Video Audit</span>
-            {evcRecord && (
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            )}
+            <MapPin className="w-4 h-4" />
+            <span>EVC Inspection &amp; Telemetry</span>
+            {evcRecord && <span className="w-2 h-2 rounded-full bg-emerald-500" />}
           </button>
 
           <button
@@ -606,333 +1064,69 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                 : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
             }`}
           >
-            <span>🛡️ Obligations &amp; Audit Trail</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-slate-100 text-[10px] font-mono text-slate-700">
-              {appCompliances.length}
-            </span>
+            <ShieldCheck className="w-4 h-4" />
+            <span>Audit Trail &amp; Orders</span>
+            {appCompliances.length > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-amber-100 text-[10px] font-bold text-amber-900">
+                {appCompliances.length}
+              </span>
+            )}
           </button>
         </div>
 
-        {/* Tab Content Body */}
-        <div className="p-5 flex-1 overflow-y-auto space-y-6">
-
-          {/* TAB 1: OVERVIEW & ROUTE ENGINE */}
+        {/* ==================================================================== */}
+        {/* 6. CONSOLIDATED CONTENT PANELS (Single Outer Scroll)                 */}
+        {/* ==================================================================== */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50/50">
+          
+          {/* TAB 1: OVERVIEW & FACTS */}
           {activeTab === 'overview' && (
-            <div className="space-y-6">
-              {/* Institution Metadata Grid */}
+            <div className="space-y-4">
+              {/* Institutional Facts Cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                  <span className="text-[10px] text-slate-500 uppercase font-bold block">Application Type</span>
-                  <p className="font-bold text-xs text-slate-900 mt-0.5">{application.applicationType}</p>
-                  <p className="text-[11px] text-slate-500">{application.program}</p>
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200">
+                  <span className="text-[10px] text-slate-500 uppercase font-bold block">Programme &amp; Level</span>
+                  <p className="font-bold text-xs text-slate-900 mt-0.5">{application.program || 'Engineering & Tech'}</p>
+                  <p className="text-[11px] text-slate-500">{(application as any).level || 'Under Graduate'}</p>
                 </div>
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200">
                   <span className="text-[10px] text-slate-500 uppercase font-bold block">Intake Surge</span>
                   <p className="font-bold text-xs text-slate-900 mt-0.5">
                     {application.proposedIntake} seats
-                    <span className="text-slate-500 font-normal ml-1">(from {(application as any).currentIntake || (application.proposedIntake - 60)})</span>
+                    <span className="text-slate-500 font-normal ml-1">
+                      (from {(application as any).currentIntake || (application.proposedIntake - 60)})
+                    </span>
                   </p>
                   <p className="text-[11px] text-emerald-700 font-semibold">
-                    +{application.proposedIntake - ((application as any).currentIntake || (application.proposedIntake - 60))} Seats Proposed
+                    +{application.proposedIntake - ((application as any).currentIntake || (application.proposedIntake - 60))} Proposed
                   </p>
                 </div>
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200">
                   <span className="text-[10px] text-slate-500 uppercase font-bold block">Submission Date</span>
                   <p className="font-bold text-xs text-slate-900 mt-0.5">{formatDateIndian(application.submittedAt)}</p>
-                  <p className="text-[11px] text-slate-500">Ingested via NSWS</p>
+                  <p className="text-[11px] text-slate-500">NSWS Single Window</p>
                 </div>
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+
+                <div className="bg-white p-3.5 rounded-xl border border-slate-200">
                   <span className="text-[10px] text-slate-500 uppercase font-bold block">Assigned Officer</span>
                   <p className="font-bold text-xs text-slate-900 mt-0.5">{application.assignedOfficer}</p>
                   <p className="text-[11px] text-blue-600 font-medium">RO {application.region}</p>
                 </div>
               </div>
 
-              {/* Statutory Route Engine & Handbook Rule Breakdown */}
-              <div className="bg-gradient-to-r from-blue-50/70 via-indigo-50/50 to-slate-50 p-4.5 rounded-xl border border-blue-200 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-5 h-5 text-blue-700" />
-                    <h3 className="font-bold text-xs uppercase tracking-wider text-slate-900">
-                      Statutory 5-Route Engine Verdict (APH Table 1 / Errata G02)
-                    </h3>
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-100 text-blue-900 border border-blue-300">
-                    Rule Engine v2026.1
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                  <div className="bg-white p-3 rounded-lg border border-slate-200">
-                    <span className="text-[10px] font-bold uppercase text-slate-500 block mb-0.5">Accreditation Status</span>
-                    <p className="font-bold text-slate-900">
-                      {isCOEP ? 'NBA Tier-1 Accredited (Valid till 2028)' : isGIITS ? 'Non-NBA Accredited (CSE Surge)' : 'Standard Self-Disclosure'}
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-1">
-                      {isCOEP ? 'Permits physical EVC waiver under Errata G02 p. 42.' : isGIITS ? 'Absence of NBA accreditation triggers mandatory physical EVC.' : 'Standard institutional renewal.'}
-                    </p>
-                  </div>
-
-                  <div className="bg-white p-3 rounded-lg border border-slate-200">
-                    <span className="text-[10px] font-bold uppercase text-slate-500 block mb-0.5">Physical Verification</span>
-                    <p className="font-bold text-slate-900">
-                      {isCOEP ? 'EVC Waived (Fast-Track)' : (isGIITS || isBATU) ? 'Mandatory Physical EVC Required' : 'Post-Approval Audit'}
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-1">
-                      {isCOEP ? 'Direct desk scrutiny clearance permitted.' : 'Mandatory 30-min geo-tagged video walkthrough & GPS audit.'}
-                    </p>
-                  </div>
-
-                  <div className="bg-white p-3 rounded-lg border border-slate-200">
-                    <span className="text-[10px] font-bold uppercase text-slate-500 block mb-0.5">Official Artifact</span>
-                    <p className="font-bold text-blue-700">
-                      <a
-                        href={`/api/v1/cases/${application.id}/intake-evaluation-table`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="hover:underline flex items-center gap-1"
-                      >
-                        <span>Intake Capacity Table</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-1">
-                      Live statutory table reflecting 2026-27 AICTE capacity norms.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stage Lifecycle Progress Stepper (Executive Interactive Pipeline) */}
-              <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-                    <span className="text-xs font-extrabold uppercase tracking-wider text-slate-900">
-                      Workflow Lifecycle Stage Tracking &bull; AY 2026–27
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="text-slate-500 font-medium">Current Milestone:</span>
-                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
-                      {application.currentStage}
-                    </span>
-                    <span className="text-[11px] font-mono text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                      {application.elapsedDaysAtStage}d elapsed (SLA: {application.stageDeadlineDays}d)
-                    </span>
-                  </div>
-                </div>
-                
-                {/* 5-Step Connected Pipeline */}
-                <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 relative">
-                  {/* Step 1: NSWS Ingestion */}
-                  {(() => {
-                    const isDone = application.currentStage !== 'Application Submitted' && application.currentStage !== 'Draft';
-                    const isActive = application.currentStage === 'Application Submitted' || application.currentStage === 'Draft';
-                    return (
-                      <div className={`p-3 rounded-xl border transition-all relative flex flex-col justify-between min-h-[92px] ${
-                        isActive
-                          ? 'bg-gradient-to-b from-blue-50/90 to-white border-2 border-blue-600 shadow-sm ring-2 ring-blue-500/20'
-                          : isDone
-                          ? 'bg-emerald-50/50 border-emerald-200 text-emerald-950'
-                          : 'bg-slate-50/70 border-slate-200 text-slate-600'
-                      }`}>
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono text-[10px] font-bold text-slate-400">STAGE 01</span>
-                          {isDone ? (
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                              <CheckCircle2 className="w-2.5 h-2.5" /> DONE
-                            </span>
-                          ) : isActive ? (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-blue-600 text-white animate-pulse">
-                              ACTIVE
-                            </span>
-                          ) : (
-                            <span className="text-[9px] font-bold text-slate-400">WAIT</span>
-                          )}
-                        </div>
-                        <div>
-                          <span className="block font-bold text-xs text-slate-900 mt-1">1. Ingestion</span>
-                          <span className="text-[10px] text-slate-500 block">NSWS &bull; Siebel Token</span>
-                        </div>
-                        <div className="text-[9px] text-slate-400 font-medium pt-1 border-t border-slate-100 mt-1">
-                          {isDone ? 'Verified Single Window' : isActive ? 'Processing Intake Application' : 'Initial Phase'}
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Step 2: Desk Scrutiny */}
-                  {(() => {
-                    const isActive = application.currentStage === 'Scrutiny in Progress' || application.currentStage === 'Deficiency Communicated';
-                    const isDone = application.currentStage === 'Scrutiny Cleared' || application.currentStage === 'EVC Scheduled' || application.currentStage === 'EVC Inspection Completed' || application.currentStage === 'Executive Committee Approval' || application.currentStage === 'SAC / SHC Review' || application.currentStage === 'Approval Issued' || application.currentStage === 'Application Rejected';
-                    return (
-                      <div className={`p-3 rounded-xl border transition-all relative flex flex-col justify-between min-h-[92px] ${
-                        isActive
-                          ? 'bg-gradient-to-b from-blue-50/90 to-white border-2 border-blue-600 shadow-sm ring-2 ring-blue-500/20'
-                          : isDone
-                          ? 'bg-emerald-50/50 border-emerald-200 text-emerald-950'
-                          : 'bg-slate-50/70 border-slate-200 text-slate-600'
-                      }`}>
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono text-[10px] font-bold text-slate-400">STAGE 02</span>
-                          {isDone ? (
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                              <CheckCircle2 className="w-2.5 h-2.5" /> CLEARED
-                            </span>
-                          ) : isActive ? (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-blue-600 text-white animate-pulse">
-                              IN REVIEW
-                            </span>
-                          ) : (
-                            <span className="text-[9px] font-bold text-slate-400">PENDING</span>
-                          )}
-                        </div>
-                        <div>
-                          <span className="block font-bold text-xs text-slate-900 mt-1">2. Desk Scrutiny</span>
-                          <span className="text-[10px] text-slate-500 block">Checklist &bull; Snapshot v1</span>
-                        </div>
-                        <div className="text-[9px] text-slate-400 font-medium pt-1 border-t border-slate-100 mt-1">
-                          {isDone ? 'Snapshot Digitally Signed' : isActive ? 'Verifying 4 Mandatory Checks' : 'SLA: 10 Days'}
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Step 3: Physical EVC Inspection */}
-                  {(() => {
-                    const isWaived = isCOEP;
-                    const isActive = (application.currentStage === 'EVC Scheduled' || application.currentStage === 'EVC Inspection Completed') && !isWaived;
-                    const isDone = (application.currentStage === 'Executive Committee Approval' || application.currentStage === 'SAC / SHC Review' || application.currentStage === 'Approval Issued' || application.currentStage === 'Application Rejected') && !isWaived;
-                    return (
-                      <div className={`p-3 rounded-xl border transition-all relative flex flex-col justify-between min-h-[92px] ${
-                        isWaived
-                          ? 'bg-purple-50/60 border-purple-200 text-purple-950'
-                          : isActive
-                          ? 'bg-gradient-to-b from-blue-50/90 to-white border-2 border-blue-600 shadow-sm ring-2 ring-blue-500/20'
-                          : isDone
-                          ? 'bg-emerald-50/50 border-emerald-200 text-emerald-950'
-                          : 'bg-slate-50/70 border-slate-200 text-slate-600'
-                      }`}>
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono text-[10px] font-bold text-slate-400">STAGE 03</span>
-                          {isWaived ? (
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-purple-100 text-purple-800 border border-purple-300">
-                              <Award className="w-2.5 h-2.5 text-purple-600" /> WAIVED
-                            </span>
-                          ) : isDone ? (
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                              <CheckCircle2 className="w-2.5 h-2.5" /> VISITED
-                            </span>
-                          ) : isActive ? (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-blue-600 text-white animate-pulse">
-                              DISPATCHED
-                            </span>
-                          ) : (
-                            <span className="text-[9px] font-bold text-slate-400">PENDING</span>
-                          )}
-                        </div>
-                        <div>
-                          <span className="block font-bold text-xs text-slate-900 mt-1">3. EVC Inspection</span>
-                          <span className="text-[10px] text-slate-500 block">
-                            {isWaived ? 'Waived (NBA Exemption)' : 'GPS &bull; 30m Video'}
-                          </span>
-                        </div>
-                        <div className="text-[9px] text-slate-400 font-medium pt-1 border-t border-slate-100 mt-1">
-                          {isWaived ? 'APH 2026-27 Errata p. 42' : isDone ? 'Telemetric Audit Verified' : isActive ? 'Field Verification Active' : 'SLA: 14 Days'}
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Step 4: Regional Desk / SAC */}
-                  {(() => {
-                    const isActive = application.currentStage === 'Executive Committee Approval' || application.currentStage === 'SAC / SHC Review';
-                    const isDone = application.currentStage === 'Approval Issued' || application.currentStage === 'Application Rejected';
-                    return (
-                      <div className={`p-3 rounded-xl border transition-all relative flex flex-col justify-between min-h-[92px] ${
-                        isActive
-                          ? 'bg-gradient-to-b from-blue-50/90 to-white border-2 border-blue-600 shadow-sm ring-2 ring-blue-500/20'
-                          : isDone
-                          ? 'bg-emerald-50/50 border-emerald-200 text-emerald-950'
-                          : 'bg-slate-50/70 border-slate-200 text-slate-600'
-                      }`}>
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono text-[10px] font-bold text-slate-400">STAGE 04</span>
-                          {isDone ? (
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                              <CheckCircle2 className="w-2.5 h-2.5" /> REVIEWED
-                            </span>
-                          ) : isActive ? (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-blue-600 text-white animate-pulse">
-                              IN REVIEW
-                            </span>
-                          ) : (
-                            <span className="text-[9px] font-bold text-slate-400">PENDING</span>
-                          )}
-                        </div>
-                        <div>
-                          <span className="block font-bold text-xs text-slate-900 mt-1">4. Regional Desk</span>
-                          <span className="text-[10px] text-slate-500 block">RO / SAC Review Gate</span>
-                        </div>
-                        <div className="text-[9px] text-slate-400 font-medium pt-1 border-t border-slate-100 mt-1">
-                          {isDone ? 'Concurrence Finalized' : isActive ? 'Regional Concurrence & SAC' : 'SLA: 15 Days'}
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Step 5: Final Order */}
-                  {(() => {
-                    const isIssued = application.currentStage === 'Approval Issued';
-                    const isRejected = application.currentStage === 'Application Rejected';
-                    return (
-                      <div className={`p-3 rounded-xl border transition-all relative flex flex-col justify-between min-h-[92px] ${
-                        isIssued
-                          ? 'bg-emerald-50/90 border-2 border-emerald-600 shadow-sm ring-2 ring-emerald-500/20 text-emerald-950'
-                          : isRejected
-                          ? 'bg-rose-50/90 border-2 border-rose-600 shadow-sm ring-2 ring-rose-500/20 text-rose-950'
-                          : 'bg-slate-50/70 border-slate-200 text-slate-600'
-                      }`}>
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono text-[10px] font-bold text-slate-400">STAGE 05</span>
-                          {isIssued ? (
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-600 text-white">
-                              <CheckCircle2 className="w-2.5 h-2.5" /> APPROVED
-                            </span>
-                          ) : isRejected ? (
-                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-rose-600 text-white">
-                              <XCircle className="w-2.5 h-2.5" /> REJECTED
-                            </span>
-                          ) : (
-                            <span className="text-[9px] font-bold text-slate-400">GATE</span>
-                          )}
-                        </div>
-                        <div>
-                          <span className="block font-bold text-xs text-slate-900 mt-1">5. Council Order</span>
-                          <span className="text-[10px] text-slate-500 block">
-                            {isIssued ? 'EoA Order Issued' : isRejected ? 'Speaking Order / LOD' : 'Statutory Order'}
-                          </span>
-                        </div>
-                        <div className="text-[9px] text-slate-400 font-medium pt-1 border-t border-slate-100 mt-1">
-                          {isIssued ? 'Digitally Signed & Dispatched' : isRejected ? 'LOD Dispatched' : 'Council EC Chamber'}
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-
-              {/* Advanced Manual Stage Transition Selector (For Regional & Bureau Officers) */}
+              {/* Manual Stage Transition for Authorized Officers (Hidden for Applicants) */}
               {canAct && (
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4.5 space-y-3">
+                <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900">
+                      <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
+                        <Sliders className="w-3.5 h-3.5 text-blue-600" />
                         Manual Statutory Stage Transition (Override Gate)
                       </h4>
                       <p className="text-[11px] text-slate-500">
-                        Select a specific target stage to execute authorized regulatory movement with justification note.
+                        Select an eligible target stage to execute authorized regulatory movement with justification note.
                       </p>
                     </div>
                   </div>
@@ -969,7 +1163,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                   </div>
 
                   {selectedTargetStage && (
-                    <div className="space-y-2 mt-2 bg-white p-3 rounded-lg border border-slate-200">
+                    <div className="space-y-2 mt-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
                       <label className="text-xs font-bold text-slate-700 block">
                         Official Regulatory Remarks / Mandatory Reason:
                       </label>
@@ -978,7 +1172,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                         placeholder="Provide detailed justification, official remarks, or specific deficiencies observed..."
                         value={mandatoryReason}
                         onChange={(e) => setMandatoryReason(e.target.value)}
-                        className="w-full p-2.5 rounded-md border border-slate-300 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        className="w-full p-2.5 rounded-md border border-slate-300 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
                       />
                       {transitionError && (
                         <p className="text-xs font-semibold text-rose-600 flex items-center gap-1">
@@ -1001,13 +1195,13 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
             </div>
           )}
 
-          {/* TAB 2: SUBMITTED DOCUMENTS & STATUTORY CHECKLISTS */}
+          {/* TAB 2: SUBMITTED DOCUMENTS */}
           {activeTab === 'documents' && (
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                    Prescribed Documents &amp; Verification Roster
+                    Prescribed Regulatory Documents &amp; Verification Roster
                   </h3>
                   <p className="text-[11px] text-slate-500">
                     Monitored under AICTE APH Chapter I / II. Documents flagged deficient open a time-bound rectification window.
@@ -1037,15 +1231,15 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
               </div>
 
               {/* Documents Table */}
-              <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+              <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
                 <table className="w-full text-xs text-left">
                   <thead className="bg-slate-50 text-slate-600 font-bold uppercase text-[10px] border-b border-slate-200">
                     <tr>
                       <th className="p-3">Document / Requirement</th>
                       <th className="p-3">Category</th>
-                      <th className="p-3">Validity / Expiry</th>
+                      <th className="p-3">Validity</th>
                       <th className="p-3">Status</th>
-                      <th className="p-3 text-right">Verification Actions</th>
+                      <th className="p-3 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -1088,7 +1282,6 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                         </td>
                         <td className="p-3 text-right">
                           <div className="flex items-center justify-end gap-1.5">
-                            {/* Officer Inline Verification Controls */}
                             {canAct && (
                               <>
                                 <button
@@ -1110,7 +1303,6 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                               </>
                             )}
 
-                            {/* Institution Rectification Action */}
                             {isInstitution && doc.status === 'Rejected' && (
                               <button
                                 onClick={() => setCorrectingDoc(doc)}
@@ -1130,7 +1322,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
             </div>
           )}
 
-          {/* TAB 3: PHYSICAL INSPECTION & VIDEO AUDIT */}
+          {/* TAB 3: PHYSICAL EVC INSPECTION */}
           {activeTab === 'evc' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -1156,8 +1348,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
 
               {evcRecord ? (
                 <div className="space-y-4">
-                  {/* Committee Metadata Card */}
-                  <div className="bg-white p-4.5 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+                  <div className="bg-white p-4 rounded-xl border border-slate-200 grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
                     <div>
                       <span className="text-[10px] uppercase font-bold text-slate-500 block">Inspection Date</span>
                       <p className="font-bold text-slate-900 mt-0.5">{evcRecord.scheduledDate}</p>
@@ -1168,14 +1359,16 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
 
                     <div>
                       <span className="text-[10px] uppercase font-bold text-slate-500 block">Committee Chair</span>
-                      <p className="font-bold text-slate-900 mt-0.5">{evcRecord.committeeChairman || evcRecord.committeeMembers?.[0] || 'Dr. S. K. Roy (IIT Bombay)'}</p>
+                      <p className="font-bold text-slate-900 mt-0.5">
+                        {evcRecord.committeeChairman || evcRecord.committeeMembers?.[0] || 'Dr. S. K. Roy (IIT Bombay)'}
+                      </p>
                       <p className="text-[11px] text-slate-500">AICTE Expert Panel Roster</p>
                     </div>
 
                     <div>
                       <span className="text-[10px] uppercase font-bold text-slate-500 block">GPS Coordinates</span>
                       <p className="font-mono text-slate-900 font-bold mt-0.5">17.7231° N, 83.3012° E</p>
-                      <p className="text-[11px] text-emerald-700 font-medium">Geo-fence Verified</p>
+                      <p className="text-[11px] text-emerald-700 font-medium">500m Geo-fence Verified</p>
                     </div>
 
                     <div>
@@ -1185,28 +1378,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Inspection Scorecards */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="bg-emerald-50/70 p-4 rounded-xl border border-emerald-200 text-center">
-                      <span className="text-xs font-bold text-emerald-900 block">Infrastructure &amp; Built-up Area</span>
-                      <p className="text-2xl font-black text-emerald-700 mt-1">{evcRecord.infrastructureScore || 94}%</p>
-                      <p className="text-[11px] text-emerald-800 mt-0.5">All 24 labs compliant with AICTE Table 3.1</p>
-                    </div>
-
-                    <div className="bg-emerald-50/70 p-4 rounded-xl border border-emerald-200 text-center">
-                      <span className="text-xs font-bold text-emerald-900 block">Faculty Cadre Ratio</span>
-                      <p className="text-2xl font-black text-emerald-700 mt-1">{evcRecord.facultyScore || 91}%</p>
-                      <p className="text-[11px] text-emerald-800 mt-0.5">1:20 Teacher-Student ratio verified</p>
-                    </div>
-
-                    <div className="bg-emerald-50/70 p-4 rounded-xl border border-emerald-200 text-center">
-                      <span className="text-xs font-bold text-emerald-900 block">Laboratory Equipment Norms</span>
-                      <p className="text-2xl font-black text-emerald-700 mt-1">{evcRecord.laboratoriesScore || 96}%</p>
-                      <p className="text-[11px] text-emerald-800 mt-0.5">Physical safety &amp; calibration verified</p>
-                    </div>
-                  </div>
-
-                  {/* 30-Minute Geo-tagged Video Walkthrough Simulator */}
+                  {/* 30-Minute Video Telemetry */}
                   <div className="bg-slate-900 text-white rounded-xl p-4 space-y-2 border border-slate-800">
                     <div className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2">
@@ -1218,26 +1390,17 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                       </span>
                     </div>
 
-                    <div className="relative h-44 bg-slate-950 rounded-lg overflow-hidden flex items-center justify-center border border-slate-800">
-                      <div className="absolute top-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-xs px-2 py-0.5 rounded text-[10px] font-mono text-emerald-400">
-                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
-                        <span>REC &bull; 00:28:44 / 00:30:00</span>
-                      </div>
-                      
+                    <div className="relative h-36 bg-slate-950 rounded-lg overflow-hidden flex items-center justify-center border border-slate-800">
                       <div className="text-center space-y-1">
-                        <MapPin className="w-8 h-8 text-blue-400 mx-auto" />
+                        <MapPin className="w-7 h-7 text-blue-400 mx-auto" />
                         <p className="text-xs font-bold text-slate-200">Campus Video Stream Sealed with WORM Cryptographic Hash</p>
                         <p className="text-[10px] text-slate-400 font-mono">SHA-256: 7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069</p>
-                      </div>
-
-                      <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-xs px-2 py-0.5 rounded text-[10px] font-mono text-slate-300">
-                        EVC Team #2-SOC1770029225 &bull; AICTE Portal
                       </div>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="p-8 text-center bg-slate-50 rounded-xl border border-slate-200">
+                <div className="p-8 text-center bg-white rounded-xl border border-slate-200">
                   <Calendar className="w-8 h-8 text-slate-400 mx-auto mb-2" />
                   <p className="font-semibold text-slate-800">No EVC Inspection Assigned</p>
                   <p className="text-slate-500 text-xs mt-0.5">
@@ -1248,18 +1411,18 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
             </div>
           )}
 
-          {/* TAB 4: COMPLIANCE, NOTICES & IMMUTABLE AUDIT TRAIL */}
+          {/* TAB 4: COMPLIANCE, ORDERS & IMMUTABLE AUDIT TRAIL */}
           {activeTab === 'compliance' && (
-            <div className="space-y-6">
-              {/* Compliance Obligations Section */}
+            <div className="space-y-5">
+              {/* Post-Approval Compliance Obligations */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                      Institutional Undertakings &amp; Mandatory Conditions
+                      Institutional Undertakings &amp; Post-Approval Obligations
                     </h4>
                     <p className="text-[11px] text-slate-500">
-                      Monitored under AICTE Approval Process Handbook (APH §2.25(c)/(f) &amp; Table 2.3)
+                      Monitored under AICTE APH §2.25(c)/(f) (15-Day Joint FDR, 30-Year Lease Deed, Affidavit 3)
                     </p>
                   </div>
 
@@ -1270,26 +1433,26 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                       className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs flex items-center gap-1.5 transition-colors disabled:opacity-50"
                     >
                       <CheckCircle2 className="w-4 h-4" />
-                      <span>{closingCompliance ? 'Verifying...' : 'Authorize Case & Obligation Closure'}</span>
+                      <span>{closingCompliance ? 'Verifying...' : 'Authorize Case Closure'}</span>
                     </button>
                   )}
                 </div>
 
                 {complianceClosedData && (
-                  <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-950 text-xs space-y-1 animate-in fade-in">
+                  <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-950 text-xs space-y-1 animate-in fade-in">
                     <div className="flex items-center gap-2 font-bold text-emerald-900">
                       <CheckCircle className="w-4 h-4 text-emerald-600" />
                       <span>Statutory Compliance Formally Discharged &amp; Case Closed</span>
                     </div>
                     <p className="text-emerald-800 text-[11px]">
                       Closed By: <strong>{complianceClosedData.closedBy}</strong> at {formatDateIndian(complianceClosedData.closedAt)}.
-                      All {complianceClosedData.obligationsClosedCount || 0} obligations marked completed. WORM audit digest recorded.
+                      WORM audit digest recorded.
                     </p>
                   </div>
                 )}
 
                 {appCompliances.length === 0 ? (
-                  <p className="text-xs text-slate-500 italic bg-slate-50 p-3 rounded-lg border border-slate-200">
+                  <p className="text-xs text-slate-500 italic bg-white p-3 rounded-lg border border-slate-200">
                     No pending compliance undertakings recorded for this application.
                   </p>
                 ) : (
@@ -1315,18 +1478,18 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                 )}
               </div>
 
-              {/* Digital Audit Trail & Activity Movement Log (Domain B.5) */}
+              {/* Digital Audit Trail (WORM Log) */}
               <div className="space-y-3 pt-3 border-t border-slate-200">
                 <div>
                   <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                    Immutable Digital Audit Trail (WORM Log)
+                    Immutable Digital Audit Trail (HMAC-SHA256 WORM Log)
                   </h4>
                   <p className="text-[11px] text-slate-500">
                     Cryptographically chained audit entries recording all approvals, reverts, and notifications.
                   </p>
                 </div>
 
-                <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+                <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
                   <div className="divide-y divide-slate-100 max-h-56 overflow-y-auto">
                     {appAudits.length === 0 ? (
                       <p className="p-4 text-xs text-slate-500 italic">No audit records found for this case ID.</p>
@@ -1349,265 +1512,195 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
               </div>
             </div>
           )}
-
         </div>
 
-        {/* Modal Footer */}
-        <div className="bg-slate-50 border-t border-slate-200 p-4 flex items-center justify-between">
-          <span className="text-xs text-slate-500 font-medium">
-            AICTE NiyamSetu Digital Platform &bull; Case Record: <span className="font-mono text-slate-700">{application.id}</span>
-          </span>
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-semibold text-xs rounded-lg transition-colors"
-          >
-            Close Dossier
-          </button>
-        </div>
-      </div>
+        {/* ==================================================================== */}
+        {/* SUB-MODALS                                                           */}
+        {/* ==================================================================== */}
 
-      {/* Rejection Confirmation Modal */}
-      {showRejectModal && (
-        <div className="fixed inset-0 z-60 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95">
-            <div className="bg-rose-700 text-white p-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <XCircle className="w-5 h-5 text-rose-200" />
-                <h3 className="font-bold text-sm">Formally Reject Application (APH Non-Compliance)</h3>
+        {/* Case Summary & 5 Notices Modal */}
+        {showCaseSummaryModal && (
+          <CaseSummaryNoticesModal
+            application={application}
+            onClose={() => setShowCaseSummaryModal(false)}
+          />
+        )}
+
+        {/* Revert Modal */}
+        {showRevertModal && (
+          <div className="fixed inset-0 z-60 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg p-5 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h4 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                  <RotateCcw className="w-4 h-4 text-amber-600" />
+                  <span>Revert Application Stage (APH §1.8(f)-(g))</span>
+                </h4>
+                <button onClick={() => setShowRevertModal(false)} className="text-slate-400 hover:text-slate-600">
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-              <button
-                onClick={() => setShowRejectModal(false)}
-                className="text-slate-200 hover:text-white p-1"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
 
-            <div className="p-5 space-y-4 text-xs text-slate-800">
-              <p className="text-slate-600">
-                You are executing a formal statutory rejection under AICTE Approval Process Handbook regulations. This order is recorded in the permanent audit trail.
-              </p>
+              <div className="space-y-3 text-xs">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Target Reversion Stage:</label>
+                  <select
+                    value={revertTargetKey}
+                    onChange={(e) => setRevertTargetKey(e.target.value)}
+                    className="w-full p-2.5 rounded-lg border border-slate-300 text-xs bg-white font-medium"
+                  >
+                    <option value="submitted">Stage 01: Application Submitted (Restart Desk Review)</option>
+                    <option value="scrutiny_pending">Stage 02: Scrutiny in Progress</option>
+                    <option value="correction_required">Stage 02b: Deficiency Communicated (Cure Window)</option>
+                    <option value="rescrutiny_pending">Stage 02c: Scrutiny Cleared</option>
+                    <option value="evc_pending">Stage 03: EVC Scheduled (Re-Inspection)</option>
+                  </select>
+                </div>
 
-              <div>
-                <label className="font-bold text-slate-800 block mb-1">
-                  Substantive Grounds for Rejection <span className="text-rose-600">*</span>
-                </label>
-                <textarea
-                  rows={3}
-                  value={rejectReason}
-                  onChange={(e) => {
-                    setRejectReason(e.target.value);
-                    setRejectError(null);
-                  }}
-                  placeholder="Specify regulatory non-compliance (e.g. failure to cure infrastructure deficiencies within stipulated APH window)..."
-                  className="w-full p-2.5 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none"
-                />
-                {rejectError && (
-                  <p className="text-rose-600 text-[11px] font-semibold mt-1">
-                    {rejectError}
-                  </p>
-                )}
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Mandatory Written Regulatory Reason:</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Enter substantive statutory reason for stage reversion (minimum 5 characters per APH guidelines)..."
+                    value={revertReason}
+                    onChange={(e) => setRevertReason(e.target.value)}
+                    className="w-full p-2.5 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  />
+                  {revertError && (
+                    <p className="text-xs font-semibold text-rose-600 mt-1">{revertError}</p>
+                  )}
+                </div>
               </div>
-            </div>
 
-            <div className="bg-slate-50 border-t border-slate-200 px-5 py-3 flex items-center justify-end gap-2.5">
-              <button
-                onClick={() => setShowRejectModal(false)}
-                className="px-3.5 py-2 rounded-lg border border-slate-300 text-slate-700 font-semibold text-xs hover:bg-slate-100"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmReject}
-                disabled={isActioning}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg shadow-xs flex items-center gap-1.5 transition-colors disabled:opacity-50"
-              >
-                <XCircle className="w-3.5 h-3.5" />
-                <span>{isActioning ? 'Rejecting...' : 'Confirm & Execute Rejection'}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Authorized Revert Stage Modal (Domain A.3) */}
-      {showRevertModal && (
-        <div className="fixed inset-0 z-60 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95">
-            <div className="bg-[#B91C1C] text-white p-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <History className="w-5 h-5 text-amber-200" />
-                <h3 className="font-bold text-sm">Authorized Case Return / Revert (APH §1.8(f)-(g) &amp; §2.23.1)</h3>
-              </div>
-              <button
-                onClick={() => setShowRevertModal(false)}
-                className="text-slate-200 hover:text-white p-1"
-                aria-label="Close revert modal"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-4 text-xs text-slate-800">
-              <p className="text-slate-600">
-                You are executing an authorized stage return/revert. Under AICTE APH regulations, a formal substantive reason must be duly recorded in the immutable WORM audit trail.
-              </p>
-
-              <div>
-                <label className="font-bold text-slate-800 block mb-1">
-                  Target Return Stage <span className="text-rose-600">*</span>
-                </label>
-                <select
-                  value={revertTargetKey}
-                  onChange={(e) => setRevertTargetKey(e.target.value)}
-                  className="w-full p-2.5 rounded-lg border border-slate-300 text-xs bg-white font-medium focus:ring-2 focus:ring-blue-500"
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  onClick={() => setShowRevertModal(false)}
+                  className="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100"
                 >
-                  <option value="submitted">Initial Submission / Intake</option>
-                  <option value="scrutiny_pending">Scrutiny Stage (Desk Verification)</option>
-                  <option value="correction_required">Correction Window (Deficiency Rectification)</option>
-                  <option value="rescrutiny_pending">Re-Scrutiny Stage</option>
-                  <option value="evc_pending">Expert Visit Committee (EVC Queue)</option>
-                </select>
+                  Cancel
+                </button>
+                <button
+                  onClick={handleRevertStage}
+                  disabled={isReverting}
+                  className="px-4 py-2 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-xs transition-colors flex items-center gap-1.5"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>{isReverting ? 'Reverting...' : 'Confirm Reversion'}</span>
+                </button>
               </div>
-
-              <div>
-                <label className="font-bold text-slate-800 block mb-1">
-                  Substantive Regulatory Reason for Revert <span className="text-rose-600">*</span>
-                </label>
-                <textarea
-                  rows={3}
-                  value={revertReason}
-                  onChange={(e) => {
-                    setRevertReason(e.target.value);
-                    setRevertError(null);
-                  }}
-                  placeholder="Specify statutory ground (e.g., deficiency identified in Fire NOC, need for structural re-verification under APH §1.8(f)-(g) & §2.23.1)..."
-                  className="w-full p-2.5 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none"
-                />
-                {revertError && (
-                  <p className="text-rose-600 text-[11px] font-semibold mt-1">
-                    {revertError}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-slate-50 border-t border-slate-200 px-5 py-3 flex items-center justify-end gap-2.5">
-              <button
-                onClick={() => setShowRevertModal(false)}
-                className="px-3.5 py-2 rounded-lg border border-slate-300 text-slate-700 font-semibold text-xs hover:bg-slate-100"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleRevertStage}
-                disabled={isReverting}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg shadow-xs flex items-center gap-1.5 transition-colors disabled:opacity-50"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>{isReverting ? 'Reverting...' : 'Confirm & Execute Stage Revert'}</span>
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Case Summary and Notices Modal */}
-      {showCaseSummaryModal && (
-        <CaseSummaryNoticesModal
-          application={application}
-          onClose={() => setShowCaseSummaryModal(false)}
-        />
-      )}
-
-      {/* Document Rectification Dialog */}
-      {correctingDoc && (
-        <div className="fixed inset-0 z-60 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95">
-            <div className="bg-[#183B56] text-white p-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-amber-400" />
-                <h3 className="font-bold text-sm">Rectify Prescribed Document Deficiency</h3>
-              </div>
-              <button
-                onClick={() => setCorrectingDoc(null)}
-                className="text-slate-400 hover:text-white p-1"
-                aria-label="Close dialog"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-4 text-xs text-slate-800">
-              <div>
-                <span className="text-[10px] uppercase font-bold text-slate-500 block">Document Name:</span>
-                <p className="font-bold text-sm text-slate-900 mt-0.5">{correctingDoc.name}</p>
-                <p className="text-[11px] text-slate-500">Category: {correctingDoc.category} &bull; Current Status: {correctingDoc.status}</p>
+        {/* Reject Modal */}
+        {showRejectModal && (
+          <div className="fixed inset-0 z-60 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg p-5 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h4 className="font-bold text-sm text-rose-900 flex items-center gap-2">
+                  <XCircle className="w-4 h-4 text-rose-600" />
+                  <span>Reject Application (Speaking Order Formulation)</span>
+                </h4>
+                <button onClick={() => setShowRejectModal(false)} className="text-slate-400 hover:text-slate-600">
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
-              {correctingDoc.rejectionReason && (
-                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs">
-                  <span className="font-bold block text-[11px] text-rose-700">Official Scrutiny Deficiency Note:</span>
-                  <p className="mt-0.5 leading-relaxed">{correctingDoc.rejectionReason}</p>
-                </div>
-              )}
+              <div className="space-y-3 text-xs">
+                <p className="text-slate-600">
+                  Rejection is a formal quasi-judicial action under AICTE Act 1987 §10k. A Speaking Order recording substantive non-compliance reasons must be issued. Aggrieved applicants retain 7-day appellate recourse before SAC.
+                </p>
 
-              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 flex items-start gap-2.5">
-                <div className="w-5 h-5 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
-                  !
-                </div>
-                <div className="text-[11px] text-amber-950 leading-relaxed">
-                  <strong>Statutory Declaration:</strong> Filing rectified proof initiates secondary re-scrutiny under APH Chapter II. Upload only authenticated, stamped scans.
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Substantive Non-Compliance Grounds:</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Specify non-compliance clauses, deficiency items, or adverse findings..."
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    className="w-full p-2.5 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-rose-500 focus:outline-none"
+                  />
+                  {rejectError && (
+                    <p className="text-xs font-semibold text-rose-600 mt-1">{rejectError}</p>
+                  )}
                 </div>
               </div>
 
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600 space-y-1">
-                <p className="font-bold text-slate-800">Upload Requirements:</p>
-                <p>&bull; Format: PDF only (clean high-resolution scan)</p>
-                <p>&bull; Maximum file size: 10MB</p>
-                <p>&bull; File pre-validated: <span className="font-mono text-blue-700">{correctingDoc.fileName.replace('.pdf', '_rectified_v2.pdf')}</span></p>
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  onClick={() => setShowRejectModal(false)}
+                  className="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmReject}
+                  disabled={isActioning}
+                  className="px-4 py-2 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-xs transition-colors flex items-center gap-1.5"
+                >
+                  <XCircle className="w-3.5 h-3.5" />
+                  <span>{isActioning ? 'Recording...' : 'Confirm Rejection'}</span>
+                </button>
               </div>
-
-              <div>
-                <label className="font-bold text-slate-800 block mb-1">
-                  Explanation of Rectification Action <span className="text-rose-600">*</span>
-                </label>
-                <textarea
-                  rows={3}
-                  value={rectificationComment}
-                  onChange={(e) => {
-                    setRectificationComment(e.target.value);
-                    setRectificationError(null);
-                  }}
-                  placeholder="Detail the corrections made, authority approvals obtained, or updated validity dates..."
-                  className="w-full p-2.5 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                />
-                {rectificationError && (
-                  <p className="text-[#d4351c] text-[11px] font-semibold mt-1">
-                    {rectificationError}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-slate-50 border-t border-slate-200 px-5 py-3 flex items-center justify-end gap-2.5">
-              <button
-                onClick={() => setCorrectingDoc(null)}
-                className="px-3.5 py-2 rounded-lg border border-slate-300 text-slate-700 font-semibold text-xs hover:bg-slate-100"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmRectification}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-xs flex items-center gap-1.5"
-              >
-                <Upload className="w-3.5 h-3.5" />
-                <span>Submit Rectification for Re-Scrutiny</span>
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Document Rectification Modal */}
+        {correctingDoc && (
+          <div className="fixed inset-0 z-60 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg p-5 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h4 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                  <Upload className="w-4 h-4 text-blue-600" />
+                  <span>Rectify Flagged Deficiency: {correctingDoc.name}</span>
+                </h4>
+                <button onClick={() => setCorrectingDoc(null)} className="text-slate-400 hover:text-slate-600">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                {correctingDoc.rejectionReason && (
+                  <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-800">
+                    <strong>Recorded Deficiency:</strong> {correctingDoc.rejectionReason}
+                  </div>
+                )}
+
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Explanation of Rectification Submitted:</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Explain how the deficiency was resolved (e.g. additional Associate Professor appointment orders attached)..."
+                    value={rectificationComment}
+                    onChange={(e) => setRectificationComment(e.target.value)}
+                    className="w-full p-2.5 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                  {rectificationError && (
+                    <p className="text-xs font-semibold text-rose-600 mt-1">{rectificationError}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  onClick={() => setCorrectingDoc(null)}
+                  className="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmRectification}
+                  className="px-4 py-2 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition-colors flex items-center gap-1.5"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Submit Rectification</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
     </div>
   );
 };

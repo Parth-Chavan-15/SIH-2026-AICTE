@@ -148,7 +148,9 @@ const MainLayout: React.FC = () => {
                 onOpenNewAppModal={() => setShowNewAppModal(true)}
               />
             )}
-            {currentTab === 'inst-nsws' && <NSWSSimulationView />}
+            {currentTab === 'inst-nsws' && (
+              <NSWSSimulationView onSelectApplication={(id) => setSelectedAppId(id)} />
+            )}
             {currentTab === 'inst-deficiencies' && (
               <InstitutionDeficiencyCureView onSelectApplication={(id) => setSelectedAppId(id)} />
             )}
