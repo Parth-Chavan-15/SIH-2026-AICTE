@@ -60,6 +60,11 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
     ? notifications.filter((n) => n.applicationId === collegeAppId)
     : notifications;
 
+  // Scoped escalations: colleges only see their escalations; higher authorities see all
+  const scopedEscalations = isInstitution && collegeAppId
+    ? escalations.filter((e) => e.applicationId === collegeAppId)
+    : escalations;
+
   const filteredNotifications = scopedNotifications.filter((n) => {
     const matchesCategory = categoryFilter === 'All' || n.category === categoryFilter;
     const matchesInst = institutionFilter === 'All' || n.applicationId === institutionFilter;
@@ -110,7 +115,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
             }`}
           >
             <Flame className="w-3.5 h-3.5 text-rose-600" />
-            <span>Escalation Dossier ({escalations.length})</span>
+            <span>Escalation Dossier ({scopedEscalations.length})</span>
           </button>
         </div>
       </div>
@@ -196,8 +201,17 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
           </div>
 
           {/* Notifications Feed */}
-          <div className="space-y-2.5">
-            {filteredNotifications.map((notif) => {
+          {filteredNotifications.length === 0 ? (
+            <div className="p-10 text-center bg-white rounded-2xl border border-slate-200 shadow-2xs">
+              <BellRing className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+              <h3 className="font-bold text-slate-800 text-sm">You&apos;re all caught up.</h3>
+              <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                No new notifications or pending alerts are available.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {filteredNotifications.map((notif) => {
               let icon = <Bell className="w-4 h-4 text-blue-600" />;
               let borderColor = 'border-slate-200';
               let badgeColor = 'bg-blue-50 text-blue-700';
@@ -268,7 +282,8 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
                 </div>
               );
             })}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -285,91 +300,101 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
             </p>
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
-                    <th className="py-3 px-4">Application</th>
-                    <th className="py-3 px-4">Escalation Trigger Reason</th>
-                    <th className="py-3 px-4">Previous &rarr; Escalated Authority</th>
-                    <th className="py-3 px-4">Timestamp</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {escalations.map((esc) => (
-                    <tr key={esc.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3.5 px-4">
-                        <p className="font-bold text-slate-900">{esc.institutionName}</p>
-                        <span className="font-mono text-[11px] text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded mt-0.5 inline-block">
-                          {esc.applicationNumber}
-                        </span>
-                        <span className="block text-[10px] text-slate-400 mt-0.5">
-                          Stage: {esc.currentStage}
-                        </span>
-                      </td>
-
-                      <td className="py-3.5 px-4 max-w-[280px]">
-                        <p className="text-slate-800 leading-relaxed font-medium">
-                          {esc.escalationReason}
-                        </p>
-                        {esc.resolutionNotes && (
-                          <p className="text-[11px] text-emerald-800 bg-emerald-50 p-1.5 rounded mt-1 border border-emerald-100">
-                            Resolution: {esc.resolutionNotes}
-                          </p>
-                        )}
-                      </td>
-
-                      <td className="py-3.5 px-4 text-slate-700">
-                        <div className="space-y-0.5">
-                          <p className="text-slate-500 text-[10px]">From: {esc.previousAuthority}</p>
-                          <p className="font-bold text-slate-900">To: {esc.escalatedTo}</p>
-                        </div>
-                      </td>
-
-                      <td className="py-3.5 px-4 text-slate-600">
-                        {formatDateIndian(esc.escalationTimestamp)}
-                      </td>
-
-                      <td className="py-3.5 px-4">
-                        <span
-                          className={`inline-block px-2.5 py-0.5 rounded-md text-[11px] font-mono font-bold border ${
-                            esc.status === 'Resolved'
-                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                              : 'bg-rose-50 text-rose-800 border-rose-300'
-                          }`}
-                        >
-                          {esc.status}
-                        </span>
-                      </td>
-
-                      <td className="py-3.5 px-4 text-right space-x-2">
-                        <button
-                          onClick={() => onSelectApplication(esc.applicationId)}
-                          className="text-xs text-blue-600 font-semibold hover:underline"
-                        >
-                          View
-                        </button>
-                        {esc.status !== 'Resolved' && (
-                          <button
-                            onClick={() => {
-                              setResolvingEsc(esc);
-                              setResolutionNotes('Special review constituted; SLA clock restarted with condition.');
-                            }}
-                            className="px-2.5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs"
-                          >
-                            Resolve Case
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {scopedEscalations.length === 0 ? (
+            <div className="p-10 text-center bg-white rounded-2xl border border-slate-200 shadow-2xs">
+              <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
+              <h3 className="font-bold text-slate-800 text-sm">You&apos;re all caught up.</h3>
+              <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                No active SLA breach escalations for your institution. All applications are proceeding within statutory timelines.
+              </p>
             </div>
-          </div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                      <th className="py-3 px-4">Application</th>
+                      <th className="py-3 px-4">Escalation Trigger Reason</th>
+                      <th className="py-3 px-4">Previous &rarr; Escalated Authority</th>
+                      <th className="py-3 px-4">Timestamp</th>
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {scopedEscalations.map((esc) => (
+                      <tr key={esc.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-3.5 px-4">
+                          <p className="font-bold text-slate-900">{esc.institutionName}</p>
+                          <span className="font-mono text-[11px] text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded mt-0.5 inline-block">
+                            {esc.applicationNumber}
+                          </span>
+                          <span className="block text-[10px] text-slate-400 mt-0.5">
+                            Stage: {esc.currentStage}
+                          </span>
+                        </td>
+
+                        <td className="py-3.5 px-4 max-w-[280px]">
+                          <p className="text-slate-800 leading-relaxed font-medium">
+                            {esc.escalationReason}
+                          </p>
+                          {esc.resolutionNotes && (
+                            <p className="text-[11px] text-emerald-800 bg-emerald-50 p-1.5 rounded mt-1 border border-emerald-100">
+                              Resolution: {esc.resolutionNotes}
+                            </p>
+                          )}
+                        </td>
+
+                        <td className="py-3.5 px-4 text-slate-700">
+                          <div className="space-y-0.5">
+                            <p className="text-slate-500 text-[10px]">From: {esc.previousAuthority}</p>
+                            <p className="font-bold text-slate-900">To: {esc.escalatedTo}</p>
+                          </div>
+                        </td>
+
+                        <td className="py-3.5 px-4 text-slate-600">
+                          {formatDateIndian(esc.escalationTimestamp)}
+                        </td>
+
+                        <td className="py-3.5 px-4">
+                          <span
+                            className={`inline-block px-2.5 py-0.5 rounded-md text-[11px] font-mono font-bold border ${
+                              esc.status === 'Resolved'
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                                : 'bg-rose-50 text-rose-800 border-rose-300'
+                            }`}
+                          >
+                            {esc.status}
+                          </span>
+                        </td>
+
+                        <td className="py-3.5 px-4 text-right space-x-2">
+                          <button
+                            onClick={() => onSelectApplication(esc.applicationId)}
+                            className="text-xs text-blue-600 font-semibold hover:underline"
+                          >
+                            View
+                          </button>
+                          {esc.status !== 'Resolved' && (
+                            <button
+                              onClick={() => {
+                                setResolvingEsc(esc);
+                                setResolutionNotes('Special review constituted; SLA clock restarted with condition.');
+                              }}
+                              className="px-2.5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs"
+                            >
+                              Resolve Case
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

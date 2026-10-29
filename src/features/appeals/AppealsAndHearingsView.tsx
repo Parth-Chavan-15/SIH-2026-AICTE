@@ -60,7 +60,9 @@ export const AppealsAndHearingsView: React.FC = () => {
       (institutionApp as any).state === 'correction_required')
   );
 
-  const [activeTab, setActiveTab] = useState<'APPEALS' | 'HEARINGS' | 'COMPLAINTS'>('APPEALS');
+  const [activeTab, setActiveTab] = useState<'APPEALS' | 'HEARINGS' | 'COMPLAINTS'>(
+    isRO ? 'HEARINGS' : 'APPEALS'
+  );
   const [data, setData] = useState<any>({ appeals: [], hearings: [], complaints: [] });
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);

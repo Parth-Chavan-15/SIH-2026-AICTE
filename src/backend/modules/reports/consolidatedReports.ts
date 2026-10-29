@@ -416,6 +416,115 @@ export function compileConsolidatedReports(
     };
   });
 
+  // Scoped tenant isolation: Institutions only see items belonging to their applications
+  const appIds = new Set(applications.map(a => a.id));
+  const instNames = new Set(applications.map(a => a.facts?.institutionName || a.id));
+  const isGlobalOrAll = applications.length >= 5;
+
+  const rawEvcStatus: Array<{
+    applicationId: string;
+    institutionName: string;
+    institutionType: 'Existing Institution (Chapter II)' | 'New Technical Institution (Chapter I)';
+    operationalSlaBadge: string;
+    evcStatus: string;
+    scheduledDate: string;
+    videoAndGpsVerified: boolean;
+    gpsCoordinates: string;
+    overdueFlag: boolean;
+  }> = [
+    {
+      applicationId: 'APP-2026-GIITS',
+      institutionName: 'Gonna Institute of Information Technology and Sciences (GIITS), Visakhapatnam',
+      institutionType: 'Existing Institution (Chapter II)',
+      operationalSlaBadge: 'Configured Operational SLA (Simulated): 14 Days [Chapter II Existing Institution EoA]',
+      evcStatus: 'Completed & Scored (88/100, Recommendation: Conditional EoA)',
+      scheduledDate: '2026-03-27',
+      videoAndGpsVerified: true,
+      gpsCoordinates: '17° 42\' 7" N, 83° 6\' 47" E (Gonnavanipalem, Parawada Mandal, Visakhapatnam)',
+      overdueFlag: false
+    },
+    {
+      applicationId: 'APP-2026-NEW-INST-PUNE',
+      institutionName: 'Shivaji Maharaj Institute of Emerging Tech (New)',
+      institutionType: 'New Technical Institution (Chapter I)',
+      operationalSlaBadge: 'Configured Operational SLA (Simulated): 7 Days [Chapter I New Institution LoA Priority]',
+      evcStatus: 'Scheduled Priority Visit (30-Min Video Verified)',
+      scheduledDate: '2026-11-02',
+      videoAndGpsVerified: true,
+      gpsCoordinates: '18° 31\' 12" N, 73° 50\' 24" E',
+      overdueFlag: false
+    }
+  ];
+
+  const rawDocValidity: Array<{
+    documentName: string;
+    institutionName: string;
+    category: string;
+    statutoryRule: string;
+    expiryDate: string;
+    daysRemaining: number;
+    status: 'Expired' | 'Expiring Soon' | 'Valid';
+  }> = [
+    {
+      documentName: '30-Year Registered Land Lease Deed (Doc #4491/2006) — Live Lease Rule APH §2.1(e)',
+      institutionName: 'University BDT College of Engineering (UBDTCE), Davangere',
+      category: 'Land & Building Title',
+      statutoryRule: 'APH §2.1(e) & Annexure-1: Live lease must exceed course duration (>=4-5 yrs)',
+      expiryDate: '2026-11-05',
+      daysRemaining: 12,
+      status: 'Expiring Soon'
+    },
+    {
+      documentName: 'Annual Fire Safety NOC (Rc.No: 002037/FPW/TP/GVMC/2026) — Condition 10',
+      institutionName: 'Gonna Institute of Information Technology and Sciences (GIITS), Visakhapatnam',
+      category: 'Fire Safety & Stability',
+      statutoryRule: 'GVMC Condition 10: 1-Year validity, mandatory 60-day advance renewal submission',
+      expiryDate: '2026-12-15',
+      daysRemaining: 52,
+      status: 'Expiring Soon'
+    }
+  ];
+
+  const rawOverdueEscalations: Array<{
+    caseId: string;
+    institutionName: string;
+    escalatedTo: string;
+    reason: string;
+    escalatedAt: string;
+    priority: 'Critical' | 'High';
+  }> = [
+    {
+      caseId: 'APP-2026-GIITS',
+      institutionName: 'Gonna Institute of Information Technology and Sciences (GIITS)',
+      escalatedTo: 'Regional Officer (South-Central Region)',
+      reason: 'Faculty Cadre Ratio deficit (1:2.4) deficiency cure pending > 10 days; approaching statutory deadline under APH §1.8',
+      escalatedAt: '2026-10-23T14:30:00.000Z',
+      priority: 'High'
+    },
+    {
+      caseId: 'APP-2026-BATU',
+      institutionName: 'Dr. Babasaheb Ambedkar Technological University (BATU Lonere)',
+      escalatedTo: 'EVC Inspection Committee Cell (Dr. R. K. Soni, EVC Chair)',
+      reason: 'Physical EVC inspection mandate unfulfilled for 12 days; approaching 14-day SLA deadline per APH §2.16.1',
+      escalatedAt: '2026-10-24T09:15:00.000Z',
+      priority: 'High'
+    }
+  ];
+
+  const scopedEvcStatus = isGlobalOrAll ? rawEvcStatus : rawEvcStatus.filter(e => appIds.has(e.applicationId));
+  const scopedDocValidity = isGlobalOrAll ? rawDocValidity : rawDocValidity.filter(d => instNames.has(d.institutionName) || applications.some(a => d.documentName.includes(a.id)));
+  const scopedOverdueEscalations = isGlobalOrAll ? rawOverdueEscalations : rawOverdueEscalations.filter(e => appIds.has(e.caseId));
+  const scopedUndertakings = (isGlobalOrAll ? obligations : obligations.filter(o => appIds.has(o.applicationId))).map(o => ({
+    obligationId: o.id,
+    applicationId: o.applicationId,
+    institutionName: (applications.find(a => a.id === o.applicationId)?.facts?.institutionName as string) || 'University BDT College of Engineering (UBDTCE), Davangere',
+    conditionTitle: o.conditionKey.replace(/_/g, ' '),
+    statutoryCitation: 'APH 2024–27 §2.25(c) & UBDTCE F.No. South-West/1-10970417826/2022/EOA',
+    dueDate: o.dueAt.split('T')[0],
+    status: o.status,
+    daysRemaining: Math.max(0, Math.ceil((Date.parse(o.dueAt) - Date.now()) / (1000 * 60 * 60 * 24)))
+  }));
+
   return {
     generatedAt: nowIso,
     academicSession: '2026-2027',
@@ -440,78 +549,10 @@ export function compileConsolidatedReports(
     },
     sixCategoryReports: {
       applicationPendency: appPendency,
-      evcStatus: [
-        {
-          applicationId: 'APP-2026-GIITS',
-          institutionName: 'Gonna Institute of Information Technology and Sciences (GIITS), Visakhapatnam',
-          institutionType: 'Existing Institution (Chapter II)',
-          operationalSlaBadge: 'Configured Operational SLA (Simulated): 14 Days [Chapter II Existing Institution EoA]',
-          evcStatus: 'Completed & Scored (88/100, Recommendation: Conditional EoA)',
-          scheduledDate: '2026-03-27',
-          videoAndGpsVerified: true,
-          gpsCoordinates: '17° 42\' 7" N, 83° 6\' 47" E (Gonnavanipalem, Parawada Mandal, Visakhapatnam)',
-          overdueFlag: false
-        },
-        {
-          applicationId: 'APP-2026-NEW-INST-PUNE',
-          institutionName: 'Shivaji Maharaj Institute of Emerging Tech (New)',
-          institutionType: 'New Technical Institution (Chapter I)',
-          operationalSlaBadge: 'Configured Operational SLA (Simulated): 7 Days [Chapter I New Institution LoA Priority]',
-          evcStatus: 'Scheduled Priority Visit (30-Min Video Verified)',
-          scheduledDate: '2026-11-02',
-          videoAndGpsVerified: true,
-          gpsCoordinates: '18° 31\' 12" N, 73° 50\' 24" E',
-          overdueFlag: false
-        }
-      ],
-      undertakingCompliance: obligations.map(o => ({
-        obligationId: o.id,
-        applicationId: o.applicationId,
-        institutionName: 'University BDT College of Engineering (UBDTCE), Davangere',
-        conditionTitle: o.conditionKey.replace(/_/g, ' '),
-        statutoryCitation: 'APH 2024–27 §2.25(c) & UBDTCE F.No. South-West/1-10970417826/2022/EOA',
-        dueDate: o.dueAt.split('T')[0],
-        status: o.status,
-        daysRemaining: Math.max(0, Math.ceil((Date.parse(o.dueAt) - Date.now()) / (1000 * 60 * 60 * 24)))
-      })),
-      documentValidity: [
-        {
-          documentName: '30-Year Registered Land Lease Deed (Doc #4491/2006) — Live Lease Rule APH §2.1(e)',
-          institutionName: 'University BDT College of Engineering (UBDTCE), Davangere',
-          category: 'Land & Building Title',
-          statutoryRule: 'APH §2.1(e) & Annexure-1: Live lease must exceed course duration (>=4-5 yrs)',
-          expiryDate: '2026-11-05',
-          daysRemaining: 12,
-          status: 'Expiring Soon'
-        },
-        {
-          documentName: 'Annual Fire Safety NOC (Rc.No: 002037/FPW/TP/GVMC/2026) — Condition 10',
-          institutionName: 'Gonna Institute of Information Technology and Sciences (GIITS), Visakhapatnam',
-          category: 'Fire Safety & Stability',
-          statutoryRule: 'GVMC Condition 10: 1-Year validity, mandatory 60-day advance renewal submission',
-          expiryDate: '2026-12-15',
-          daysRemaining: 52,
-          status: 'Expiring Soon'
-        }
-      ],
-      overdueAndEscalations: [
-        {
-          caseId: 'APP-2026-GIITS',
-          institutionName: 'Gonna Institute of Information Technology and Sciences (GIITS)',
-          escalatedTo: 'Regional Officer (South-Central Region)',
-          reason: 'Faculty Cadre Ratio deficit (1:2.4) deficiency cure pending > 10 days; approaching statutory deadline under APH §1.8',
-          escalatedAt: '2026-10-23T14:30:00.000Z',
-          priority: 'High'
-        },
-        {
-          caseId: 'APP-2026-BATU',
-          institutionName: 'Dr. Babasaheb Ambedkar Technological University (BATU Lonere)',
-          escalatedTo: 'EVC Inspection Committee Cell (Dr. R. K. Soni, EVC Chair)',
-          reason: 'Physical EVC inspection mandate unfulfilled for 12 days; approaching 14-day SLA deadline per APH §2.16.1',
-          escalatedAt: '2026-10-24T09:15:00.000Z',
-          priority: 'High'
-        }
-      ],
+      evcStatus: scopedEvcStatus,
+      undertakingCompliance: scopedUndertakings,
+      documentValidity: scopedDocValidity,
+      overdueAndEscalations: scopedOverdueEscalations,
       regionWisePerformance
     }
   };

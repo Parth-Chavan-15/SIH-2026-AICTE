@@ -33,13 +33,16 @@ export const ReportsView: React.FC = () => {
   const { applications, evcInspections, complianceItems, expiringDocs } = useApp();
 
   const [selectedRegion, setSelectedRegion] = useState('All');
-  const [selectedAcademicYear, setSelectedAcademicYear] = useState('2027-28');
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState('2026-27');
 
   // Filtered dataset
   const filteredApps = useMemo(() => {
     return applications.filter((app) => {
       const matchRegion = selectedRegion === 'All' || app.region === selectedRegion;
-      const matchYear = app.academicYear === selectedAcademicYear;
+      const matchYear =
+        selectedAcademicYear === 'All' ||
+        app.academicYear === selectedAcademicYear ||
+        (!app.academicYear && selectedAcademicYear === '2026-27');
       return matchRegion && matchYear;
     });
   }, [applications, selectedRegion, selectedAcademicYear]);
@@ -141,6 +144,21 @@ export const ReportsView: React.FC = () => {
         </button>
       </div>
 
+      {/* Visible Simulation Disclaimer */}
+      <div className="bg-amber-50/90 border border-amber-300/80 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs text-amber-950">
+        <div className="flex items-center gap-2">
+          <span className="font-bold">
+            Demonstration data — simulated (AY 2026-27 Norms)
+          </span>
+          <span className="text-amber-800 text-[11px] hidden sm:inline">
+            &bull; Operational processing durations and regional metrics computed under APH 2024-27 benchmark norms.
+          </span>
+        </div>
+        <span className="text-[10px] font-mono font-bold bg-amber-200/60 text-amber-900 px-2 py-0.5 rounded border border-amber-400">
+          Analytics Engine
+        </span>
+      </div>
+
       {/* Filter Ribbon */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center gap-3 text-xs">
         <div className="flex items-center gap-2 font-bold text-slate-700">
@@ -168,8 +186,9 @@ export const ReportsView: React.FC = () => {
           onChange={(e) => setSelectedAcademicYear(e.target.value)}
           className="px-3 py-1.5 rounded-lg border border-slate-300 bg-white"
         >
+          <option value="2026-27">Academic Session 2026-27 (Current Active)</option>
+          <option value="All">All Academic Sessions</option>
           <option value="2027-28">Academic Session 2027-28</option>
-          <option value="2026-27">Academic Session 2026-27</option>
         </select>
       </div>
 

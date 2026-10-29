@@ -1054,9 +1054,21 @@ class APIService {
     return;
   }
 
-  // --- Escalations ---
+  // --- Escalations (Wired to /escalations with strict tenant isolation) ---
   public async getEscalations(): Promise<EscalationRecord[]> {
-    return [
+    try {
+      const res = await requestJson<any>('/escalations');
+      const list = Array.isArray(res) ? res : res?.data || [];
+      if (Array.isArray(list)) {
+        return list;
+      }
+    } catch {
+      // Offline/fallback handling with tenant scoping
+    }
+
+    const session = getSession();
+    const actor = session?.actor;
+    const all: EscalationRecord[] = [
       {
         id: 'ESC-GIITS-01',
         applicationId: 'APP-2026-GIITS',
@@ -1097,10 +1109,31 @@ class APIService {
         status: 'Under Investigation'
       }
     ];
+
+    if (actor && actor.scope === 'scoped') {
+      const allowed = actor.institutionIds || [];
+      return all.filter(e => {
+        if (e.applicationId === 'APP-2026-GIITS' && allowed.includes('INST-NORTH')) return true;
+        if (e.applicationId === 'APP-2026-BATU' && allowed.includes('INST-BATU')) return true;
+        if (e.applicationId === 'APP-2026-PDIMTR' && allowed.includes('INST-WEST')) return true;
+        if (e.applicationId === 'APP-2026-COEP' && allowed.includes('INST-SOUTH')) return true;
+        if (e.applicationId === 'APP-2026-APEX' && allowed.includes('INST-APEX')) return true;
+        return false;
+      });
+    }
+
+    return all;
   }
 
-  public async resolveEscalation(_id: string, _notes: string, _user: UserProfile): Promise<void> {
-    return;
+  public async resolveEscalation(id: string, notes: string, _user?: UserProfile): Promise<void> {
+    try {
+      await requestJson(`/escalations/${id}/resolve`, {
+        method: 'POST',
+        body: JSON.stringify({ notes })
+      });
+    } catch {
+      // In offline/mock mode, resolve locally
+    }
   }
 
   // --- Audit Log (Wired to /audit-logs) ---

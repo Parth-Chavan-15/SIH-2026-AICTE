@@ -107,8 +107,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
   const [closingCompliance, setClosingCompliance] = useState(false);
   const [complianceClosedData, setComplianceClosedData] = useState<any>(null);
 
-  // Route policy drawer toggle
-  const [showWhyRouteDrawer, setShowWhyRouteDrawer] = useState(false);
+
 
   // Document correction modal state (GOV.UK style rectification)
   const [correctingDoc, setCorrectingDoc] = useState<DocumentItem | null>(null);
@@ -707,7 +706,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
         {/* ==================================================================== */}
         {/* 1. COMPACT CASE IDENTITY HEADER                                      */}
         {/* ==================================================================== */}
-        <div className="bg-[#0A2540] text-white p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-700">
+        <div className="relative bg-[#0A2540] text-white p-4 sm:p-5 pr-14 flex flex-wrap items-center justify-between gap-3 border-b border-slate-700">
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center shrink-0 mt-0.5">
               <Building2 className="w-5 h-5 text-blue-300" />
@@ -741,14 +740,16 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
               overdueDays={application.overdueDays}
               daysRemaining={Math.max(0, application.stageDeadlineDays - application.elapsedDaysAtStage)}
             />
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors ml-1"
-              title="Close Case Dossier (ESC)"
-            >
-              <X className="w-5 h-5" />
-            </button>
           </div>
+
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors focus:outline-hidden focus:ring-2 focus:ring-white/50"
+            aria-label="Close case dossier"
+            title="Close Case Dossier (ESC)"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* ==================================================================== */}
@@ -775,74 +776,59 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
             )}
           </div>
 
-          <button
-            onClick={() => setShowWhyRouteDrawer(!showWhyRouteDrawer)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-indigo-700 bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200 transition-colors"
-            title="Inspect governing handbook clauses"
-          >
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-indigo-800 bg-indigo-100/80 border border-indigo-300 shadow-2xs">
             <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Why this route?</span>
-            {showWhyRouteDrawer ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-          </button>
+            <span>Why this route? Statutory Predicate (Active)</span>
+          </div>
         </div>
 
-        {/* Expandable "Why this Route?" Statutory Drawer */}
-        {showWhyRouteDrawer && (
-          <div className="bg-gradient-to-r from-indigo-50/90 via-blue-50/80 to-slate-50 border-b border-indigo-200 p-4 text-xs text-slate-800 animate-in slide-in-from-top-2 duration-150">
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-1">
-                <h4 className="font-bold text-indigo-950 text-xs uppercase tracking-wide flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-indigo-600" />
-                  Statutory Predicate: {application.routeType} (Rule Engine v2026.1)
-                </h4>
-                <p className="text-slate-600 leading-relaxed text-[11px]">
-                  {isCOEP
-                    ? 'Evaluated under APH 2024–27 Table 2.3 Row 9 and AY 2026–27 Addendum Errata G02 p. 42 §2.6(c)(1). Tier-1 NBA score (680) clears desk scrutiny and exempts institution from physical EVC.'
-                    : isGIITS
-                    ? 'Evaluated under APH Table 2.3 Row 3. Proposed intake surge from 120 to 180 seats in unaccredited branch mandates on-site physical verification by a 3-member Expert Visit Committee under §1.9.'
-                    : isPDIMTR
-                    ? 'Evaluated under APH Table 2.3 Row 1 (Annual EoA Renewal on Self-Disclosure). Pre-approval scrutiny and physical inspection waived; post-approval subject to 30-year lease deed compliance.'
-                    : isBATU
-                    ? 'Evaluated under APH §2.16.1 & §2.17(e) (Restoration / Site Shifting). Preliminary desk scrutiny is statutory waived in lieu of immediate mandatory campus physical verification.'
-                    : 'Evaluated against AICTE Approval Process Handbook (APH 2024–27) Table 2.3 matrix and statutory accreditation thresholds.'}
-                </p>
-              </div>
-              <button
-                onClick={() => setShowWhyRouteDrawer(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 shrink-0"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+        {/* ALWAYS-EXPANDED "Why this Route?" Statutory Rationale Panel */}
+        <div className="bg-gradient-to-r from-indigo-50/90 via-blue-50/80 to-slate-50 border-b border-indigo-200 p-4 text-xs text-slate-800">
+          <div className="space-y-1">
+            <h4 className="font-bold text-indigo-950 text-xs uppercase tracking-wide flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-indigo-600" />
+              Statutory Predicate: {application.routeType} (Rule Engine v2026.1)
+            </h4>
+            <p className="text-slate-600 leading-relaxed text-[11px]">
+              {isCOEP
+                ? 'Evaluated under APH 2024–27 Table 2.3 Row 9 and AY 2026–27 Addendum Errata G02 p. 42 §2.6(c)(1). Tier-1 NBA score (680) clears desk scrutiny and exempts institution from physical EVC.'
+                : isGIITS
+                ? 'Evaluated under APH Table 2.3 Row 3. Proposed intake surge from 120 to 180 seats in unaccredited branch mandates on-site physical verification by a 3-member Expert Visit Committee under §1.9.'
+                : isPDIMTR
+                ? 'Evaluated under APH Table 2.3 Row 1 (Annual EoA Renewal on Self-Disclosure). Pre-approval scrutiny and physical inspection waived; post-approval subject to 30-year lease deed compliance.'
+                : isBATU
+                ? 'Evaluated under APH §2.16.1 & §2.17(e) (Restoration / Site Shifting). Preliminary desk scrutiny is statutory waived in lieu of immediate mandatory campus physical verification.'
+                : 'Evaluated against AICTE Approval Process Handbook (APH 2024–27) Table 2.3 matrix and statutory accreditation thresholds.'}
+            </p>
+          </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-3 pt-3 border-t border-indigo-100 text-[11px]">
-              <div className="bg-white/80 p-2.5 rounded-lg border border-slate-200">
-                <span className="font-bold text-slate-500 uppercase text-[9px] block">Accreditation Benchmark</span>
-                <span className="font-bold text-slate-900 mt-0.5 block">
-                  {isCOEP ? 'NBA Tier-1 (Valid 2028)' : isGIITS ? 'Non-NBA Program' : 'Self-Disclosure'}
-                </span>
-              </div>
-              <div className="bg-white/80 p-2.5 rounded-lg border border-slate-200">
-                <span className="font-bold text-slate-500 uppercase text-[9px] block">EVC Requirement</span>
-                <span className="font-bold text-slate-900 mt-0.5 block">
-                  {isCOEP ? 'Waived (NBA Exemption)' : isPDIMTR ? 'Bypassed (Self-Disclosure)' : 'Mandatory Physical EVC'}
-                </span>
-              </div>
-              <div className="bg-white/80 p-2.5 rounded-lg border border-slate-200">
-                <span className="font-bold text-slate-500 uppercase text-[9px] block">Official Artifact</span>
-                <a
-                  href={`/api/v1/cases/${application.id}/intake-evaluation-table`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-bold text-blue-600 hover:underline flex items-center gap-1 mt-0.5"
-                >
-                  <span>Intake Capacity Table</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-3 pt-3 border-t border-indigo-100 text-[11px]">
+            <div className="bg-white/80 p-2.5 rounded-lg border border-slate-200">
+              <span className="font-bold text-slate-500 uppercase text-[9px] block">Accreditation Benchmark</span>
+              <span className="font-bold text-slate-900 mt-0.5 block">
+                {isCOEP ? 'NBA Tier-1 (Valid 2028)' : isGIITS ? 'Non-NBA Program' : 'Self-Disclosure'}
+              </span>
+            </div>
+            <div className="bg-white/80 p-2.5 rounded-lg border border-slate-200">
+              <span className="font-bold text-slate-500 uppercase text-[9px] block">EVC Requirement</span>
+              <span className="font-bold text-slate-900 mt-0.5 block">
+                {isCOEP ? 'Waived (NBA Exemption)' : isPDIMTR ? 'Bypassed (Self-Disclosure)' : 'Mandatory Physical EVC'}
+              </span>
+            </div>
+            <div className="bg-white/80 p-2.5 rounded-lg border border-slate-200">
+              <span className="font-bold text-slate-500 uppercase text-[9px] block">Official Artifact</span>
+              <a
+                href={`/api/v1/cases/${application.id}/intake-evaluation-table`}
+                target="_blank"
+                rel="noreferrer"
+                className="font-bold text-blue-600 hover:underline flex items-center gap-1 mt-0.5"
+              >
+                <span>Intake Capacity Table</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
             </div>
           </div>
-        )}
+        </div>
 
         {/* ==================================================================== */}
         {/* 3. ROUTE-SPECIFIC DYNAMIC LIFECYCLE RAIL                             */}

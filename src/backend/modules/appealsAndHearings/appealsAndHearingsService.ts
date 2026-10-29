@@ -16,6 +16,7 @@ import mongoose from 'mongoose';
 export interface HearingRecord {
   id: string;
   type: 'SHC_COMPLIANCE_HEARING' | 'SAC_STATUTORY_APPEAL' | 'PGRC_COMPLAINT_HEARING';
+  hearingType?: 'SHC' | 'SAC' | 'PGRC';
   caseId: string;
   institutionName: string;
   referredBy: string;
@@ -314,6 +315,7 @@ export function scheduleHearing(data: {
   const hearing: HearingRecord = {
     id: hearingId,
     type: data.hearingType === 'SAC' ? 'SAC_STATUTORY_APPEAL' : 'SHC_COMPLIANCE_HEARING',
+    hearingType: data.hearingType,
     caseId: data.caseId,
     institutionName: data.caseId,
     referredBy: data.scheduledBy || 'Regional_Officer',

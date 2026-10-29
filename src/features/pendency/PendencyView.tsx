@@ -106,6 +106,21 @@ export const PendencyView: React.FC<PendencyViewProps> = ({ onSelectApplication 
         </div>
       </div>
 
+      {/* Visible Simulation Disclaimer */}
+      <div className="bg-amber-50/90 border border-amber-300/80 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs text-amber-950">
+        <div className="flex items-center gap-2">
+          <span className="font-bold">
+            Demonstration data — simulated (AY 2026-27 Norms)
+          </span>
+          <span className="text-amber-800 text-[11px] hidden sm:inline">
+            &bull; Operational SLA clocks and stage pendency computed per APH 2024-27 statutory deadlines.
+          </span>
+        </div>
+        <span className="text-[10px] font-mono font-bold bg-amber-200/60 text-amber-900 px-2 py-0.5 rounded border border-amber-400">
+          SLA Matrix
+        </span>
+      </div>
+
       {/* Bottleneck Alert Banner */}
       {bottlenecks.length > 0 && (
         <div className="bg-gradient-to-r from-rose-950 via-rose-900 to-slate-900 rounded-2xl p-5 text-white shadow-md border border-rose-800 flex flex-col md:flex-row md:items-center justify-between gap-4">

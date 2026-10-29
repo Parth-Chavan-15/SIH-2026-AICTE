@@ -82,7 +82,7 @@ export const ROLE_NAV_ITEMS: Record<RolePortalId, { portalTitle: string; subtitl
     items: [
       { id: 'ro-allocation', label: '1. Committee Allocation & Workloads', icon: Users },
       { id: 'ro-pendency', label: '2. Regional Pendency & SLA Matrix', icon: Clock },
-      { id: 'ro-appeals-hearings', label: '3. Standing Hearing Committee (SHC)', icon: Scale },
+      { id: 'ro-appeals-hearings', label: '3. SHC Hearing', icon: Scale },
       { id: 'ro-obligations', label: '4. Post-Approval Compliance & 4-Clock Timers', icon: ShieldCheck },
       { id: 'notifications', label: '5. Regional Alerts & Escalations', icon: Bell },
     ]

@@ -12,6 +12,11 @@ import {
   compileElectronicCaseSummary,
   compileConsolidatedReports
 } from '../modules/reports/consolidatedReports';
+import {
+  getEscalationsForActor,
+  getEscalationById,
+  resolveEscalationRecord
+} from '../modules/escalations/escalationService';
 
 export function createWorkflowRouter(storage: CaseStorage): Router {
   const router = Router();
@@ -245,6 +250,92 @@ export function createWorkflowRouter(storage: CaseStorage): Router {
       return res.status(200).json({
         success: true,
         data: reports
+      });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: { code: 'STORAGE_UNAVAILABLE', message: err.message } });
+    }
+  });
+
+  // GET /api/v1/escalations - Scoped SLA Escalations Dossier with Cross-Tenant Isolation
+  router.get('/escalations', async (req: Request, res: Response) => {
+    const actor = ((req as any).actor as Actor) || {
+      id: 'anon',
+      roles: ['reviewer'],
+      permissions: ['case.read'],
+      scope: 'global',
+      institutionIds: [],
+      regionIds: []
+    };
+    try {
+      const escalations = getEscalationsForActor(actor);
+      return res.status(200).json({
+        success: true,
+        data: escalations
+      });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: { code: 'STORAGE_UNAVAILABLE', message: err.message } });
+    }
+  });
+
+  // GET /api/v1/escalations/:id - Single Escalation Detail with Cross-Tenant Isolation
+  router.get('/escalations/:id', async (req: Request, res: Response) => {
+    const actor = ((req as any).actor as Actor) || {
+      id: 'anon',
+      roles: ['reviewer'],
+      permissions: ['case.read'],
+      scope: 'global',
+      institutionIds: [],
+      regionIds: []
+    };
+    try {
+      const result = getEscalationById(actor, req.params.id);
+      if (result.error === 'NOT_FOUND') {
+        return res.status(404).json({
+          success: false,
+          error: { code: 'NOT_FOUND', message: `Escalation record ${req.params.id} not found` }
+        });
+      }
+      if (result.error === 'FORBIDDEN') {
+        return res.status(403).json({
+          success: false,
+          error: { code: 'FORBIDDEN', message: 'Forbidden: Access denied to another institution\'s escalation docket' }
+        });
+      }
+      return res.status(200).json({
+        success: true,
+        data: result.escalation
+      });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: { code: 'STORAGE_UNAVAILABLE', message: err.message } });
+    }
+  });
+
+  // POST /api/v1/escalations/:id/resolve - Authorized Escalation Resolution
+  router.post('/escalations/:id/resolve', async (req: Request, res: Response) => {
+    const actor = ((req as any).actor as Actor) || {
+      id: 'anon',
+      roles: ['regional_officer'],
+      permissions: ['case.transition'],
+      scope: 'global',
+      institutionIds: [],
+      regionIds: []
+    };
+    const { notes } = req.body;
+    try {
+      const result = resolveEscalationRecord(actor, req.params.id, notes);
+      if (result.error === 'NOT_FOUND') {
+        return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Escalation not found' } });
+      }
+      if (result.error === 'FORBIDDEN') {
+        return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Only regulatory authorities can resolve escalations' } });
+      }
+      if (result.error === 'VALIDATION_FAILED') {
+        return res.status(422).json({ success: false, error: { code: 'VALIDATION_FAILED', message: 'Substantive resolution notes are required' } });
+      }
+      return res.status(200).json({
+        success: true,
+        data: result.escalation,
+        message: 'Escalation marked resolved'
       });
     } catch (err: any) {
       return res.status(500).json({ success: false, error: { code: 'STORAGE_UNAVAILABLE', message: err.message } });

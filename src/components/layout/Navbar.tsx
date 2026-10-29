@@ -31,7 +31,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   const session = getSession();
   const activeActor = session?.actor;
   const [showClockPopover, setShowClockPopover] = useState(false);
-  const [showJudgeTour, setShowJudgeTour] = useState(false);
 
   // Determine active regulatory role (1 to 6) - Priority order: Institution -> Regional -> Bureau -> EVC -> Reviewer -> Admin
   const roleNumber: number =
@@ -149,104 +148,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right: Operational Tools, Clock Pill, Alerts & Clean Sign Out */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* 1-Click Judge Demo Centre */}
-          <div className="relative">
-            <button
-              onClick={() => setShowJudgeTour(!showJudgeTour)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-600 hover:to-indigo-600 text-white text-xs font-bold shadow-xs border border-blue-400/30 transition-all"
-              title="Open SIH 2026 Judge Demonstration Centre"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span className="hidden sm:inline">Judge Demo Centre</span>
-              <span className="sm:hidden">Demos</span>
-              <ChevronDown className="w-3 h-3 text-blue-200" />
-            </button>
-
-            {showJudgeTour && (
-              <div className="absolute right-0 mt-2 w-80 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-4 z-50 text-xs space-y-3 anim-scale-in">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-amber-400" />
-                    <span className="font-bold text-white text-sm">Judge Demo Centre</span>
-                  </div>
-                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">
-                    SIH 26262
-                  </span>
-                </div>
-
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  1-Click Test Scenarios for our 4 Core Regulatory USPs:
-                </p>
-
-                <div className="space-y-2">
-                  <button
-                    onClick={() => {
-                      handleSwitchRole(1, 'principal@coep.ac.in', 'inst-nsws');
-                      setShowJudgeTour(false);
-                    }}
-                    className="w-full text-left p-2.5 rounded-lg bg-slate-800/80 hover:bg-blue-900/40 border border-slate-700/80 hover:border-blue-500/50 transition-all group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-white group-hover:text-blue-300">1. Dynamic Route Engine</span>
-                      <span className="text-[10px] font-mono bg-blue-950 text-blue-300 px-1.5 py-0.5 rounded">Table 2.3</span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
-                      COEP (NBA Tier-1, EVC waived p. 42) vs GIITS (Mandatory EVC)
-                    </p>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      handleSwitchRole(2, 'scrutiny.reviewer@aicte.gov.in', 'scrutiny-rescrutiny');
-                      setShowJudgeTour(false);
-                    }}
-                    className="w-full text-left p-2.5 rounded-lg bg-slate-800/80 hover:bg-amber-900/40 border border-slate-700/80 hover:border-amber-500/50 transition-all group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-white group-hover:text-amber-300">2. Differential Re-Scrutiny</span>
-                      <span className="text-[10px] font-mono bg-amber-950 text-amber-300 px-1.5 py-0.5 rounded">Rule C3</span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
-                      Inspect Rule C3 immutably locked approved scope on GIITS
-                    </p>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      handleSwitchRole(4, 'ro.western@aicte.gov.in', 'ro-obligations');
-                      setShowJudgeTour(false);
-                    }}
-                    className="w-full text-left p-2.5 rounded-lg bg-slate-800/80 hover:bg-emerald-900/40 border border-slate-700/80 hover:border-emerald-500/50 transition-all group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-white group-hover:text-emerald-300">3. 4-Clock Timers & Outbox</span>
-                      <span className="text-[10px] font-mono bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded">M3 Timers</span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
-                      Advance simulation date to test automated 60d/30d lease and NOC alerts
-                    </p>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      handleSwitchRole(6, 'admin@aicte.gov.in', 'admin-worm');
-                      setShowJudgeTour(false);
-                    }}
-                    className="w-full text-left p-2.5 rounded-lg bg-slate-800/80 hover:bg-purple-900/40 border border-slate-700/80 hover:border-purple-500/50 transition-all group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-white group-hover:text-purple-300">4. WORM Cryptographic Audit</span>
-                      <span className="text-[10px] font-mono bg-purple-950 text-purple-300 px-1.5 py-0.5 rounded">HMAC-SHA256</span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
-                      Verify immutable tamper-proof hash chain across benchmark colleges
-                    </p>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
           {/* Regulatory Simulation Clock Pill */}
           <div className="relative">
             <button
