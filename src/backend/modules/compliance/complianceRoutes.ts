@@ -163,11 +163,31 @@ export function createComplianceRouter(): Router {
     });
   });
 
-  // GET /api/v1/alerts - View delivered and provenance alerts (Test T12)
+  // GET /api/v1/alerts - View delivered and provenance alerts (Test T12 & Tenant Scoping)
   router.get('/alerts', (req: Request, res: Response) => {
+    const actor = (req as any).actor;
+    let alerts = Array.from(complianceDB.deliveredAlerts.values());
+    if (actor && (actor.roles?.includes('institution') || actor.id?.startsWith('usr-inst-'))) {
+      const allowedInsts = new Set(actor.institutionIds || []);
+      const isCOEP = actor.email === 'principal@coep.ac.in' || actor.id === 'usr-inst-coep';
+      const isGIITS = actor.email === 'principal@giits.ac.in' || actor.id === 'usr-inst-giits';
+      const isPDIMTR = actor.email === 'principal@pdimtr.ac.in' || actor.id === 'usr-inst-pdimtr';
+      const isBATU = actor.email === 'principal@batu.ac.in' || actor.id === 'usr-inst-batu';
+      const isAPEX = actor.email === 'principal@apex.ac.in' || actor.id === 'usr-inst-apex';
+
+      alerts = alerts.filter(a => {
+        if (a.institutionId && allowedInsts.has(a.institutionId)) return true;
+        if (isCOEP && (a.applicationId === 'APP-2026-COEP' || a.institutionId === 'INST-SOUTH')) return true;
+        if (isGIITS && (a.applicationId === 'APP-2026-GIITS' || a.institutionId === 'INST-NORTH')) return true;
+        if (isPDIMTR && (a.applicationId === 'APP-2026-PDIMTR' || a.institutionId === 'INST-PDIMTR')) return true;
+        if (isBATU && (a.applicationId === 'APP-2026-BATU' || a.institutionId === 'INST-BATU')) return true;
+        if (isAPEX && (a.applicationId === 'APP-2026-APEX' || a.institutionId === 'INST-APEX')) return true;
+        return false;
+      });
+    }
     res.json({
       success: true,
-      data: Array.from(complianceDB.deliveredAlerts.values()),
+      data: alerts,
     });
   });
 

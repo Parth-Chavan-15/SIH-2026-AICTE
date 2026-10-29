@@ -1,4 +1,4 @@
-# NiyamSetu (नियमसेतु)
+# NIYAMSETU (नियमसेतु)
 ### Intelligent Regulatory Governance & Approval Workflow Automation Engine for AICTE
 **Smart India Hackathon 2026 | Problem Statement 26262 (AICTE Regulation Bureau) | Academic Year 2026–2027**
 
@@ -6,53 +6,55 @@
 [![Status](https://img.shields.io/badge/Status-Production--Hardened%20ACID%20Prototype-brightgreen?style=flat-square)](https://niyamsetu-aicte.onrender.com)
 [![Deliverables Suite](https://img.shields.io/badge/Deliverables%20Suite-38%2F38%20Passed%20(100%25)-brightgreen.svg?style=flat-square)](./tests/regression_retrofit_all_deliverables.test.ts)
 [![PS Compliance Matrix](https://img.shields.io/badge/PS%2026262%20Matrix-36%20Traced%20(34%20Verified%20%7C%202%20Simulated)-brightgreen?style=flat-square)](./docs/PS_COMPLIANCE_MATRIX.md)
-[![Total Test Suite](https://img.shields.io/badge/Total%20Test%20Suite-385%2F385%20Passed%20(100%25)-brightgreen.svg?style=flat-square)](./tests/)
+[![Total Test Suite](https://img.shields.io/badge/Total%20Test%20Suite-388%2F388%20Passed%20(100%25)-brightgreen.svg?style=flat-square)](./tests/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict%20(0%20Errors)-blue.svg?style=flat-square)](./tsconfig.json)
 [![Handbook Base](https://img.shields.io/badge/Handbook%20Base-APH%202024--27%20%2B%20Addendum%20G02-orange.svg?style=flat-square)](https://www.aicte-india.org)
 
-![NIYAMSETU main interface](docs/assets/niyamsetu-main-ui.png)
+![NIYAMSETU — Main Interface](docs/assets/niyamsetu-main-ui.png)
 
 ---
 
-## 🏛️ Executive Summary & Statutory Grounding
+## 🏛️ Executive Summary
 
-Every academic year, the **All India Council for Technical Education (AICTE)** oversees technical higher education across India, processing approval applications from over **10,000 polytechnics, engineering institutions, and management colleges**. Approval workflows span Setting up New Technical Institutions (Chapter I), Extension of Approval (EoA, Chapter II), Increase in Intake / Additional Courses, Introduction of Supernumerary Quotas, Change of Site / Shifting, and Restoration of Intake.
+Every academic year, the **All India Council for Technical Education (AICTE)** oversees technical higher education across India, regulating approvals for more than **10,000 polytechnics, engineering colleges, and management institutes**. Applications encompass Setting up New Technical Institutions (Chapter I), Annual Extension of Approval (EoA, Chapter II), Intake Increases, Introduction of Supernumerary Quotas, Change of Site, and Restoration of Intake.
 
-Historically, coordinating these regulatory workflows involved fragmented manual touchpoints across applicant portals, regional office allocation desks, scrutiny panels, physical inspection committees, and post-approval compliance tracking.
+Historically, processing these applications involved fragmented manual touchpoints across applicant portals, regional office allocation desks, scrutiny panels, physical inspection committees, and post-approval compliance tracking.
 
-**NiyamSetu (नियमसेतु)** is an automated, secure, and source-grounded regulatory workflow platform engineered specifically for the AICTE Regulation Bureau to:
-1. **Automate Application Routing**: Execute a pure, deterministic Dynamic Route Engine anchored directly to **APH 2024–27 Table 2.3** and **AY 2026–27 Addendum Errata G02**, halting safely to `review_required` on material policy ambiguities ($X=360$, ELP 50%, Hibernation).
-2. **Guarantee Differential Re-Scrutiny Scope-Locks (APH §1.8(g))**: Enforce backend-level immutability where cleared checklist items ($C3, C4$) are permanently locked read-only against modification or re-scrutiny; only flagged deficiencies ($D1, D2$) are unlocked during the 10-day operational turnaround window (Statutory 15-day deposit clock applies post-approval under §2.25(f)).
-3. **Decouple Governance Branches from Main Workflow**: Maintain clean application lifecycles while providing decoupled conditional branches for **Standing Appellate Committee (SAC)** appeals within 7 calendar days under APH §1.11 / §2.24, **Standing Hearing Committee (SHC)** compliance hearings under APH §2.23.3, and **Chapter VII §7.10 Grievances** (rejecting anonymous complaints under §7.10(h)).
+**NIYAMSETU (नियमसेतु)** is an automated, secure, and source-grounded regulatory governance platform engineered specifically for the AICTE Regulation Bureau to:
+1. **Automate Regulatory Routing**: Pure, deterministic Dynamic Route Engine anchored directly to **APH 2024–27 Table 2.3** and **AY 2026–27 Addendum Errata G02**, halting safely to `review_required` on material policy ambiguities ($X=360$, ELP 50%, Hibernation).
+2. **Guarantee Differential Re-Scrutiny Scope-Locks (APH §1.8(g))**: Enforce cryptographic and backend-level immutability where cleared checklist items ($C3, C4$) are permanently locked read-only; only flagged deficiencies ($D1, D2$) are unlocked during the cure window.
+3. **Decouple Governance Branches from Main Workflow**: Maintain clean application lifecycles with decoupled conditional branches for **Standing Appellate Committee (SAC)** appeals (7-day statutory limit under APH §1.11 / §2.24), **Standing Hearing Committee (SHC)** compliance hearings (APH §2.23.3), and **Chapter VII §7.10 Grievances** (rejecting anonymous complaints under §7.10(h)).
 4. **Isolate Regulatory Clocks**: Distinguish pre-approval cure windows from post-approval compliance tracking through an automated **4-Clock Deterministic Timer Engine**, isolating APH §2.25(f) security deposits from initial scrutiny cure windows.
 5. **Ensure Multi-Tier Persistence & Enterprise Durability**: Run on a production **MongoDB Atlas** database across all 11 critical domain models with write-through updates and startup re-hydration, alongside a zero-downtime transactional memory engine for instant evaluation.
 6. **Enforce Role-Based Experience Separation & Tenant Isolation**: Completely isolate applicant interfaces (status, notices, deficiency cure, compliance uploads) from internal regulatory deliberations (evaluator voting, confidential expert notes, speaking order drafts). Zero cross-tenant leakage between institutions.
 
 ---
 
-## 💎 The 4 Regulatory USPs & 8 Breakthrough Innovations
+## 🌟 The 4 Regulatory USPs & 8 Breakthrough Innovations
 
-### 🌟 4 Non-Negotiable Regulatory USPs
+### 🛡️ 4 Non-Negotiable Regulatory USPs
 
 1. **Explainable, Version-Pinned Regulatory Routing**: Direct mathematical predicate mapping of **APH 2024–27 Table 2.3** and **AY 2026–27 Addendum Errata G02**. The route engine yields deterministic route determinations (Routes 1–5) paired with human-readable statutory justifications ("Why this route?"). Material ambiguities ($X=360$, ELP 50%, Hibernation) trigger safe-halt holds (`review_required`).
 2. **Differential Scope-Locked Re-Scrutiny (APH §1.8(g))**: Cryptographically enforced differential scope lock. Checklists cleared in initial scrutiny ($C3, C4$) are locked read-only with SHA-256 verification. Reviewers are physically blocked from tampering with compliant categories; any modification attempt is rejected server-side with `HTTP 409 Conflict` (`RESCRUTINY_SCOPE_ONLY_SIGNED_DEFICIENCIES`).
 3. **Human-Authorized Statutory Decision Gate**: Server-side non-delegable authorization barriers ensure that neither AI algorithms nor automated rules can grant regulatory approvals. Letters of Approval (LoA) and Extensions of Approval (EoA) require authenticated Council sign-offs, with tamper-evident HMAC-SHA256 digital seals and strict role isolation.
 4. **Approval-to-Compliance Continuity**: Recorded approval orders dynamically synthesize institution-specific compliance obligations into the post-approval lifecycle, automatically tracking Joint FDR / Security Deposits (15-day statutory clock under APH §2.25(f)), annual Fire Safety NOC renewals, 30-year registered land lease deeds (§6.17(a)), and 6-month faculty cadre regularizations.
 
-### 🚀 8 Groundbreaking Innovation Mechanisms
+### 🚀 8 Breakthrough Technical Innovations
 
-1. **Version-Pinned Rule Registry**: Immutable, semantic versioning of regulatory clauses with visual AST/clause diffing and regulatory conflict sandbox simulation.
-2. **Scope-Locked Scrutiny Snapshots**: Point-in-time cryptographic snapshots preserving evaluator assessments and deficiency lists ($D1, D2$) under natural justice doctrines.
-3. **Conditional NBA-Related Fast-Track**: Dynamic rule evaluation granting physical EVC waivers for high-scoring accredited institutions (Score $\ge 650$) pursuant to Addendum §2.6(c)(1).
-4. **Document Verification Lifecycle**: 5-state document engine (`pending` $\to$ `uploaded` $\to$ `verified` $\to$ `rejected` $\to$ `expired`) backed by SHA-256 evidence digests and automated expiry warnings.
-5. **Four-Category Deadline-Management Engine**: Deterministic multi-clock architecture isolating pre-approval scrutiny cure deadlines from post-approval statutory Joint FDR windows, SLA breach warnings, and appellate periods.
-6. **Optimistic Concurrency Protection**: High-throughput distributed state management enforcing atomic version gates to prevent lost updates during concurrent committee deliberations.
-7. **Tamper-Evident SHA-256 Audit Chain**: Complete WORM-aligned chronological ledger chaining all transitions, observations, and decisions with HMAC-SHA256 hashes for total legal defensibility.
-8. **Outbox-Based Dispatch & Traceable Notifications**: Transactional outbox pattern guaranteeing at-least-once alert delivery with actor-scoped tenant isolation and cancellation of stale reminders upon compliance fulfillment.
+1. **22-Category Regulatory Routing Engine**: Deterministic classification covering Chapter I New Institutions and all 21 categories of Chapter II Table 2.3 with zero hardcoded branch drift.
+2. **Single-Window Pre-Filled Intake with Mock NSWS**: Seamless 3-step institutional application ingestion simulating National Single Window System (NSWS) pre-population and Class-3 DSC digital signatures.
+3. **Role-Segregated Evidence Dockets with Cryptographic Hash Lock**: Clean isolation of institutional uploads, reviewer notes, and Council speaking orders with SHA-256 evidence integrity hashing.
+4. **Geo-Fenced & Tamper-Evident EVC Video Inspections**: Physical inspection verification featuring simulated 500m geofence coordinate enforcement and continuous timestamped video evidence capture.
+5. **Deficiency Scope-Locking with Differential Re-Scrutiny (APH §1.8(g))**: Guarantees that institutions are evaluated strictly against notified shortcomings without re-opening previously approved parameters.
+6. **Autonomous Escalation & 7-Day Standing Appellate Engine (APH §1.11 / §2.24)**: Automated SLA breach escalation to Regional Officers and strict 7-day statute-of-limitations enforcement for SAC appeals.
+7. **4-Clock Post-Approval Compliance Engine**: Automated tracking of post-approval obligations with isolated statutory timers (15-Day FDR, Fire Safety NOC, Land Lease, Faculty Ratio).
+8. **Self-Contained Judge Demonstration Center & Scenario Runner**: One-click preset scenario launcher enabling evaluators to inspect live end-to-end workflows across all 6 roles with pre-seeded data.
 
 ---
 
 ## 🔄 End-to-End Regulatory Workflow Architecture
+
+The NIYAMSETU architecture cleanly separates intake, evaluation, decision-making, and post-approval compliance tracking across all statutory routes:
 
 ```mermaid
 flowchart TD
@@ -63,15 +65,15 @@ flowchart TD
     classDef docNode fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
     classDef auditNode fill:#1c1917,stroke:#f59e0b,stroke-width:1.5px,color:#fbbf24;
 
-    A["1. Application Intake Simulation<br/>(NSWS / Portal Ingestion + DSC Simulation)"]:::startNode --> B["2. Dynamic Route Engine<br/>(APH 2024-27 Table 2.3 + Addendum Errata G02)"]:::processNode
+    A["1. Application Intake Simulation<br/>(NSWS Ingestion + DSC Simulation)"]:::startNode --> B["2. Dynamic Route Engine<br/>(APH 2024-27 Table 2.3 + Errata G02)"]:::processNode
     
     B -->|Self-Disclosure EoA Table 2.3 Row 1| G_EC["Chapter II Executive Committee Gate<br/>(Grant of EoA APH §2.25)"]:::decisionNode
     B -->|New Inst / Non-NBA Table 2.3 Row 9| C["RO Desk Allocation<br/>(Assign Standing Scrutiny Group)"]:::processNode
-    B -->|Site Shifting / Restoration Table 2.3 Row 11| E["RO Desk Allocation<br/>(Direct EVC Panel Assignment)"]:::processNode
+    B -->|Site Shifting / Restoration Table 2.3 Row 11/14| E["RO Desk Allocation<br/>(Direct EVC Panel Assignment)"]:::processNode
     B -->|Policy Ambiguity Hold X=360| BH["Policy Review Required Hold<br/>(Addendum 2026-27 p. 42 / Safe Halt)"]:::decisionNode
 
     C --> D["Desk Scrutiny Committee<br/>(6 Statutory Checklist Categories)"]:::processNode
-    D -->|Deficiencies Flagged D1, D2| D_LOD["Issue Formal Letter of Deficiency (LoD)<br/>(Statutory Shortcomings Notice APH §1.11 / §2.25c)"]:::decisionNode
+    D -->|Deficiencies Flagged D1, D2| D_LOD["Issue Letter of Deficiency (LoD)<br/>(Statutory Shortcomings Notice APH §1.11)"]:::decisionNode
     D_LOD -->|10-Day SLA Cure Window| D1["Differential Re-Scrutiny Scope-Lock<br/>(APH §1.8g: Cleared C3/C4 Locked Read-Only)"]:::branch
     D1 -->|Deficiencies Successfully Cured| D2Check{"Route Requires<br/>EVC?"}
     D -->|All Compliant C1-C6| D2Check
@@ -79,7 +81,7 @@ flowchart TD
     D2Check -->|Yes: Non-NBA Intake / New Inst| E
     D2Check -->|No: Valid NBA per Addendum §2.6c1| G_EC
 
-    E --> F["Expert Visit Committee (EVC)<br/>(On-Site Physical Inspection APH §1.9<br/>Engineering Safeguard: 500m geofence)"]:::processNode
+    E --> F["Expert Visit Committee (EVC)<br/>(On-Site Physical Inspection APH §1.9<br/>Engineering Safeguard: 500m Geofence)"]:::processNode
     F -->|Satisfactory Report| G_ROUTE{"Application<br/>Category?"}
     
     G_ROUTE -->|Chapter I: New Institution| G_CH1_EC["Executive Committee Decision<br/>(APH §1.10a)"]:::decisionNode
@@ -91,266 +93,339 @@ flowchart TD
     G_EC -->|Approved| H2["Issue Extension of Approval (EoA)<br/>(Speaking Order APH §2.25)"]:::docNode
     G_EC -->|Adverse Decision| I2
 
-    %% Decoupled Chapter II SHC Shortcomings Branch
-    D -.->|Unresolved Shortcomings| SHC_COMP["Chapter II SHC Compliance Opportunity<br/>(APH §2.23.3: Hearing & Evidence)"]:::branch
+    %% Decoupled Governance Branches
+    D -.->|Unresolved Shortcomings| SHC_COMP["Standing Hearing Committee (SHC)<br/>(APH §2.23.3: Hearing & Evidence)"]:::branch
     F -.->|Serious Deficiencies| SHC_COMP
-    SHC_COMP --> SHC_REC["SHC Recommendations<br/>(Submitted to Executive Committee)"]:::branch
+    SHC_COMP --> SHC_REC["SHC Recommendations"]:::branch
     SHC_REC --> G_EC
 
-    %% Decoupled Chapter II SAC Appellate Branch
     I2 -.->|Aggrieved within 7 Days| SAC_APP["Standing Appellate Committee (SAC)<br/>(Eligible Statutory Appeal APH §2.24)"]:::branch
-    SAC_APP --> SAC_REC["SAC Recommendations<br/>(Submitted to Council)"]:::branch
+    SAC_APP --> SAC_REC["SAC Recommendations"]:::branch
     SAC_REC --> SAC_FINAL["Council Decision<br/>(Final under APH §2.24)"]:::decisionNode
 
-    %% Decoupled Chapter VII Grievance & Complaint Branch
-    PGRC["Chapter VII PGRC Intake<br/>(Identity Verification; Reject Anonymous APH §7.10h)"]:::startNode -.-> SCSC["Standing Complaint Scrutiny Committee (SCSC)<br/>(Evidence Scrutiny & Fact Assessment)"]:::branch
-    SCSC -.-> SCSC_ACT{"Action Required?"}
-    SCSC_ACT -.->|Show-Cause / Fact-Finding| SCSC_EVC["Warning / Show-Cause Notice / Fact-Finding EVC"]:::branch
+    PGRC["Chapter VII Grievance Intake<br/>(Reject Anonymous APH §7.10h)"]:::startNode -.-> SCSC["Standing Complaint Scrutiny (SCSC)"]:::branch
+    SCSC -.-> SCSC_EVC["Show-Cause Notice / Fact-Finding EVC"]:::branch
     SCSC_EVC -.-> SHC_COMP
 
     %% Post-Approval Compliance Materialization
-    H1 --> N["Post-Approval Compliance DB<br/>(Materialized Strictly from Authorized Order Conditions)"]:::auditNode
+    H1 --> N["Post-Approval Compliance Engine<br/>(Materialized from Order Conditions)"]:::auditNode
     H2 --> N
-    N --> N1["Clock 1: APH §2.25f Security Deposit & Affidavit-3 (15 Days - Statutory)"]:::auditNode
-    N -.->|When Imposed by Order| N2["Clock 2: Fire Safety NOC Renewal (Annual / Operational SLA Reminder)"]:::auditNode
-    N -.->|When Imposed by Order| N3["Clock 3: 30-Year Registered Land Lease Deed (APH §6.17a)"]:::auditNode
-    N -.->|When Imposed by Order| N4["Clock 4: Faculty Appointment Undertaking (6-Month Cadre Ratio)"]:::auditNode
+    N --> N1["Clock 1: Joint FDR & Affidavit-3 (15 Days - APH §2.25f)"]:::auditNode
+    N -.->|When Imposed| N2["Clock 2: Fire Safety NOC Renewal (Annual SLA)"]:::auditNode
+    N -.->|When Imposed| N3["Clock 3: 30-Yr Registered Land Lease (APH §6.17a)"]:::auditNode
+    N -.->|When Imposed| N4["Clock 4: Faculty Appointment Undertaking (6 Months)"]:::auditNode
 ```
 
 ---
 
-## 📚 Authoritative Regulatory Documentation & Modular Workflows
+## 📊 Modular Statutory Route Diagrams (Diagrams A to J)
 
-The platform architecture is fully documented in source-linked, modular specifications:
+For complete transparency, each statutory route family in **APH 2024–27** is modeled in its own focused, readable diagram below. 
 
-### 1. Regulatory Source Dossier & Mapping
-- **[Source Register](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/regulatory/SOURCE_REGISTER.md)**: Enumeration of statutory acts, APH editions (2024-27, 2026-27 Errata G02), and gazette notifications.
-- **[Rule Mapping Matrix](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/regulatory/RULE_MAPPING_MATRIX.md)**: Clause-by-clause mapping of all 17 core regulatory rules directly to codebase implementations.
-- **[Unverified & Conflicting Rules Analysis](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/regulatory/UNVERIFIED_OR_CONFLICTING_RULES.md)**: Explicit treatment of ambiguous clauses ($X=360$, ELP 50%, Hibernation holds).
+> [!NOTE]
+> To inspect the exhaustive mapping of every Table 2.3 row (21 categories + Chapter I New Institution) to its respective diagram, test suites, and terminal end states, consult the [Route-to-Diagram Matrix](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/ROUTE_TO_DIAGRAM_MATRIX.md).
 
-### 2. Modular Regulatory Workflows
-- **[01. Chapter I: New Technical Institutions](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/01_chapter_i_new_institution.md)**: LoD $\to$ LoR $\to$ LoA progression, mandatory physical EVC, 10-year Joint FDR.
-- **[02. Chapter II: Self-Disclosure EoA](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/02_chapter_ii_self_disclosure_eoa.md)**: Table 2.3 Row 1 zero-touch annual renewal route.
-- **[03. Chapter II: Scrutiny & EVC Routes](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/03_chapter_ii_scrutiny_and_evc_routes.md)**: Intake expansion, NBA fast-track waiver, site shifting, scope-lock HTTP 409 safeguard.
-- **[04. Chapter II: Table 2.3 Matrix](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/04_chapter_ii_route_matrix.md)**: Complete 21-category statutory matrix preserving category `AA`.
-- **[05. Standing Hearing Committee (SHC)](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/05_shc_compliance.md)**: Opportunity of hearing under §2.23.3, natural justice, interface partitioning.
-- **[06. Chapter-Specific Appeals (SAC)](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/06_chapter_specific_appeals.md)**: Standing Appellate Committee under §1.11 / §2.24 with strict 7-day statute of limitations.
-- **[07. Chapter VII Complaints & Inquiries](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/07_chapter_vii_complaints.md)**: Non-anonymous complaint validation (§7.10h) $\to$ SCSC $\to$ Surprise EVC $\to$ SHC $\to$ Executive Committee.
-- **[08. Post-Approval Compliance & Document Lifecycle](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/08_post_approval_compliance.md)**: §2.25(f) 15-day Joint FDR, Affidavit-3, 30-day statutory bodies, 5-state document engine.
-- **[99. Common End-to-End Platform Architecture](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/99_common_end_to_end_architecture.md)**: Unified platform architecture connecting all 8 routes to core services.
+### Diagram A: Setting up New Technical Institutions (Chapter I)
+*Statutory grounding: AICTE Act §10(k), APH 2024–27 Chapter I Clause 1.8–1.10. Mandatory Scrutiny, mandatory physical EVC, Executive Committee and Council ratifications.*
+
+```mermaid
+flowchart TD
+    classDef step fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#fff;
+    classDef decision fill:#831843,stroke:#ec4899,stroke-width:2px,color:#fff;
+    classDef terminal fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
+
+    A["Chapter I New Institution Intake<br/>(Land, Society/Trust, Building Plan, DPR)"]:::step --> B["Desk Scrutiny Committee<br/>(Original Document Verification)"]:::step
+    B -->|Deficiencies Noted| B_LOD["Issue Letter of Deficiency (LoD)<br/>(Cure window enabled)"]:::decision
+    B_LOD -->|Differential Re-Scrutiny| B_RE["Re-Scrutiny Panel<br/>(APH §1.8g Scope-Locked)"]:::step
+    B_RE -->|Deficiencies Cleared| C["Mandatory Expert Visit Committee (EVC)<br/>(Physical Infrastructure & Land Inspection)"]:::step
+    B -->|All Compliant| C
+
+    C -->|Unsatisfactory Infrastructure| C_DEF["Referral to Standing Hearing Committee (SHC)<br/>(APH §2.23.3 Natural Justice Hearing)"]:::decision
+    C -->|Satisfactory Report| D["Regional Office Compilation & Forwarding"]:::step
+
+    D --> E["Executive Committee Evaluation<br/>(APH §1.10a)"]:::decision
+    E --> F["Full Council Consideration & Decision<br/>(APH §1.10a)"]:::decision
+    F -->|Approved| G["Grant Letter of Approval (LoA)<br/>(Imposes Mandatory 10-Year Joint FDR)"]:::terminal
+    F -->|Rejected| H["Issue Letter of Rejection (LoR)<br/>(With Speaking Order & 7-Day Appeal Right)"]:::terminal
+```
 
 ---
 
-## 🎯 5-Minute Evaluator & Judge Walkthrough
+### Diagram B: Self-Disclosure Extension of Approval (Chapter II Table 2.3 Row 1)
+*Statutory grounding: APH 2024–27 Chapter II Clause 2.4. Zero-touch fast-track route for existing compliant institutions.*
 
-To experience the complete regulatory lifecycle in 5 minutes, follow this guided evaluation path:
+```mermaid
+flowchart LR
+    classDef step fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#fff;
+    classDef decision fill:#831843,stroke:#ec4899,stroke-width:2px,color:#fff;
+    classDef terminal fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
 
+    A["Institutional Self-Disclosure Filing<br/>(Annual Compliance & Mandatory Affidavits)"]:::step --> B["Automated AICTE Portal Consistency Check<br/>(Affidavit Integrity & Zero Penalty Record)"]:::step
+    B -->|Anomaly / Penalty Detected| C["Escalate to RO Desk Scrutiny<br/>(Exit Fast-Track Route)"]:::decision
+    B -->|Verified Compliant| D["Automated Recommendation to Executive Committee"]:::step
+    D --> E["Executive Committee Decision<br/>(APH §2.25)"]:::decision
+    E -->|Grant EoA| F["Issue Digitally Sealed EoA<br/>(Speaking Order Generated)"]:::terminal
 ```
-┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                   THE 5-MINUTE GOLDEN EVALUATION PATH                                  │
-├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│  STEP 1: Log in as Institution (principal@coep.ac.in)                                                  │
-│          • View application status for APP-2026-COEP (B.Tech AI & Data Science).                       │
-│          • Observe the explanation banner: High NBA Score (680) waives EVC under Addendum §2.6(c)(1).  │
-│          • Note: Applicant views are strictly isolated; internal expert notes are hidden.             │
-│                                                                                                        │
-│  STEP 2: Log in as Desk Reviewer (scrutiny.reviewer@aicte.gov.in)                                      │
-│          • Open Scrutiny Evaluation for APP-2026-GIITS.                                                │
-│          • Witness APH §1.8(g) Differential Scope-Lock: previously cleared items (C3, C4) are read-only│
-│            and locked; only flagged deficiencies can be evaluated.                                     │
-│                                                                                                        │
-│  STEP 3: Log in as EVC Inspection Officer (evc.chair@aicte.gov.in)                                     │
-│          • Open EVC Inspection for APP-2026-GIITS.                                                     │
-│          • Verify on-site inspection checklist, geo-coordinates, and geotagged 30-minute video.        │
-│          • Submit EVC Report: case advances to decision_pending (no illegal auto-approval).           │
-│                                                                                                        │
-│  STEP 4: Log in as Approval Bureau Officer (bureau.approval@aicte.gov.in)                              │
-│          • Review Council Speaking Order for APP-2026-PDIMTR.                                          │
-│          • Generate and digitally seal the Extension of Approval (EoA) PDF.                            │
-│          • Inspect the PDF with HMAC-SHA256 seal and non-production demonstration watermark.           │
-│          • Navigate to Post-Approval Compliance: observe automatic condition materialization!          │
-│                                                                                                        │
-│  STEP 5: Log in as Policy Admin (admin@aicte.gov.in)                                                   │
-│          • Open Active Rules & Routing Registry.                                                      │
-│          • Inspect active rules, version history, rule diff visualizer, and regulatory conflict sandbox│
-│          • Run the sandbox simulation against APH Table 2.3 Row 9 and Row 11.                          │
-└────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+---
+
+### Diagram C: Scrutiny-Only Routes (Table 2.3 Rows 2, 4, 8, 9-NBA, 10, 12, 15, 16, 17, 18, 19, 20)
+*Statutory grounding: NBA Fast-Track Intake Increases (Addendum §2.6(c)(1)), Administrative Changes, Mergers, Closures.*
+
+```mermaid
+flowchart TD
+    classDef step fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#fff;
+    classDef decision fill:#831843,stroke:#ec4899,stroke-width:2px,color:#fff;
+    classDef terminal fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
+
+    A["Application Filing (e.g. NBA Intake Increase,<br/>Name Change, Division Mergers)"]:::step --> B["RO Desk Scrutiny Committee Allocation"]:::step
+    B --> C["Desk Scrutiny Evaluation<br/>(Evaluates NBA Status, NOCs, State Approvals)"]:::step
+    C -->|Shortcomings Noted| D["Issue Formal LoD<br/>(10-Day SLA Window)"]:::decision
+    D --> E["Differential Re-Scrutiny<br/>(APH §1.8g Scope-Locked)"]:::step
+    E -->|Deficiencies Resolved| F["Scrutiny Recommendation Forwarding"]:::step
+    C -->|All Compliant| F
+    F --> G["Executive Committee Determination<br/>(EVC Waived by Regulation)"]:::decision
+    G -->|Approved| H["Issue Official Order / EoA"]:::terminal
+    G -->|Rejected| I["Issue Letter of Rejection (LoR)<br/>(Speaking Order with Appeal Window)"]:::terminal
+```
+
+---
+
+### Diagram D: Scrutiny Followed by EVC (Rows 3, 5, 9-Non-NBA, 6, 11, 13, 21)
+*Statutory grounding: Non-NBA Intake Increase, New Programmes, Structural Conversions, ODL/Online Approval.*
+
+```mermaid
+flowchart TD
+    classDef step fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#fff;
+    classDef decision fill:#831843,stroke:#ec4899,stroke-width:2px,color:#fff;
+    classDef terminal fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
+
+    A["Application Filing<br/>(Non-NBA Intake Expansion / New Courses)"]:::step --> B["Desk Scrutiny Committee Verification"]:::step
+    B -->|Deficiencies Identified| C["Letter of Deficiency (LoD) & Cure"]:::decision
+    C --> D["Differential Re-Scrutiny Scope-Lock<br/>(APH §1.8g)"]:::step
+    D -->|Cleared| E["Precondition Cleared for EVC"]:::step
+    B -->|All Compliant| E
+    E --> F["RO Orders Expert Visit Committee (EVC)<br/>(On-site verification of labs, faculty, equipment)"]:::step
+    F --> G["EVC On-Site Inspection & Video Evidence Upload"]:::step
+    G --> H["Executive Committee Review & Disposition"]:::decision
+    H -->|Approved| I["Issue Extension of Approval (EoA)"]:::terminal
+    H -->|Rejected| J["Issue Letter of Rejection (LoR)"]:::terminal
+```
+
+---
+
+### Diagram E: Direct or Category-Specific EVC (Site Shifting Row 14 & Restoration Row 7)
+*Statutory grounding: Change of Site / Location (Row 14) and Restoration of Intake after Punitive Action (Row 7).*
+
+```mermaid
+flowchart TD
+    classDef step fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#fff;
+    classDef decision fill:#831843,stroke:#ec4899,stroke-width:2px,color:#fff;
+    classDef terminal fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
+
+    A["Application Intake: Shifting of Site (Row 14)<br/>or Restoration of Penalized Intake (Row 7)"]:::step --> B["RO Administrative Completeness Verification"]:::step
+    B --> C["Direct EVC Panel Constituted & Scheduled<br/>(Site Inspection is Primary Regulatory Condition)"]:::step
+    C --> D["On-Site Physical EVC Inspection<br/>(Verifies New Campus Infrastructure or Penalty Rectification)"]:::step
+    D -->|Deficiencies Exist| E["Standing Hearing Committee (SHC)<br/>(APH §2.23.3 Natural Justice Opportunity)"]:::decision
+    D -->|Satisfactory Report| F["Regional Committee Recommendation"]:::step
+    E -->|SHC Clears Case| F
+    F --> G["Executive Committee Formal Consideration"]:::decision
+    G -->|Approved| H["Grant Approval / Restoration Order"]:::terminal
+    G -->|Rejected| I["Issue Formal Rejection Speaking Order"]:::terminal
+```
+
+---
+
+### Diagram F: Deficiency & Differential Re-Scrutiny (APH §1.8(g) Scope-Lock)
+*Statutory grounding: APH 2024–27 Chapter I Clause 1.8(g). Server-enforced differential scope immutability.*
+
+```mermaid
+flowchart TD
+    classDef step fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#fff;
+    classDef locked fill:#312e81,stroke:#6366f1,stroke-width:1.5px,color:#fff;
+    classDef unlocked fill:#831843,stroke:#ec4899,stroke-width:2px,color:#fff;
+    classDef terminal fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
+
+    A["Initial Scrutiny Report Completed<br/>(Checklist Items: C1, C2, C3, C4, C5, C6)"]:::step --> B{"Scrutiny Findings"}
+    B -->|C3, C4 Passed| C["Cleared Items Permanently Scope-Locked<br/>(Read-only, SHA-256 Digest Frozen)"]:::locked
+    B -->|D1, D2 Deficient| D["Flagged Deficiencies Unlocked for Cure<br/>(Institution Given 10-Day SLA Window)"]:::unlocked
+    
+    D --> E["Institution Uploads Rectification Evidence"]:::step
+    C --> F["Differential Re-Scrutiny Panel Convened"]:::step
+    E --> F
+    
+    F --> G{"Evaluator Attempts Edit on Locked Item?"}
+    G -->|Yes: Tamper Attempt| H["Server-Side Rejection: HTTP 409 Conflict<br/>(RESCRUTINY_SCOPE_ONLY_SIGNED_DEFICIENCIES)"]:::unlocked
+    G -->|No: Reviews Only D1, D2| I["Verify Cure Evidence for D1, D2"]:::step
+    I -->|Satisfactory| J["Differential Re-Scrutiny Cleared"]:::terminal
+    I -->|Deficiency Uncured| K["Referral to Standing Hearing Committee (SHC)"]:::terminal
+```
+
+---
+
+### Diagram G: Standing Hearing Committee (SHC) Shortcomings Hearing (APH §2.23.3)
+*Statutory grounding: APH 2024–27 Chapter II Clause 2.23.3. Natural justice hearing before adverse determination.*
+
+```mermaid
+flowchart TD
+    classDef step fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#fff;
+    classDef decision fill:#831843,stroke:#ec4899,stroke-width:2px,color:#fff;
+    classDef terminal fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
+
+    A["Unresolved Deficiency from Scrutiny or EVC"]:::step --> B["RO Issues Formal SHC Hearing Notice<br/>(Dates, Shortcomings & Required Representatives)"]:::step
+    B --> C["Standing Hearing Committee (SHC) Session<br/>(Quorum: Senior Academician, Legal Expert, RO)"]:::step
+    C --> D["Institutional Presentation & Evidence Scrutiny<br/>(Natural Justice Opportunity under APH §2.23.3)"]:::step
+    D --> E{"SHC Hearing Assessment"}
+    E -->|Deficiencies Fully Clarified| F["SHC Recommends Approval / Extension"]:::step
+    E -->|Deficiencies Confirmed / Unresolved| G["SHC Recommends Non-Approval / Penalty"]:::decision
+    F --> H["Executive Committee Deliberation & Speaking Order"]:::terminal
+    G --> H
+```
+
+---
+
+### Diagram H: Standing Appellate Committee (SAC) 7-Day Appeal (APH §1.11 / §2.24)
+*Statutory grounding: APH 2024–27 Clause 1.11 & 2.24. Time-barred statutory appeal window.*
+
+```mermaid
+flowchart TD
+    classDef step fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#fff;
+    classDef decision fill:#831843,stroke:#ec4899,stroke-width:2px,color:#fff;
+    classDef terminal fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
+
+    A["Council Issues Letter of Rejection (LoR)<br/>(Speaking Order Communicated with Timestamp)"]:::step --> B{"Appeal Lodged within 7 Calendar Days?"}
+    B -->|No: Day 8 or Later| C["Appeal Time-Barred by Statute<br/>(Server Rejection: SAC_APPEAL_TIME_BARRED)"]:::decision
+    B -->|Yes: Within 7 Calendar Days| D["Standing Appellate Committee (SAC) Intake"]:::step
+    D --> E["SAC Hearing Convened<br/>(Chaired by Retired High Court Judge / Senior Academic)"]:::step
+    E --> F["Review of Evidence & Previous Committee Findings"]:::step
+    F --> G["SAC Formulates Statutory Recommendations"]:::step
+    G --> H["Final Decision by Council<br/>(Final Statutory Authority under APH §2.24)"]:::decision
+    H -->|Appeal Allowed| I["Grant Letter of Approval / EoA"]:::terminal
+    H -->|Appeal Dismissed| J["Confirm Rejection (Speaking Order Final)"]:::terminal
+```
+
+---
+
+### Diagram I: Chapter VII Complaint / Grievance Redressal (APH §7.10)
+*Statutory grounding: APH 2024–27 Chapter VII Clause 7.10. Handling of stakeholder complaints with anonymous screening.*
+
+```mermaid
+flowchart TD
+    classDef step fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#fff;
+    classDef decision fill:#831843,stroke:#ec4899,stroke-width:2px,color:#fff;
+    classDef terminal fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
+
+    A["Grievance / Complaint Received via Public Grievance Portal"]:::step --> B{"Complainant Identity Verified?<br/>(APH §7.10h Anonymous Filter)"}
+    B -->|Anonymous / Unverified| C["Dismissed Server-Side at Intake<br/>(APH §7.10h: Anonymous Complaints Barred)"]:::decision
+    B -->|Verified Complainant with Affidavit| D["Standing Complaint Scrutiny Committee (SCSC)"]:::step
+    D --> E{"Prima Facie Substance Found?"}
+    E -->|No: Frivolous Complaint| F["Close Complaint with Speaking Order"]:::terminal
+    E -->|Yes: Serious Irregularity| G["Issue Show-Cause Notice to Institution"]:::decision
+    G --> H["Surprise Fact-Finding EVC Inspection"]:::step
+    H --> I["Standing Hearing Committee (SHC) Proceeding"]:::step
+    I --> J["Council Regulatory Action<br/>(Penalty, Reduction of Intake, or No Admission Status)"]:::terminal
+```
+
+---
+
+### Diagram J: Post-Approval Statutory Compliance (4-Clock Lifecycle)
+*Statutory grounding: APH 2024–27 §2.25(f) 15-day Joint FDR, §6.17(a) 30-year lease, annual Fire Safety NOC, faculty ratios.*
+
+```mermaid
+flowchart TD
+    classDef step fill:#0f172a,stroke:#3b82f6,stroke-width:1.5px,color:#fff;
+    classDef clock fill:#1c1917,stroke:#f59e0b,stroke-width:1.5px,color:#fbbf24;
+    classDef terminal fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
+
+    A["Official Approval Order Generated (LoA / EoA)"]:::step --> B["Post-Approval Compliance Engine Materialization<br/>(Extracts Statutory Conditions into Independent Clocks)"]:::step
+    
+    B --> C["Clock 1: Joint FDR & Affidavit-3<br/>(15 Calendar Days - APH §2.25f Statutory)"]:::clock
+    B --> D["Clock 2: Fire Safety NOC Renewal<br/>(Annual Statutory Expiry SLA)"]:::clock
+    B --> E["Clock 3: Registered Land Lease Deed<br/>(30-Year Continuous Validity - APH §6.17a)"]:::clock
+    B --> F["Clock 4: Faculty Cadre Appointment<br/>(6-Month Regularization Undertaking)"]:::clock
+
+    C --> G{"Compliance Evidence Uploaded Before Clock Expiry?"}
+    D --> G
+    E --> G
+    F --> G
+
+    G -->|Yes: Evidence Uploaded & Verified| H["Condition Marked Fulfilled & Sealed in Audit Trail"]:::terminal
+    G -->|No: Clock Reaches Zero| I["Automated System Escalation Triggered<br/>(Notice to RO Desk & Institution Status Flagged Overdue)"]:::clock
+    I --> J["Imposition of Penalty / Show-Cause under Chapter VII"]:::terminal
 ```
 
 ---
 
 ## 👥 The 6 Statutory Role Personas & Dedicated Workspaces
 
-All accounts use the built-in demo password: **`password123`**
+All accounts use the built-in demonstration password: **`password123`**
 
-| Role ID | Persona Title | Email Account | Dedicated Workspace Tabs | Jurisdiction Scope | Constitutional Guardrail |
+| Role ID | Persona Title | Email Account | Dedicated Workspace Tabs | Jurisdiction Scope | Statutory Guardrails |
 |---|---|---|---|---|---|
-| `institution` | **College Principal / Trust Signatory** | `principal@coep.ac.in`<br/>`principal@pdimtr.ac.in` | • `1. Applications Docket`<br/>• `2. Intake Simulation`<br/>• `3. Deficiency Response`<br/>• `4. Compliance Tracking` | Scoped to own College ID | **Tenant Isolation**: Cannot view internal deliberations; cannot edit cleared checklist items; cannot access other institutions' cases or escalations. |
-| `reviewer` | **Desk Scrutiny Committee Expert** | `scrutiny.reviewer@aicte.gov.in` | • `1. Assigned Scrutiny`<br/>• `2. Portal Report Ingestion` | Assigned Applications | Bound by **APH §1.8(g)**: cleared items ($C3, C4$) are read-only on re-scrutiny; cannot record final approval. |
-| `evc` | **Expert Visit Committee Officer** | `evc.chair@aicte.gov.in` | • `1. Scheduled Inspections`<br/>• `2. Geotagged Evidence` | Assigned Inspections | Assigned only when mandated by Table 2.3; report submission advances to `decision_pending` only. |
-| `regional_officer` | **Regional Officer (Western / SCRO)** | `ro.western@aicte.gov.in` | • `1. Operations Desk`<br/>• `2. Allocation Proforma`<br/>• `3. SHC Hearing`<br/>• `4. Regional Pendency` | Regional Jurisdiction | Manages committee capacity (max 10 cases); transmits verified proformas; schedules SHC shortcomings hearings under APH §2.23.3; cannot override Council decisions. |
-| `bureau_officer` / `demo_authority` | **Approval Bureau Officer / Council Chair** | `bureau.approval@aicte.gov.in` | • `1. Approvals Docket`<br/>• `2. Decision Generator`<br/>• `3. SAC Appeals & Dispositions`<br/>• `4. National Pendency` | National / Global Scope | Records authorized decisions; issues speaking orders; signs decision PDFs; disposes SAC statutory appeals under APH §1.11 / §2.24; materializes compliance obligations. |
-| `policy_admin` | **Regulation Bureau Policy Admin** | `admin@aicte.gov.in` | • `1. Rules Registry`<br/>• `2. Regulatory Sandbox`<br/>• `3. Tamper-Evident Audit Trail` | System / Rules Scope | Operates Active Rules Registry; edits versioned drafts; tests sandbox simulations; inspects immutable SHA-256 HMAC audit chain. |
+| `institution` | **College Principal / Trust Signatory** | `principal@coep.ac.in`<br/>`principal@pdimtr.ac.in` | • `1. Applications Docket`<br/>• `2. Intake Simulation`<br/>• `3. Deficiency Response`<br/>• `4. Compliance Tracking` | Scoped to own College ID | **Tenant Isolation**: Cannot view internal deliberations; cannot edit cleared checklist items; cannot access other institutions' cases. |
+| `reviewer` | **Desk Scrutiny Committee Expert** | `scrutiny.reviewer@aicte.gov.in` | • `1. Assigned Scrutiny Queue`<br/>• `2. Document Verification`<br/>• `3. Deficiency Defect Logger`<br/>• `4. Scrutiny Findings Sign-off` | Assigned Regional Scrutiny Cases | **Scope-Lock (APH §1.8g)**: Cannot alter previously cleared categories; cannot issue approval orders; edits strictly limited to flagged deficiencies. |
+| `evc_expert` | **Expert Visit Committee (EVC) Officer** | `evc.chair@aicte.gov.in` | • `1. Scheduled Inspections`<br/>• `2. Geo-Location & Video Upload`<br/>• `3. Facility Checklist`<br/>• `4. Inspection Report Sign-off` | Assigned Physical Inspection Panels | **Physical Integrity**: Cannot conduct inspection outside simulated 500m geofence; requires verified timestamped inspection video. |
+| `ro_officer` | **Regional Office Operations Officer** | `ro.officer@aicte.gov.in` | • `1. Regional Workload Allocation`<br/>• `2. Scrutiny & EVC Task Routing`<br/>• `3. SHC Compliance Hearings`<br/>• `4. Regional Escalations Docket` | Regional Office Jurisdiction | **Workload & Quorum Safeguards**: Cannot assign tasks beyond capacity thresholds; cannot alter committee verdicts; quorum enforced for SHC. |
+| `approval_bureau` | **Council Approval Bureau Officer** | `bureau.approval@aicte.gov.in` | • `1. Council Approval Docket`<br/>• `2. Order Drafting & Speaking Orders`<br/>• `3. SAC Appeals & Dispositions`<br/>• `4. Cryptographic Seal & Release` | Council Approval Authority | **Non-Delegable Human Gate**: Only authenticated Bureau/Council officers can execute final LoA/EoA sign-offs; digital seal HMAC-SHA256 locked. |
+| `admin` | **AICTE Policy Administrator** | `admin@aicte.gov.in` | • `1. Consolidated Statistics & KPIs`<br/>• `2. Active Rules & Routing Registry`<br/>• `3. Conflict Sandbox & Simulation`<br/>• `4. Cryptographic Audit Log` | Council-Wide National Scope | **Policy Immutability**: All rule edits require versioned rationale and are tracked in an immutable, cryptographically chained audit trail. |
 
 ---
 
-## 🏫 Canonical Real-World Institution Cases
+## ⏱️ 5-Minute Guided Evaluation Walkthrough
 
-The platform is pre-seeded with 5 real-world technical institutions demonstrating distinct regulatory routes:
-
-| Application ID | Institution Name & Region | Approval Category | Regulatory Route & Specific APH Clause |
-|---|---|---|---|
-| `APP-2026-COEP` | **College of Engineering Pune**<br/>(Western Region) | Increase in Intake (B.Tech AI & Data Science) | **APH Addendum 2026–27 §2.6(c)(1)**: NBA accreditation score of 680 waives physical EVC inspection. Evaluated via Fast-Track Desk Scrutiny directly to Executive Committee. |
-| `APP-2026-GIITS` | **GMR Institute of Technology**<br/>(South-Central Region) | Additional Courses / Intake Expansion | **APH Table 2.3 Row 9**: Non-NBA status mandates sequential Desk Scrutiny followed by physical verification by Expert Visit Committee (EVC Panel Alpha). |
-| `APP-2026-PDIMTR`| **PDIMTR Nagpur**<br/>(Western Region) | Extension of Approval (EoA)<br/>Self-Disclosure with Conditions | **APH Chapter II §2.5 & §2.25**: Pre-seeded with recorded conditional approval. Demonstrates decision document synthesis (EoA) and the 3 materialized compliance obligations. |
-| `APP-2026-APEX` | **Apex Institute of Technology**<br/>(Northern Region) | Increase in Intake<br/>Decoupled Governance Branch | Demonstrates decoupled appellate workflows: adverse rejection order triggers statutory appeal to the Standing Appellate Committee (SAC) within strict 7-day window. |
-| `APP-2026-BATU` | **BATU Lonere**<br/>(Western Region) | Change of Site / Location<br/>Break-in-EoA Restoration | **APH Table 2.3 Row 11**: Desk Scrutiny is **bypassed** in favor of immediate physical site verification by EVC Panel Beta. |
-
----
-
-## 💾 Critical Data Model Persistence & Durability Matrix
-
-Every critical domain model across NIYAMSETU has been audited, implemented, and verified across both persistence engines:
-
-| Domain Entity | Read Path in Code | Write Path in Code | Storage Backend | Restart Recovery | Idempotency Key / Guarantee | Status |
-|---|---|---|---|---|---|---|
-| **Applications (`cases`)** | `models.application.find` / `findOne` | `unit.insert`, `unit.save` in `mongoCore.ts` | MongoDB `applications` collection | Durable across restarts; re-indexed | Unique `caseData.id`, `applicationNumber`; optimistic `version` check | **Verified** |
-| **Institutions** | `institutions.findOne` in `mongoCore.ts` | Upserted during initialization in `mongoInit.ts` | MongoDB `institutions` collection | Durable; seeded if missing | Unique `id`, `permanentId` | **Verified** |
-| **Policy Revisions** | `policy_revisions.find` in `mongoCore.ts` | Upserted during initialization in `mongoInit.ts` | MongoDB `policy_revisions` collection | Durable; seeded from `APPROVED_2026_POLICIES` | Unique `id` | **Verified** |
-| **Core Decisions** | `CoreDecision.find` in `decisions.ts` | `unit.save` in `decisions.ts` / `mongoCore.ts` | MongoDB `core_decisions` collection | Durable across restarts | Unique `id`, linked `applicationId` | **Verified** |
-| **Audit Events** | `models.audit.find` in `mongoCore.ts` | `unit.audit(event)` in `mongoCore.ts` | MongoDB `core_audit` collection | Durable; chronological sort | Unique `id`; SHA-256 HMAC hash chaining | **Verified** |
-| **Receipts & Outbox** | `models.receipt.findOne` in `mongoCore.ts` | `models.receipt.create`, `models.outbox.create` | MongoDB `core_receipts` & `core_outbox` | Durable across restarts | Unique `key` with duplicate collision detection (`ReceiptCollision`) | **Verified** |
-| **Decision PDFs** | `getDocumentMetadata` in `decisionDocumentsService.ts` | `persistDecisionDocumentToMongo` in `decisionDocumentsService.ts` | MongoDB `decision_documents` collection | Durable; re-hydrated on boot via `syncDecisionDocumentsFromMongo` | Unique `docId`; HMAC-SHA256 integrity seal | **Verified** |
-| **Compliance Obligations** | `complianceDB.obligations.get` | `persistObligationToMongo` in `complianceService.ts` | MongoDB `compliance_obligations` collection | Durable; re-hydrated on boot via `syncComplianceFromMongo` | Unique `id`; linked `decisionEventId` | **Verified** |
-| **Compliance Documents** | `complianceDB.documents.get` | `persistStoredDocumentToMongo` in `complianceService.ts` | MongoDB `compliance_documents` collection | Durable; re-hydrated on boot via `syncComplianceFromMongo` | Unique `id`; sha256 evidence digests | **Verified** |
-| **EVC Tasks & Schedules** | `evcTasks.get`, `getTasksForCase` | `persistEVCTaskToMongo` in `evcService.ts` | MongoDB `evc_tasks` collection | Durable; re-hydrated on boot via `syncEVCTasksFromMongo` | Unique `id`; `EVC_DUPLICATE_SCHEDULE_FORBIDDEN` | **Verified** |
-| **Appeals (SAC/SHC)** | `hearingsDB.get` | `persistHearingToMongo` in `appealsAndHearingsService.ts` | MongoDB `appeals_hearings` collection | Durable; re-hydrated on boot via `syncAppealsAndHearingsFromMongo` | Unique `id`; 7-day statutory limit | **Verified** |
-| **Grievances (Ch. VII)** | `complaintsDB.get` | `persistComplaintToMongo` in `appealsAndHearingsService.ts` | MongoDB `chapter_vii_complaints` collection | Durable; re-hydrated on boot via `syncAppealsAndHearingsFromMongo` | Unique `complaintId`; §7.10(h) anonymous rejection | **Verified** |
-
-> [!NOTE]
-> When `MONGODB_URI` is active, writes are committed transactionally to MongoDB Atlas. In addition, an in-memory cache layer ensures sub-millisecond query responses for high-concurrency evaluation, and `mongoInit.ts` synchronizes all 4 companion stores (`compliance`, `decision_documents`, `appeals_hearings`, `evc_tasks`) from MongoDB on boot. When offline, NiyamSetu automatically operates with zero downtime on its high-fidelity transactional memory engine.
-
----
-
-## 🔒 MongoDB Atlas Network Security Architecture
-
-Connecting a cloud-hosted platform like Render to MongoDB Atlas requires clear understanding of network topologies and security trade-offs:
-
-| Deployment Tier | Network Architecture | Atlas IP Access Configuration | Security Controls & Defense-in-Depth | Suitability |
-|---|---|---|---|---|
-| **Tier 1: Enterprise Production** | Dedicated VPC Peering or AWS PrivateLink between Render Private Network and Atlas VPC | Private Subnet CIDR only (No public routing) | Private routing; no Internet-exposed ports; IAM database authentication | Recommended for official AICTE production rollout |
-| **Tier 2: Dedicated Cloud Staging** | Render Paid Team Plan with Dedicated Outbound IP Egress | Dedicated Static IP whitelist in Atlas | Single static IP allowlist; SCRAM-SHA-256; TLS 1.3 encryption | Production staging & high-security deployments |
-| **Tier 3: Hackathon Prototype / Free Tier** | Render Free Tier (Dynamic AWS US-East IP pool) | Atlas allowlist (`0.0.0.0/0`) or dynamic regional CIDR blocks | **Mandatory Defense-in-Depth:**<br/>1. Strong 32-character SCRAM-SHA-256 passwords.<br/>2. Least-privilege DB user (`readWrite` on `niyamsetu` only; no `atlasAdmin`).<br/>3. TLS 1.3 enforced (`tls=true`).<br/>4. Secrets kept strictly in Render environment variables.<br/>5. Atlas audit logging and anomaly alerts. | Standard hackathon evaluation on Render free tier |
-
----
-
-## 🛠️ Diagnostic Probes & Operational Runbook
-
-### 1. Liveness Probe (`GET /health`)
-Verifies that the Node.js application process is running and responsive:
-```bash
-curl -s https://niyamsetu-aicte.onrender.com/health
-```
-```json
-{
-  "status": "alive",
-  "uptimeSeconds": 284,
-  "commit": "32a98bf",
-  "readiness": "/api/v1/ready"
-}
-```
-
-### 2. Dependency Readiness Probe (`GET /api/v1/ready`)
-Verifies operational dependencies without exposing sensitive credentials or connection strings:
-```bash
-curl -s https://niyamsetu-aicte.onrender.com/api/v1/ready
-```
-- **When MongoDB is connected & ping succeeds (HTTP 200):**
-  ```json
-  {
-    "success": true,
-    "data": {
-      "status": "ready",
-      "storageMode": "mongodb",
-      "database": {
-        "configured": true,
-        "connected": true,
-        "readyState": 1,
-        "dbName": "niyamsetu",
-        "pingLatencyMs": 14
-      },
-      "uptimeSeconds": 284,
-      "commit": "32a98bf"
-    }
-  }
-  ```
-- **When running in Production and `MONGODB_URI` is missing (HTTP 503):**
-  ```json
-  {
-    "success": false,
-    "status": "unhealthy",
-    "storageMode": "in-memory-unverified",
-    "error": {
-      "code": "DATABASE_NOT_CONFIGURED",
-      "message": "Production service requires MONGODB_URI environment variable on Render"
-    },
-    "data": {
-      "status": "unhealthy",
-      "storageMode": "in-memory-unverified",
-      "database": { "configured": false, "connected": false, "readyState": 0 }
-    }
-  }
-  ```
-
-### 3. Root-Cause Analysis of Render Free-Tier 503 Responses
-- **Cause 1 (Cold Starts):** Render free instances spin down after 15 minutes of inactivity. When a request arrives, container cold-boot takes **35 to 50 seconds**. If a client timeout is under 30 seconds, Cloudflare returns HTTP 503 or 504. Once warm, responses take **120ms to 280ms**.
-- **Cause 2 (Dependency Readiness):** If `NODE_ENV === 'production'` and `MONGODB_URI` is unconfigured, `/api/v1/ready` intentionally returns HTTP 503 to signal an unverified persistence state.
-- **Cause 3 (Database Outage):** If MongoDB Atlas drops connection or loses replica set primary, `storage.ready()` throws `STORAGE_UNAVAILABLE` (HTTP 503).
-
----
-
-## 📋 Audit of Mandatory Retrofit Deliverables
-
-| Deliverable | Statutory Grounding | Code Implementation | Test Suite Verification |
-|---|---|---|---|
-| **1. Application Intake Simulation** | National Single Window System integration guidelines | [`src/backend/modules/nsws/`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/backend/modules/nsws/)<br/>[`src/features/nsws/`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/features/nsws/) | `Deliverable 1` in `regression_retrofit_all_deliverables.test.ts` |
-| **2. Dynamic Route Engine** | APH 2024–27 Table 2.3, Chapter I §1.8–§1.9, Addendum 2026–27 §2.6(c)(1) | [`src/backend/policy/dynamicRouteEngine.ts`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/backend/policy/dynamicRouteEngine.ts) | `Deliverable 2` (3 scenarios: NBA waiver, non-NBA EVC, $X=360$ hold) |
-| **3. RO Operations Desk Allocation** | Regional Office operational workload distribution norms | [`src/backend/modules/allocation/`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/backend/modules/allocation/)<br/>[`src/features/ro/`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/features/ro/) | `Deliverable 3` (Capacity limits, EVC precondition guard, audit log) |
-| **4. Existing Portal Report Ingestion** | AICTE Scrutiny Evaluation Report format (GIITS & MCET) | [`src/backend/modules/portalImport/`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/backend/modules/portalImport/)<br/>[`src/features/portalImport/`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/features/portalImport/) | `Deliverable 4` (Demo fixtures, confidence mapping, scoped tasks) |
-| **5. Re-Scrutiny Scope-Lock** | APH 2024–27 Chapter I Clause 1.8(g) | [`src/backend/modules/scrutiny/`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/backend/modules/scrutiny/) | `Deliverable 5` (HTTP 409 Conflict upon editing cleared items) |
-| **6. Decoupled SAC / SHC / Grievance** | APH §1.11, §2.23.3, §2.24, and Chapter VII §7.10 | [`src/backend/modules/appealsAndHearings/`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/backend/modules/appealsAndHearings/)<br/>[`src/features/appeals/`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/features/appeals/) | `Deliverable 6` (7-day SAC appeal window, anonymous grievance rejection) |
-| **7. Active Rules & Routing Registry** | Role 6 Policy Administration & Versioning Norms | [`src/backend/modules/rulesRegistry/`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/backend/modules/rulesRegistry/)<br/>[`src/features/admin/ConfigRulesView.tsx`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/features/admin/ConfigRulesView.tsx) | `Deliverable 7` (Searchable active rules, diff editor, conflict register) |
-| **8. Generated Decision Documents** | AICTE Act 1987 §10(k), Official Order Issuance | [`src/backend/modules/decisionDocuments/`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/backend/modules/decisionDocuments/)<br/>[`src/features/documents/`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/features/documents/) | `Deliverable 8` (Dynamic PDF rendering, demo digital signing, complianceDB sync) |
-| **9. Timers & Regulatory Clocks** | APH §2.25(f) vs Deficiency Cure Distinction | [`src/backend/modules/compliance/`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/backend/modules/compliance/) | Acceptance tests T10–T12 & `m3_obligations_timers.test.ts` |
-| **10. Removal of Mock Adapters** | Clean architecture; removal of API Setu, DTE, Siebel | [`src/backend/routes/adapterRoutes.ts`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/backend/routes/adapterRoutes.ts) | `Deliverable 10` (All 3 excised endpoints return HTTP 404) |
-| **11. Regression Tests & Persistence** | Verification rigour & durability proof | [`tests/regression_retrofit_all_deliverables.test.ts`](file:///c:/Users/parth/Documents/SIH-26-AICTE/tests/regression_retrofit_all_deliverables.test.ts)<br/>[`tests/production_persistence_idempotency.test.ts`](file:///c:/Users/parth/Documents/SIH-26-AICTE/tests/production_persistence_idempotency.test.ts) | 38/38 retrofit tests + 10/10 persistence tests + 385 total tests passing |
-
----
-
-## 🧪 Automated Test Suite Summary (385 Tests / 34 Suites)
+To experience the complete regulatory lifecycle in 5 minutes, follow this guided evaluation path:
 
 ```
-Test Files  34 passed (34)
-     Tests  385 passed (385)
-  Duration  14.61s (100% pass rate, 0 failed, 0 skipped)
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                               THE 5-MINUTE GOLDEN EVALUATION PATH                                │
+├──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                                  │
+│  STEP 1: Log in as Institution (principal@coep.ac.in)                                            │
+│          • View application status for APP-2026-COEP (B.Tech AI & Data Science).                 │
+│          • Observe 5 coherent demo notifications tracking intake, routing, scrutiny, and FDR.    │
+│          • Observe the explanation banner: High NBA Score (680) waives EVC under Addendum §2.6c1.│
+│          • Note: Applicant views are strictly isolated; internal expert notes are hidden.        │
+│                                                                                                  │
+│  STEP 2: Log in as Desk Reviewer (scrutiny.reviewer@aicte.gov.in)                                │
+│          • Open Scrutiny Evaluation for APP-2026-GIITS.                                          │
+│          • Witness APH §1.8(g) Differential Scope-Lock: previously cleared items (C3, C4)        │
+│            are read-only and locked; only flagged deficiencies can be evaluated.                 │
+│                                                                                                  │
+│  STEP 3: Log in as EVC Inspection Officer (evc.chair@aicte.gov.in)                               │
+│          • Open EVC Inspection for APP-2026-GIITS.                                               │
+│          • Verify on-site inspection checklist, geo-coordinates, and geotagged 30-minute video.  │
+│          • Submit EVC Report: case advances to decision_pending (no illegal auto-approval).     │
+│                                                                                                  │
+│  STEP 4: Log in as Approval Bureau Officer (bureau.approval@aicte.gov.in)                        │
+│          • Review Council Speaking Order for APP-2026-PDIMTR.                                    │
+│          • Generate and digitally seal the Extension of Approval (EoA) PDF.                      │
+│          • Inspect the PDF with HMAC-SHA256 seal and non-production demonstration watermark.     │
+│          • Navigate to Post-Approval Compliance: observe automatic condition materialization!   │
+│                                                                                                  │
+│  STEP 5: Log in as Policy Admin (admin@aicte.gov.in)                                             │
+│          • Open Consolidated Statistics: inspect 6 KPI cards and 6 analytical charts.            │
+│          • Notice the transparent demonstration banner: "Demonstration data — simulated".        │
+│          • Open Active Rules & Routing Registry to inspect rules, diffs, and conflict sandbox.   │
+│                                                                                                  │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
-
-- **`tests/security/escalation_tenant_isolation.test.ts` (7 tests)**: Proves strict cross-tenant isolation for escalation dockets and consolidated reports between institutions (COEP vs GIITS), ensuring 0 cross-tenant data leakage.
-- **`tests/acceptance/shc_sac_role_separation.test.ts` (5 tests)**: Verifies distinct role-specific workspaces for Regional Office (`3. SHC Hearing`) and Approval Bureau (`3. SAC Appeals & Dispositions`), quorum enforcement, and permission guards.
-- **`tests/performance/load_benchmarks.test.ts` (5 tests)**: Validates ultra-low latency benchmarks (NSWS transitions < 35ms, dynamic routing < 10ms, docket loads < 10ms).
-- **`tests/production_persistence_idempotency.test.ts` (10 tests)**: Verifies synthetic persistence round-trips without mutating real institutional data, EVC duplicate scheduling rejection, 7-day statutory appeal time-barring, §7.10(h) anonymous complaint rejection, safe diagnostic readiness output, and production demo-reset protection.
-- **`tests/regression_retrofit_all_deliverables.test.ts` (38 tests)**: Verifies all 11 mandatory deliverables end-to-end, including decision preconditions, outcome alignment, HMAC-SHA256 integrity verification, no cross-case leakage, loopback origin matching, and boundary hold conditions.
-- **`tests/appeals_and_hearings_api.test.ts` (6 tests)**: Verifies decoupled statutory appeals (SAC APH §1.11 / §2.24), compliance hearings (SHC APH §2.23.3), and Chapter VII grievances API routes and validation.
-- **`tests/verification_t01_t16.test.ts` (16 tests)**: Acceptance checks T01–T16 (tenant isolation, scrutiny scope-lock, human-only decisions, timer acceleration).
-- **`tests/verification_t17_t22.test.ts` (6 tests)**: Acceptance checks T17–T22 (authorized reverts, statutory notices, DSC signatures, compliance certificates).
-- **`tests/policy/routing.test.ts` (37 tests)**: Comprehensive route engine predicate tests across Table 2.3.
-- **`tests/decisions/core.test.ts` (34 tests)**: Decision transactions, authority guards, and speaking order verification.
-- **`tests/security/auth.test.ts` (18 tests)**: Session authentication, cookie security, RBAC scopes, and login attempt throttling.
-- **`tests/core/http.test.ts` & `tests/core/commands.test.ts` (22 tests)**: HTTP guards, transaction serialization, rollback semantics, and outbox isolation.
 
 ---
 
-## 💻 Quick Start: Run Locally in Under 2 Minutes
+## 🛠️ Technology Stack & Architecture
+
+| Tier | Technologies | Architectural Purpose |
+|---|---|---|
+| **Frontend UI / UX** | React 19, TypeScript 5.8, TailwindCSS, Lucide Icons, Vite 6 | High-responsiveness reactive workspace with zero flickering and instant tab caching |
+| **Backend Core** | Node.js (v20/v22 LTS), Express, RESTful architecture | Stateless REST API service enforcing role permissions, tenancy, and route logic |
+| **Persistence Engine** | MongoDB Atlas (Production) + Transactional Memory Engine | Hybrid persistence: write-through commits with zero-downtime memory fallbacks |
+| **Performance & Cache** | In-flight request deduplication + Actor-scoped 6-second read cache | Sub-millisecond tab switching (<1ms) and 100% elimination of redundant API calls |
+| **Integrity & Security** | SHA-256 evidence digests, HMAC-SHA256 digital seals, HttpOnly cookies | Non-repudiation, role isolation, and tamper-evident audit chaining |
+| **Testing & Rigour** | Vitest, Supertest, strict TypeScript type checking | 388 automated tests across 35 suites with 100% pass rate |
+
+---
+
+## ⚡ Quick Start: Run Locally in Under 2 Minutes
 
 The project requires **zero external database setup**. Its built-in transactional memory storage starts instantly out of the box.
 
@@ -371,12 +446,8 @@ npm install
 # 3. Check TypeScript strictness (0 errors)
 npx tsc --noEmit
 
-# 4. Run automated test suites
-# Full regression & persistence suite (48 tests)
-npx vitest run tests/regression_retrofit_all_deliverables.test.ts tests/production_persistence_idempotency.test.ts
-
-# Complete repository suite (385 tests across 34 files)
-npx vitest run
+# 4. Run automated test suites (388 tests across 35 files)
+npm test
 
 # 5. Build and launch development server
 npm run build
@@ -384,16 +455,60 @@ npm run dev
 ```
 
 Open your browser to:  
-👉 **`http://localhost:3000`**
+🌐 **`http://localhost:3000`**
 
 ### Live Production Deployment
 Try the full application online without installing anything:  
-🌐 **`https://niyamsetu-aicte.onrender.com`**
+🚀 **`https://niyamsetu-aicte.onrender.com`**
 
 ---
 
-## ⚖️ Regulatory Traceability & Primary Sources
+## 🧪 Automated Test Suite Summary (388 Tests / 35 Suites)
 
-- **Primary Statutory Authorities**: All routes, rules, and workflows are anchored to the **AICTE Act 1987**, **AICTE Approval Process Handbook (APH 2024–2027)**, and **AY 2026–27 Addendum with Corrigendum Errata G02**.
-- **Member 6 Research Status**: As documented in the repository checklist, no separate research file explicitly labelled *"Member 6"* was found in the repository or attachments; its contents were not invented or assumed.
-- **Simulation Transparency**: All simulated external integrations (NSWS onboarding, emBridge Class-3 DSC token validation, mock notification dispatch, and HMAC-SHA256 digital document signing) carry prominent non-production prototype disclosures and never claim live sovereign API connections.
+```
+Test Files  35 passed (35)
+     Tests  388 passed (388)
+  Duration  14.22s (100% pass rate, 0 failed, 0 skipped)
+```
+
+- **`tests/acceptance/coep_notifications_verification.test.ts` (3 tests)**: Verifies 5 workflow-grounded COEP notifications with strict institutional tenant isolation and zero cross-tenant leakage.
+- **`tests/security/escalation_tenant_isolation.test.ts` (7 tests)**: Proves cross-tenant isolation for escalation dockets and consolidated reports between institutions (COEP vs GIITS).
+- **`tests/acceptance/shc_sac_role_separation.test.ts` (5 tests)**: Verifies distinct role-specific workspaces for Regional Office (`3. SHC Hearing`) and Approval Bureau (`3. SAC Appeals & Dispositions`), quorum enforcement, and permission guards.
+- **`tests/performance/load_benchmarks.test.ts` (5 tests)**: Validates ultra-low latency benchmarks (NSWS transitions < 35ms, dynamic routing < 10ms, docket loads < 10ms).
+- **`tests/production_persistence_idempotency.test.ts` (10 tests)**: Verifies synthetic persistence round-trips, EVC duplicate scheduling rejection, 7-day statutory appeal time-barring, APH §7.10(h) anonymous complaint rejection, and demo-reset protection.
+- **`tests/regression_retrofit_all_deliverables.test.ts` (38 tests)**: Verifies all mandatory deliverables end-to-end, including decision preconditions, outcome alignment, HMAC-SHA256 integrity verification, and boundary hold conditions.
+- **`tests/policy/routing.test.ts` (37 tests)**: Comprehensive route engine predicate tests across Table 2.3.
+- **`tests/decisions/core.test.ts` (34 tests)**: Decision transactions, authority guards, and speaking order verification.
+- **`tests/security/auth.test.ts` (18 tests)**: Session authentication, cookie security, RBAC scopes, and login attempt throttling.
+
+---
+
+## 🔍 Simulation Disclosures & Boundary Transparency
+
+To maintain absolute academic and professional integrity for the Smart India Hackathon evaluation:
+
+1. **National Single Window System (NSWS)**: Simulated via a realistic 3-step applicant onboarding wizard (`/api/v1/nsws/prefill`) reflecting official NSWS API field schemas. Does not connect to live production government servers.
+2. **Digital Signature Certificate (DSC)**: Simulated via an emBridge Class-3 USB token emulator validating cryptographic thumbprints. Production deployment would bind to the official NIC / eMudhra PKI stack.
+3. **EVC Geolocation & Video Upload**: Simulated with simulated GPS coordinate calculation and 30-minute timestamped camera feeds with a 500m geofence validation algorithm.
+4. **Outbox Notification Dispatch**: Simulated via an transactional outbox delivering real-time in-app alerts and simulated SMS/Email notices with tenant-isolated recipient dispatch.
+5. **Demonstration Watermarks**: All generated Letter of Approval (LoA) and Extension of Approval (EoA) PDFs feature a prominent, non-removable `NON-PRODUCTION PROTOTYPE — SIH 2026 DEMONSTRATION` watermark.
+
+---
+
+## 📚 Authoritative Regulatory Documentation Index
+
+| Specification Document | Path | Key Statutory Topics Covered |
+|---|---|---|
+| **Route-to-Diagram Matrix** | [`docs/workflows/ROUTE_TO_DIAGRAM_MATRIX.md`](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/ROUTE_TO_DIAGRAM_MATRIX.md) | Exhaustive mapping of all 22 Table 2.3 categories to Diagrams A–J & tests |
+| **Workflow Architecture Overview** | [`docs/workflows/README.md`](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/README.md) | Unified overview of modular regulatory routes and diagram references |
+| **Statutory Source Register** | [`docs/regulatory/SOURCE_REGISTER.md`](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/regulatory/SOURCE_REGISTER.md) | Enumeration of AICTE Act 1987, APH 2024–27, and Addendum Errata G02 |
+| **Rule Mapping Matrix** | [`docs/regulatory/RULE_MAPPING_MATRIX.md`](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/regulatory/RULE_MAPPING_MATRIX.md) | Clause-by-clause mapping of 17 core regulatory rules directly to code |
+| **Unverified / Conflicting Rules** | [`docs/regulatory/UNVERIFIED_OR_CONFLICTING_RULES.md`](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/regulatory/UNVERIFIED_OR_CONFLICTING_RULES.md) | Treatment of ambiguous clauses ($X=360$, ELP 50%, Hibernation holds) |
+| **Performance Verification** | [`docs/performance/PERFORMANCE_VERIFICATION.md`](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/performance/PERFORMANCE_VERIFICATION.md) | Latency benchmarks, request deduplication, and cache invalidation evidence |
+| **Problem Statement Matrix** | [`docs/PS_COMPLIANCE_MATRIX.md`](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/PS_COMPLIANCE_MATRIX.md) | Complete 36-point requirement traceability for SIH Problem Statement 26262 |
+| **Chapter I Workflow** | [`docs/workflows/01_chapter_i_new_institution.md`](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/01_chapter_i_new_institution.md) | Detailed Chapter I New Technical Institutions workflow specification |
+| **Chapter II Self-Disclosure** | [`docs/workflows/02_chapter_ii_self_disclosure_eoa.md`](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/02_chapter_ii_self_disclosure_eoa.md) | Table 2.3 Row 1 zero-touch annual renewal route specification |
+| **Chapter II Scrutiny & EVC** | [`docs/workflows/03_chapter_ii_scrutiny_and_evc_routes.md`](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/03_chapter_ii_scrutiny_and_evc_routes.md) | Intake expansion, NBA fast-track waiver, site shifting, scope-lock safeguard |
+| **Standing Hearing Committee** | [`docs/workflows/05_shc_compliance.md`](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/05_shc_compliance.md) | Opportunity of hearing under §2.23.3, natural justice, interface partitioning |
+| **Standing Appellate Committee** | [`docs/workflows/06_chapter_specific_appeals.md`](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/06_chapter_specific_appeals.md) | Standing Appellate Committee under §1.11 / §2.24 with 7-day limit |
+| **Post-Approval Compliance** | [`docs/workflows/08_post_approval_compliance.md`](file:///c:/Users/parth/Documents/SIH-26-AICTE/docs/workflows/08_post_approval_compliance.md) | §2.25(f) 15-day Joint FDR, Affidavit-3, 30-day statutory bodies, 4-clock engine |

@@ -973,6 +973,56 @@ class APIService {
   public async getNotifications(): Promise<NotificationItem[]> {
     const defaultAlerts: NotificationItem[] = [
       {
+        id: 'ALT-COEP-01',
+        title: 'NSWS Digital Intake Recorded',
+        message: 'Application APP-2026-COEP (B.Tech AI & Data Science Intake Expansion) successfully ingested from National Single Window System with Class-3 Digital Signature verification.',
+        timestamp: '2026-10-22T08:00:00.000Z',
+        isRead: true,
+        category: 'Workflow',
+        severity: 'info',
+        applicationId: 'APP-2026-COEP'
+      },
+      {
+        id: 'ALT-COEP-02',
+        title: 'Route Evaluated: Route 1 (Scrutiny Only)',
+        message: 'Dynamic Route Engine evaluated statutory criteria under APH Table 2.3 Row 1. NBA accreditation score of 680 waives physical EVC inspection under AY 2026-27 Addendum §2.6(c)(1).',
+        timestamp: '2026-10-22T08:05:00.000Z',
+        isRead: true,
+        category: 'Workflow',
+        severity: 'info',
+        applicationId: 'APP-2026-COEP'
+      },
+      {
+        id: 'ALT-COEP-03',
+        title: 'Desk Scrutiny Committee Group Assigned',
+        message: 'Western Regional Office (WRO) allocated case APP-2026-COEP to Standing Scrutiny Committee Group Alpha for 6-category statutory checklist examination.',
+        timestamp: '2026-10-23T09:30:00.000Z',
+        isRead: false,
+        category: 'Workflow',
+        severity: 'info',
+        applicationId: 'APP-2026-COEP'
+      },
+      {
+        id: 'ALT-COEP-04',
+        title: 'Scrutiny Cleared under NBA Tier-1 Fast-Track',
+        message: 'COEP Pune application APP-2026-COEP cleared desk scrutiny with 100% verified compliance across all categories (C1–C6). Docket transmitted to Executive Committee for approval.',
+        timestamp: '2026-10-24T07:30:00.000Z',
+        isRead: false,
+        category: 'Workflow',
+        severity: 'success',
+        applicationId: 'APP-2026-COEP'
+      },
+      {
+        id: 'ALT-COEP-05',
+        title: 'Pre-Approval Readiness: Joint FDR & Affidavit-3',
+        message: 'Statutory reminder: Upon formal grant of Approval Order, 15-day compliance clock commences under APH §2.25(f) for Joint FDR security deposit submission.',
+        timestamp: '2026-10-24T11:00:00.000Z',
+        isRead: false,
+        category: 'Compliance',
+        severity: 'warning',
+        applicationId: 'APP-2026-COEP'
+      },
+      {
         id: 'NOTIF-PDIMTR-01',
         title: '30-Year Registered Lease Deed Expiry Countdown',
         message: 'Prerna / Univ BDT College (PDIMTR) registered lease deed expires within 30 days. Form-6 renewal undertaking and valid lease deed registration required under APH Table 1.',
@@ -1011,16 +1061,6 @@ class APIService {
         category: 'Escalation',
         severity: 'info',
         applicationId: 'APP-2026-APEX'
-      },
-      {
-        id: 'NOTIF-COEP-05',
-        title: 'Scrutiny Cleared under NBA Tier-1 Fast-Track',
-        message: 'COEP Pune application APP-2026-COEP cleared desk scrutiny with 100% verified compliance. EVC waived under APH 2026-27 Errata p. 42; ready for Council approval.',
-        timestamp: '2026-10-24T07:30:00.000Z',
-        isRead: false,
-        category: 'Compliance',
-        severity: 'info',
-        applicationId: 'APP-2026-COEP'
       }
     ];
 
@@ -1033,12 +1073,12 @@ class APIService {
           title: a.title,
           message: a.message,
           timestamp: a.timestamp,
-          isRead: false,
-          category: a.category || 'Document Expiry',
-          severity: (a.severity as any) || 'warning',
-          applicationId: a.applicationId || 'APP-2026-PDIMTR'
+          isRead: Boolean(a.isRead),
+          category: a.category || 'Workflow',
+          severity: (a.severity as any) || 'info',
+          applicationId: a.applicationId || (a.id?.includes('COEP') ? 'APP-2026-COEP' : a.id?.includes('GIITS') ? 'APP-2026-GIITS' : a.id?.includes('PDIMTR') ? 'APP-2026-PDIMTR' : a.id?.includes('BATU') ? 'APP-2026-BATU' : a.id?.includes('APEX') ? 'APP-2026-APEX' : 'APP-2026-COEP')
         }));
-        return [...liveAlerts, ...defaultAlerts.filter(d => !liveAlerts.some((l: any) => l.title === d.title))];
+        return [...liveAlerts, ...defaultAlerts.filter(d => !liveAlerts.some((l: any) => l.title === d.title || l.id === d.id))];
       }
       return defaultAlerts;
     } catch {

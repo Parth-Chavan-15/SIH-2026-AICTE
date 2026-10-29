@@ -1,0 +1,65 @@
+# NIYAMSETU — ROUTE TO DIAGRAM MAPPING MATRIX
+## Complete Statutory Mapping of All AICTE Application Categories to Workflow Diagrams
+**Smart India Hackathon 2026 | Problem Statement 26262 | Academic Year 2026–2027**  
+**Authoritative Sources:** AICTE Approval Process Handbook (APH 2024–27 Chapter I & Chapter II Table 2.3) and AY 2026–27 Addendum Errata G02  
+
+---
+
+## 1. Statutory Legend & Conventions
+
+| Stage Code | Formal APH Stage | Statutory Description |
+|---|---|---|
+| **Intake** | Application Ingestion | National Single Window System (NSWS) intake or Portal Import with Class-3 DSC |
+| **Scrutiny** | Desk Scrutiny Committee | 6-Category statutory checklist verification by allocated Scrutiny Group |
+| **Re-Scrutiny** | Differential Scope-Locked Review | Turnaround review under APH §1.8(g); compliant items locked read-only |
+| **EVC** | Expert Visit Committee | On-site physical inspection by 3-member expert panel with 500m geofence & 30-min video |
+| **SHC** | Standing Hearing Committee | Regional natural justice hearing under APH §2.23.3 for shortcoming rectification |
+| **SAC** | Standing Appellate Committee | Appellate bench under APH §1.11 / §2.24 hearing appeals within 7 calendar days |
+| **Decision** | Competent Authority Gate | Council / Executive Committee human authorization issuing signed speaking order |
+| **Compliance**| Post-Approval Obligations | 4-clock lifecycle tracking Joint FDR, Fire NOC, land lease, and faculty cadre |
+
+---
+
+## 2. Exhaustive Application Category Mapping Matrix
+
+This table maps **all 22 regulatory application categories** (Chapter I New Institutions + 21 Chapter II Existing Categories) to their corresponding workflow diagrams and code verification suites:
+
+| Category # | Statutory Application Category | APH Clause / Table 2.3 Row | Route Family ID | Implemented Processing Sequence | Applicable Conditional Stages (`AA`) | Terminal End States | Implemented & Tested? | Corresponding Diagram | Code Verification Suite |
+|---|---|---|---|---|---|---|---|---|---|
+| **CAT-00** | **Setting up New Technical Institution** | Chapter I §1.1–§1.10 | `ROUTE_CH1_NEW` | Intake &rarr; Scrutiny &rarr; [Re-Scrutiny] &rarr; Mandatory EVC &rarr; RO Desk &rarr; EC/Council &rarr; LoA/LoR &rarr; Compliance | Re-Scrutiny if LoD; SAC appeal within 7d if LoR | Grant of LoA (Subject to Joint FDR) OR Speaking LoR | **Yes** | **Diagram A** | `01_chapter_i_new_institution.md`, `tests/workflow.test.ts` |
+| **CAT-01** | **Extension of Approval (EoA) on Self-Disclosure** | Chapter II §2.5, Row 1 | `ROUTE_CH2_ROW1_SELF_DISCLOSURE` | Intake &rarr; Rule Engine &rarr; Executive Committee Gate &rarr; EoA Order &rarr; Compliance | Random surprise inspection post-approval (§2.3.5) | Grant of EoA OR Review Hold | **Yes** | **Diagram B** | `tests/policy/routing.test.ts`, `02_chapter_ii_self_disclosure_eoa.md` |
+| **CAT-02** | **Introduction/Continuation of NRI Seats** | Chapter II §2.6(a), Row 2 | `ROUTE_CH2_ROW2_NRI` | Intake &rarr; Scrutiny &rarr; Executive Committee &rarr; Decision &rarr; Compliance | SHC hearing if infrastructure deficient; SAC appeal if rejected | Approval with NRI quota OR Speaking Rejection | **Yes** | **Diagram C** | `tests/policy/routing.test.ts`, `03_chapter_ii_scrutiny_and_evc_routes.md` |
+| **CAT-03** | **Conversion of Diploma Level to Degree Level (and vice-versa)** | Chapter II §2.6(b), Row 3 | `ROUTE_CH2_ROW3_DIPLOMA_DEGREE` | Intake &rarr; Scrutiny &rarr; Physical EVC &rarr; Executive Committee &rarr; Decision &rarr; Compliance | Re-Scrutiny if checklist deficient; SHC if lab deficiencies | Level Conversion Sanctioned OR Rejection Order | **Yes** | **Diagram D** | `tests/policy/routing.test.ts`, `03_chapter_ii_scrutiny_and_evc_routes.md` |
+| **CAT-04** | **Change in Name of Institution / Affiliating University / Type** | Chapter II §2.7, Row 4 | `ROUTE_CH2_ROW4_CHANGE_NAME` | Intake &rarr; Scrutiny &rarr; Executive Committee &rarr; Decision Order | SHC hearing if state government/university NOC disputed | Name Change Gazette Corrigendum OR Rejection | **Yes** | **Diagram C** | `tests/policy/routing.test.ts`, `03_chapter_ii_scrutiny_and_evc_routes.md` |
+| **CAT-05** | **Starting New Programme / Level in Existing Institution** | Chapter II §2.8, Row 5 | `ROUTE_CH2_ROW5_NEW_PROGRAMME` | Intake &rarr; Scrutiny &rarr; Physical EVC &rarr; Executive Committee &rarr; Decision &rarr; Compliance | Re-Scrutiny if land deficit; SHC if curriculum unaligned | Programme Approval Order OR Rejection | **Yes** | **Diagram D** | `tests/policy/routing.test.ts`, `03_chapter_ii_scrutiny_and_evc_routes.md` |
+| **CAT-06** | **Merger of Institutions under Same/Different Trust** | Chapter II §2.9, Row 6 | `ROUTE_CH2_ROW6_MERGER` | Intake &rarr; Scrutiny &rarr; [Conditional EVC] &rarr; Executive Committee &rarr; Decision | EVC activated (`AA`) if built-up area consolidation disputed | Amalgamated EoA Order OR Rejection | **Yes** | **Diagram C & D** | `tests/policy/routing.test.ts`, `04_chapter_ii_route_matrix.md` |
+| **CAT-07** | **Restoration of Intake / Break-in-EoA / Hibernation** | Chapter II §2.16.1 & §2.17, Row 7 | `ROUTE_CH2_ROW7_RESTORATION` | Intake &rarr; Direct EVC (Scrutiny Bypassed) &rarr; Executive Committee &rarr; Decision | SHC if operational revival equipment incomplete; Policy hold if $X=360$ | Intake Restored Order OR Rejection | **Yes** | **Diagram E** | `tests/policy/routing.test.ts`, `03_chapter_ii_scrutiny_and_evc_routes.md` |
+| **CAT-08** | **Supernumerary Seats for Foreign Nationals / OCI / Gulf** | Chapter II §2.10, Row 8 | `ROUTE_CH2_ROW8_FN_OCI` | Intake &rarr; Scrutiny &rarr; Executive Committee &rarr; Decision &rarr; Compliance | SHC if international cell / hostel amenities deficient | Quota Approval Order OR Rejection | **Yes** | **Diagram C** | `tests/policy/routing.test.ts`, `04_chapter_ii_route_matrix.md` |
+| **CAT-09A**| **Increase in Intake / Additional Courses (Valid NBA $\ge 50\%$)** | Chapter II §2.6(c) & Addendum §2.6(c)(1), Row 9 | `ROUTE_CH2_ROW9_INTAKE_NBA_FASTTRACK` | Intake &rarr; Scrutiny Only &rarr; Executive Committee &rarr; Decision &rarr; Compliance | Re-Scrutiny if cadre ratio deficit; EVC Waived under §2.6(c)(1) | Enhanced Intake EoA OR Rejection | **Yes** | **Diagram C** | `tests/policy/routing.test.ts` (APP-2026-COEP), `03_chapter_ii_scrutiny_and_evc_routes.md` |
+| **CAT-09B**| **Increase in Intake / Additional Courses (Non-NBA)** | Chapter II §2.6(c) & Row 9 | `ROUTE_CH2_ROW9_INTAKE_NON_NBA` | Intake &rarr; Scrutiny &rarr; Physical EVC &rarr; Executive Committee &rarr; Decision &rarr; Compliance | Re-Scrutiny if checklist deficient; SHC if cadre unfulfilled | Conditional Approval OR Rejection | **Yes** | **Diagram D** | `tests/policy/routing.test.ts` (APP-2026-GIITS), `03_chapter_ii_scrutiny_and_evc_routes.md` |
+| **CAT-10** | **Introduction of Integrated / Dual Degree Course** | Chapter II §2.11, Row 10 | `ROUTE_CH2_ROW10_INTEGRATED` | Intake &rarr; Scrutiny &rarr; Executive Committee &rarr; Decision &rarr; Compliance | SHC if university syllabus concurrence missing | Course Sanction Order OR Rejection | **Yes** | **Diagram C** | `tests/policy/routing.test.ts`, `04_chapter_ii_route_matrix.md` |
+| **CAT-11** | **Introduction/Continuation of Fellow Programme in Management (FPM)** | Chapter II §2.12, Row 11 | `ROUTE_CH2_ROW11_FPM` | Intake &rarr; Scrutiny &rarr; [Conditional EVC] &rarr; Executive Committee &rarr; Decision | EVC activated (`AA`) if research labs / guide cadres require visit | FPM Sanction Order OR Rejection | **Yes** | **Diagram C & D** | `tests/policy/routing.test.ts`, `04_chapter_ii_route_matrix.md` |
+| **CAT-12** | **Change in Course Name / Merger of Courses / Intake Reduction** | Chapter II §2.13, Row 12 | `ROUTE_CH2_ROW12_COURSE_RATIONALIZATION` | Intake &rarr; Scrutiny &rarr; Executive Committee &rarr; Decision Order | SHC if affiliating university resolution disputed | Rationalized Course Order OR Rejection | **Yes** | **Diagram C** | `tests/policy/routing.test.ts`, `04_chapter_ii_route_matrix.md` |
+| **CAT-13** | **Collaboration and Twinning Programme with Foreign University** | Chapter II §2.14, Row 13 | `ROUTE_CH2_ROW13_TWINNING` | Intake &rarr; Scrutiny &rarr; [Conditional EVC] &rarr; Executive Committee &rarr; Decision | EVC activated (`AA`) if campus infrastructure visit mandated | Collaboration Sanction OR Rejection | **Yes** | **Diagram C & D** | `tests/policy/routing.test.ts`, `04_chapter_ii_route_matrix.md` |
+| **CAT-14** | **Change of Site / Location** | Chapter II §2.15, Row 14 | `ROUTE_CH2_ROW14_SITE_SHIFTING` | Intake &rarr; Direct EVC (Scrutiny Bypassed) &rarr; Executive Committee &rarr; Decision | SHC if land title / building occupancy disputed | Site Shifting Sanction OR Rejection | **Yes** | **Diagram E** | `tests/policy/routing.test.ts` (APP-2026-BATU), `03_chapter_ii_scrutiny_and_evc_routes.md` |
+| **CAT-15** | **Closure of the Institution (Progressive or Complete)** | Chapter II §2.18, Row 15 | `ROUTE_CH2_ROW15_INSTITUTION_CLOSURE` | Intake &rarr; Scrutiny &rarr; Executive Committee &rarr; Decision Order | SHC if teach-out plan / student transfer disputed | Formal Closure Order Issued | **Yes** | **Diagram C** | `tests/policy/routing.test.ts`, `04_chapter_ii_route_matrix.md` |
+| **CAT-16** | **Conversion of Women's Institution to Co-ed (and vice-versa)** | Chapter II §2.19, Row 16 | `ROUTE_CH2_ROW16_WOMEN_COED` | Intake &rarr; Scrutiny &rarr; Executive Committee &rarr; Decision &rarr; Compliance | EVC activated (`AA`) if security/amenities require physical inspection | Co-ed Conversion Sanction OR Rejection | **Yes** | **Diagram C** | `tests/policy/routing.test.ts`, `04_chapter_ii_route_matrix.md` |
+| **CAT-17** | **Closure of Programme(s) / Course(s)** | Chapter II §2.20, Row 17 | `ROUTE_CH2_ROW17_PROGRAMME_CLOSURE` | Intake &rarr; Scrutiny &rarr; Executive Committee &rarr; Decision Order | SHC if staff redeployment or student transfer unverified | Course Closure Order Issued | **Yes** | **Diagram C** | `tests/policy/routing.test.ts`, `04_chapter_ii_route_matrix.md` |
+| **CAT-18** | **Change in Bank Details** | Chapter II §2.21, Row 18 | `ROUTE_CH2_ROW18_BANK_DETAILS` | Intake &rarr; Scrutiny &rarr; Executive Committee &rarr; Decision Order | SHC if bank authority / trust resolution contested | Bank Details Corrigendum Issued | **Yes** | **Diagram C** | `tests/policy/routing.test.ts`, `04_chapter_ii_route_matrix.md` |
+| **CAT-19** | **Change in Name of the Trust / Society / Company** | Chapter II §2.22, Row 19 | `ROUTE_CH2_ROW19_TRUST_NAME` | Intake &rarr; Scrutiny &rarr; Executive Committee &rarr; Decision Order | SHC if charity commissioner registration contested | Trust Corrigendum Issued | **Yes** | **Diagram C** | `tests/policy/routing.test.ts`, `04_chapter_ii_route_matrix.md` |
+| **CAT-20** | **Change in Institution Type (Deemed-to-be-University)** | Chapter II §2.23, Row 20 | `ROUTE_CH2_ROW20_DEEMED_UNIVERSITY` | Intake &rarr; Scrutiny &rarr; Executive Committee &rarr; Decision Order | SHC if Ministry of Education gazette notification disputed | Deemed Status Corrigendum Issued | **Yes** | **Diagram C** | `tests/policy/routing.test.ts`, `04_chapter_ii_route_matrix.md` |
+| **CAT-21** | **Online Learning (OL) / Distance Learning (ODL) Courses** | Chapter II §2.26, Row 21 | `ROUTE_CH2_ROW21_ODL_ONLINE` | Intake &rarr; Scrutiny &rarr; [Conditional EVC] &rarr; Executive Committee &rarr; Decision | EVC activated (`AA`) if recording studio / LMS platform requires visit | ODL/OL Sanction Order OR Rejection | **Yes** | **Diagram C & D** | `tests/policy/routing.test.ts`, `04_chapter_ii_route_matrix.md` |
+
+---
+
+## 3. Specialized Governance & Lifecycle Branches
+
+The following specialized branches operate conditionally across the application lifecycle:
+
+| Branch ID | Statutory Mechanism | Trigger Condition | Core Guardrail | Implemented & Tested? | Corresponding Diagram |
+|---|---|---|---|---|---|
+| **GOV-01** | **Deficiency & Differential Re-Scrutiny** | Scrutiny flags document or norm shortcomings ($D1, D2$) | **APH §1.8(g)**: Cleared items ($C3, C4$) locked read-only; HTTP 409 Conflict if modified | **Yes** | **Diagram F** |
+| **GOV-02** | **Standing Hearing Committee (SHC)** | Regional Office refers unresolved shortcomings under §2.23.3 | Quorum enforced: RO Chair + Senior Academician + Expert; min 5d notice | **Yes** | **Diagram G** |
+| **GOV-03** | **Standing Appellate Committee (SAC)** | Aggrieved institution appeals rejection under §1.11 / §2.24 | **Strict 7-day statute of limitations**; appeals after day 7 rejected as time-barred | **Yes** | **Diagram H** |
+| **GOV-04** | **Chapter VII Grievance Redressal** | Public / student / faculty grievance lodged | **APH §7.10(h)**: Anonymous complaints dismissed at intake without committee inquiry | **Yes** | **Diagram I** |
+| **GOV-05** | **Post-Approval 4-Clock Lifecycle** | Order issued with conditions (Joint FDR, Fire NOC, Lease, Faculty) | Materialized strictly from signed order; stale alerts suppressed upon verification | **Yes** | **Diagram J** |

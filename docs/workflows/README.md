@@ -17,6 +17,7 @@ The previous monolithic architecture combined unrelated application categories i
 ```
 docs/workflows/
 ├── README.md                              <- Architecture overview & navigation index (this file)
+├── ROUTE_TO_DIAGRAM_MATRIX.md             <- Exhaustive 22-category mapping to Diagrams A-J & test suites
 ├── 01_chapter_i_new_institution.md        <- Setting up New Technical Institution (Chapter I)
 ├── 02_chapter_ii_self_disclosure_eoa.md   <- Annual EoA on Self-Disclosure (Table 2.3 Row 1)
 ├── 03_chapter_ii_scrutiny_and_evc_routes.md <- Intake increase, NBA Fast-Track, site shifting

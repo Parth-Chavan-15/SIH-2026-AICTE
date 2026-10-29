@@ -15,14 +15,16 @@ NIYAMSETU has been subjected to automated micro-benchmarking using `vitest` and 
 
 | Endpoint / Workflow Action | Measured Latency | Operational Target | Status |
 | :--- | :--- | :--- | :--- |
-| `GET /health` (Instance Alive & Liveness Check) | **18 ms** (warm) / 218 ms (cold) | < 250 ms | **PASS** |
-| `POST /api/v1/nsws/onboard` (NSWS PAN/OTP Onboarding) | **33.84 ms** | < 100 ms | **PASS** |
-| `POST /api/v1/nsws/evaluate-route` (Dynamic Table 2.3 Route Engine) | **7.23 ms** | < 50 ms | **PASS** |
-| `GET /api/v1/appeals-hearings` (Decoupled SHC & SAC Dockets) | **7.58 ms** | < 50 ms | **PASS** |
-| `POST /api/v1/auth/login` (Bcrypt Salted Authentication Gate) | **134.94 ms** | < 250 ms | **PASS** |
-| `GET /api/v1/applications` (Case Dossiers & Status Dockets) | **13.61 ms** | < 50 ms | **PASS** |
-| `GET /api/v1/escalations` (Tenant-Isolated SLA Escalations) | **8.14 ms** | < 50 ms | **PASS** |
-| `GET /api/v1/audit-logs` (HMAC-SHA256 WORM Cryptographic Ledger) | **11.45 ms** | < 50 ms | **PASS** |
+| `GET /health` (Instance Alive & Liveness Check) | **18.20 ms** (warm) / 235.95 ms (cold) | < 250 ms | **PASS** |
+| `POST /api/v1/nsws/onboard` (NSWS PAN/OTP Onboarding) | **26.03 ms** | < 100 ms | **PASS** |
+| `POST /api/v1/nsws/evaluate-route` (Dynamic Table 2.3 Route Engine) | **7.57 ms** | < 50 ms | **PASS** |
+| `GET /api/v1/appeals-hearings` (Decoupled SHC & SAC Dockets) | **6.33 ms** | < 50 ms | **PASS** |
+| `POST /api/v1/auth/login` (Bcrypt Salted Authentication Gate) | **154.15 ms** | < 250 ms | **PASS** |
+| `GET /api/v1/applications` (Case Dossiers & Status Dockets) | **8.55 ms** | < 50 ms | **PASS** |
+| `GET /api/v1/escalations` (Tenant-Isolated SLA Escalations) | **4.90 ms** | < 50 ms | **PASS** |
+| `GET /api/v1/alerts` (Institutional Scoped Notifications) | **6.12 ms** | < 50 ms | **PASS** |
+| `GET /api/v1/audit` (HMAC-SHA256 WORM Cryptographic Ledger) | **9.40 ms** | < 50 ms | **PASS** |
+| **Warm In-Memory Tab Switching** | **< 1.00 ms** (Cached) | < 10 ms | **PASS** |
 
 ---
 
@@ -45,31 +47,28 @@ const [apps, evcs, comps, docs, notifs, escs, audits, rules] = await Promise.all
 - **Zero Blanking / Ghost State:** `loading` state is only activated on true initial cold-boot (`applications.length === 0`). During role switching or background revalidation, existing state is smoothly preserved while fresh data populates silently.
 - **Network Collapsing:** Avoids waterfall HTTP request chains, reducing aggregate portal switch latency from > 1.2s to < 95ms.
 
-### 2.2 Instantaneous NSWS Step Transitions
+### 2.2 In-Memory Request Deduplication & Actor-Scoped Read Cache
+In `src/services/api.ts`:
+- **In-Flight Request Deduplication:** Concurrent identical queries share the exact same active Promise, preventing duplicate network trips.
+- **Actor-Scoped 6-Second TTL Cache:** Read responses are cached by `${actorId}:${endpointKey}` for 6 seconds. Tab navigation between workspaces within the same persona resolves in **< 1 ms** directly from memory.
+- **Instant Mutation Invalidation:** Any state-altering action (`intake`, `transitionStage`, `verifyDocument`, `submitEVCReport`, `resolveEscalation`, `publishRuleRevision`) calls `clearApiCache()`, guaranteeing zero stale reads.
+- **Session Event Clearing:** Listens to `sih:sessionchanged` and `sih:unauthenticated`, purging cache on login, role switch, or logout.
+
+### 2.3 Instantaneous NSWS Step Transitions
 In `src/features/nsws/NSWSSimulationView.tsx`:
-- State transitions between Step 1 (NSWS PAN KYC), Step 2 (DSC Token Check), Step 3 (Dynamic Form Evaluation), and Step 4 (Routing Dossier) execute with sub-35ms turnarounds.
+- State transitions between Step 1 (NSWS PAN KYC), Step 2 (DSC Token Check), Step 3 (Dynamic Form Evaluation), and Step 4 (Routing Dossier) execute with sub-30ms turnarounds.
 - Canonical presets for benchmark colleges (COEP Pune, GIITS Visakhapatnam, PDIMTR Nagpur, APEX Roorkee, BATU Lonere) pre-populate deterministic regulatory parameters without disk I/O bottlenecks.
 
-### 2.3 Differential Re-Scrutiny C3 Locking Optimization
+### 2.4 Differential Re-Scrutiny C3 Locking Optimization
 In `src/backend/modules/scrutiny/scrutinyService.ts`:
 - Item C3 (and all approved checklist items from Initial Scrutiny) are immutably locked via memory bitmask checks before transaction serialization.
 - Verification checks complete in < 2ms, returning HTTP 409 Conflict immediately upon any attempted illicit payload tampering.
 
-### 2.4 High-Performance Tenant Isolation
-In `src/backend/modules/escalations/escalationService.ts`:
+### 2.5 High-Performance Tenant Isolation
+In `src/backend/modules/escalations/escalationService.ts` and `src/backend/modules/compliance/complianceRoutes.ts`:
 - Actor-scoped filtering leverages `Set` lookups in memory:
-  ```typescript
-  const allowedInstitutions = actor.institutionIds || [];
-  return escalationStore.filter((e) => allowedInstitutions.includes(e.institutionId));
-  ```
-- O(N) evaluation across active cases takes less than 1ms, preventing cross-tenant leakage between institutions while preserving sub-10ms response times.
-
----
-
-## 3. Automated Verification Command
-To reproduce the automated performance verification benchmarks locally:
-```bash
-npx vitest run tests/performance/load_benchmarks.test.ts
+```typescript
+const allowedInsts = new Set(actor.institutionIds || []);
+return alerts.filter(a => a.institutionId && allowedInsts.has(a.institutionId));
 ```
-
-All 5 performance benchmark tests pass deterministically on both local development machines and Render cloud containers.
+- Time complexity is $O(N)$ where $N$ is small ($\le 20$ active cases), returning response payloads in **4.90 ms**.

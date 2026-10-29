@@ -129,6 +129,9 @@ export function createCompanionApp(options?: {
       '/rules-registry'
     ];
     if (publicPrefixes.some(p => req.path.startsWith(p)) || req.path === '/adapter/status') {
+      if (req.headers.cookie || req.headers.authorization) {
+        return authMiddleware(req, res, () => next());
+      }
       return next();
     }
     return authMiddleware(req, res, next);

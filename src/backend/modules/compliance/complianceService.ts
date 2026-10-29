@@ -66,7 +66,18 @@ export const complianceDB = {
   obligations: new Map<string, Obligation>(),
   documents: new Map<string, StoredDocument>(),
   timers: new Map<string, ComplianceTimerTask>(),
-  deliveredAlerts: new Map<string, { id: string; dedupeKey: string; title: string; message: string; timestamp: string }>(),
+  deliveredAlerts: new Map<string, {
+    id: string;
+    dedupeKey: string;
+    title: string;
+    message: string;
+    timestamp: string;
+    applicationId?: string;
+    institutionId?: string;
+    category?: string;
+    severity?: 'critical' | 'warning' | 'info' | 'success';
+    isRead?: boolean;
+  }>(),
   simulatedClockTimestamp: Date.parse('2026-10-24T09:00:00.000Z'),
 };
 
@@ -454,40 +465,125 @@ export function seedComplianceDB(obligations?: Obligation[]): void {
   complianceDB.obligations.clear();
   complianceDB.documents.clear();
   complianceDB.timers.clear();
+  complianceDB.deliveredAlerts.clear();
+
+  // Institutional Alert Fixtures: Scoped to Canonical Applications
+  // 1. COEP Tech (APP-2026-COEP, INST-SOUTH) - 5 Coherent Workflow Events
+  complianceDB.deliveredAlerts.set('ALERT-COEP-01-INTAKE', {
+    id: 'ALT-COEP-01',
+    dedupeKey: 'ALERT-COEP-01-INTAKE',
+    title: 'NSWS Digital Intake Recorded',
+    message: 'Application APP-2026-COEP (B.Tech AI & Data Science Intake Expansion) successfully ingested from National Single Window System with Class-3 Digital Signature verification.',
+    timestamp: '2026-10-22T08:00:00.000Z',
+    applicationId: 'APP-2026-COEP',
+    institutionId: 'INST-SOUTH',
+    category: 'Workflow',
+    severity: 'info',
+    isRead: true
+  });
+  complianceDB.deliveredAlerts.set('ALERT-COEP-02-ROUTING', {
+    id: 'ALT-COEP-02',
+    dedupeKey: 'ALERT-COEP-02-ROUTING',
+    title: 'Route Evaluated: Route 1 (Scrutiny Only)',
+    message: 'Dynamic Route Engine evaluated statutory criteria under APH Table 2.3 Row 1. NBA accreditation score of 680 waives physical EVC inspection under AY 2026-27 Addendum §2.6(c)(1).',
+    timestamp: '2026-10-22T08:05:00.000Z',
+    applicationId: 'APP-2026-COEP',
+    institutionId: 'INST-SOUTH',
+    category: 'Workflow',
+    severity: 'info',
+    isRead: true
+  });
+  complianceDB.deliveredAlerts.set('ALERT-COEP-03-ALLOCATION', {
+    id: 'ALT-COEP-03',
+    dedupeKey: 'ALERT-COEP-03-ALLOCATION',
+    title: 'Desk Scrutiny Committee Group Assigned',
+    message: 'Western Regional Office (WRO) allocated case APP-2026-COEP to Standing Scrutiny Committee Group Alpha for 6-category statutory checklist examination.',
+    timestamp: '2026-10-23T09:30:00.000Z',
+    applicationId: 'APP-2026-COEP',
+    institutionId: 'INST-SOUTH',
+    category: 'Workflow',
+    severity: 'info',
+    isRead: false
+  });
+  complianceDB.deliveredAlerts.set('ALERT-COEP-04-SCRUTINY', {
+    id: 'ALT-COEP-04',
+    dedupeKey: 'ALERT-COEP-04-SCRUTINY',
+    title: 'Scrutiny Cleared under NBA Tier-1 Fast-Track',
+    message: 'COEP Pune application APP-2026-COEP cleared desk scrutiny with 100% verified compliance across all categories (C1–C6). Docket transmitted to Executive Committee for approval.',
+    timestamp: '2026-10-24T07:30:00.000Z',
+    applicationId: 'APP-2026-COEP',
+    institutionId: 'INST-SOUTH',
+    category: 'Workflow',
+    severity: 'success',
+    isRead: false
+  });
+  complianceDB.deliveredAlerts.set('ALERT-COEP-05-READINESS', {
+    id: 'ALT-COEP-05',
+    dedupeKey: 'ALERT-COEP-05-READINESS',
+    title: 'Pre-Approval Readiness: Joint FDR & Affidavit-3',
+    message: 'Statutory reminder: Upon formal grant of Approval Order, 15-day compliance clock commences under APH §2.25(f) for Joint FDR security deposit submission.',
+    timestamp: '2026-10-24T11:00:00.000Z',
+    applicationId: 'APP-2026-COEP',
+    institutionId: 'INST-SOUTH',
+    category: 'Compliance',
+    severity: 'warning',
+    isRead: false
+  });
+
+  // 2. PDIMTR (APP-2026-PDIMTR, INST-PDIMTR)
   complianceDB.deliveredAlerts.set('ALERT-PDIMTR-LEASE', {
     id: 'ALT-PDIMTR-01',
     dedupeKey: 'ALERT-PDIMTR-LEASE',
     title: '30-Year Registered Lease Deed Expiry Countdown',
     message: 'Prerna / Univ BDT College (PDIMTR) registered lease deed expires within 30 days. Form-6 renewal undertaking and valid lease deed registration required under APH Table 1.',
-    timestamp: '2026-10-24T08:00:00.000Z'
+    timestamp: '2026-10-24T08:00:00.000Z',
+    applicationId: 'APP-2026-PDIMTR',
+    institutionId: 'INST-PDIMTR',
+    category: 'Document Expiry',
+    severity: 'critical',
+    isRead: false
   });
+
+  // 3. GIITS (APP-2026-GIITS, INST-NORTH)
   complianceDB.deliveredAlerts.set('ALERT-GIITS-CADRE', {
     id: 'ALT-GIITS-02',
     dedupeKey: 'ALERT-GIITS-CADRE',
     title: 'Faculty Cadre Ratio Deficiency Flagged (§1.8)',
     message: 'GIITS Visakhapatnam deficiency turnaround open. Cadre ratio deficit (1:2.4 vs 1:2.0) requires additional Associate Professor appointment proof within 10-day operational SLA (Statutory 15-day window applies under §2.25(f) post-approval).',
-    timestamp: '2026-10-23T12:00:00.000Z'
+    timestamp: '2026-10-23T12:00:00.000Z',
+    applicationId: 'APP-2026-GIITS',
+    institutionId: 'INST-NORTH',
+    category: 'Workflow',
+    severity: 'warning',
+    isRead: false
   });
+
+  // 4. BATU Lonere (APP-2026-BATU, INST-BATU)
   complianceDB.deliveredAlerts.set('ALERT-BATU-EVC', {
     id: 'ALT-BATU-03',
     dedupeKey: 'ALERT-BATU-EVC',
     title: 'EVC Campus Physical Inspection Mandate Queued',
     message: 'BATU Lonere Restoration/Site Shifting application queued for 3-member Expert Visit Committee. Geo-tagged coordinates and 30-min walkthrough required.',
-    timestamp: '2026-10-24T09:00:00.000Z'
+    timestamp: '2026-10-24T09:00:00.000Z',
+    applicationId: 'APP-2026-BATU',
+    institutionId: 'INST-BATU',
+    category: 'EVC',
+    severity: 'warning',
+    isRead: false
   });
+
+  // 5. Apex Institute (APP-2026-APEX, INST-APEX)
   complianceDB.deliveredAlerts.set('ALERT-APEX-SAC', {
     id: 'ALT-APEX-04',
     dedupeKey: 'ALERT-APEX-SAC',
     title: 'Standing Appellate Committee (SAC) Hearing Listed',
     message: 'Apex Institute of Technology appeal listed before SAC for hearing under APH §1.11. Institution representative summoned with original land revenue records.',
-    timestamp: '2026-10-22T10:00:00.000Z'
-  });
-  complianceDB.deliveredAlerts.set('ALERT-COEP-SCRUTINY', {
-    id: 'ALT-COEP-05',
-    dedupeKey: 'ALERT-COEP-SCRUTINY',
-    title: 'Scrutiny Cleared under NBA Tier-1 Fast-Track',
-    message: 'COEP Pune application APP-2026-COEP cleared desk scrutiny with 100% verified compliance. EVC waived under APH 2026-27 Errata p. 42; ready for Council approval.',
-    timestamp: '2026-10-24T07:30:00.000Z'
+    timestamp: '2026-10-22T10:00:00.000Z',
+    applicationId: 'APP-2026-APEX',
+    institutionId: 'INST-APEX',
+    category: 'Escalation',
+    severity: 'info',
+    isRead: false
   });
   complianceDB.simulatedClockTimestamp = Date.parse('2026-10-24T00:00:00.000Z');
 
