@@ -10,11 +10,11 @@ Smart India Hackathon 2026 · AICTE Problem Statement **26262** · Team **DEFENS
 [![Requirements](https://img.shields.io/badge/Requirements-36_Tracked-0B2F54?style=for-the-badge)](./docs/PS_COMPLIANCE_MATRIX.md)
 [![Tests](https://img.shields.io/badge/Tests-388_Reported_Passing-16834B?style=for-the-badge)](./tests/)
 
-**[🌐 Try NiyamSetu](https://niyamsetu-aicte.onrender.com) · [🎥 Watch the demo](https://youtu.be/1bEq9VuFqNo) · [📖 User walkthrough](https://drive.google.com/file/d/1DhHsp4X29YwySjYHP3_wgb6FaZRK0XGC/view?usp=sharing)**
+**[🌐 Live demo](https://niyamsetu-aicte.onrender.com) · [🎥 Demo video](https://youtu.be/1bEq9VuFqNo) · [💻 Source code](https://github.com/Parth-Chavan-15/SIH-2026-AICTE) · [📖 User guide](https://drive.google.com/file/d/1DhHsp4X29YwySjYHP3_wgb6FaZRK0XGC/view?usp=sharing)**
 
-<img src="docs/assets/niyamsetu-main-ui.png" width="870" alt="NiyamSetu application dashboard" />
+<a href="./docs/assets/niyamsetu-main-ui.png"><img src="./docs/assets/niyamsetu-main-ui.png" width="870" alt="NiyamSetu demonstration dashboard showing the institution application workspace" /></a>
 
-**22 application categories · 6 role-based workspaces · 11 workflow diagrams**
+**22 application categories · 6 role-based workspaces · 11 expandable workflow diagrams**
 
 </div>
 
@@ -48,17 +48,24 @@ Technical institutions need AICTE approval for new colleges, annual extensions, 
 
 ## 🖼️ Visual overview — approval to compliance
 
-This infographic summarizes the path from institution intake and rule-based review to **human authorization**, post-approval monitoring and audit history. The grey branch represents alternative outcomes, such as hearings or appeals, **only when applicable**.
+Follow the journey from application intake through review, **human authorization**, post-approval compliance and audit history. The grey panel shows alternative outcomes that apply only when required.
 
 <p align="center">
-  <img src="docs/assets/niyamsetu-approval-to-compliance.png" width="580" alt="NiyamSetu approval-to-compliance infographic showing institution intake, government-system adapters, human decision gate, approved outcome, compliance and audit" />
+  <a href="./docs/assets/niyamsetu-approval-to-compliance.png" title="Click to open the full-size workflow infographic">
+    <img src="./docs/assets/niyamsetu-approval-to-compliance.png" width="650" alt="NiyamSetu approval-to-compliance infographic with institution intake, government system adapters, the human decision gate, green approved outcome, grey alternative outcomes, post-approval compliance and audit trail" />
+  </a>
 </p>
+
+<p align="center"><sub>🔎 <strong>Click the infographic to view it at full size.</strong></sub></p>
 
 ## 🔄 Complete workflow architecture
 
 **Application intake → rule-based routing → relevant scrutiny or inspection → authorized decision → applicable obligations → audit trail.** Corrections, hearings, appeals and grievances follow separate, conditional routes.
 
-The diagram below retains the complete technical flow, including exceptions, regulatory references and decisions. Its light colors are intended to be legible on GitHub.
+Open the interactive diagram below for the complete decision flow, including exceptions and regulatory references. Its light colors are intended to be legible on GitHub.
+
+<details>
+<summary><strong>▶ Click here to view the complete workflow architecture (interactive diagram)</strong></summary>
 
 ```mermaid
 flowchart TD
@@ -120,14 +127,16 @@ flowchart TD
     N -.->|When Imposed| N4["Clock 4: Faculty Appointment Undertaking (6 Months)"]:::auditNode
 ```
 
+</details>
+
 ## 🧭 Detailed regulatory routes
 
-**10 focused diagrams (A–J)** cover the major application routes, appeals, grievances, re-scrutiny and post-approval obligations. Expand any route below to see its complete decision flow.
+**10 focused diagrams (A–J)** cover the major application routes, appeals, grievances, re-scrutiny and post-approval obligations. ▶ **Click a diagram title below to expand its flowchart.** Click it again to collapse.
 
 For the full regulatory mapping, refer to the [route-to-diagram matrix](./docs/workflows/ROUTE_TO_DIAGRAM_MATRIX.md).
 
 <details>
-<summary><strong>🏛️ Diagram A · New technical institution (Chapter I)</strong></summary>
+<summary><strong>▶ Click here to view Diagram A · New technical institution (Chapter I)</strong></summary>
 
 APH Chapter I §§1.8–1.10: document scrutiny, physical EVC, Executive Committee consideration, and Council ratification.
 
@@ -155,7 +164,7 @@ flowchart TD
 </details>
 
 <details>
-<summary><strong>🔁 Diagram B · Self-disclosure EoA</strong></summary>
+<summary><strong>▶ Click here to view Diagram B · Self-disclosure EoA</strong></summary>
 
 APH §2.4, Chapter II Table 2.3 Row 1: an eligible existing institution can follow the streamlined route.
 
@@ -175,7 +184,7 @@ flowchart LR
 </details>
 
 <details>
-<summary><strong>📋 Diagram C · Scrutiny-only routes</strong></summary>
+<summary><strong>▶ Click here to view Diagram C · Scrutiny-only routes</strong></summary>
 
 Table 2.3 Rows 2, 4, 8, 9-NBA, 10, 12, 15–20: scrutiny without an EVC when applicable.
 
@@ -199,7 +208,7 @@ flowchart TD
 </details>
 
 <details>
-<summary><strong>🔎 Diagram D · Scrutiny followed by EVC</strong></summary>
+<summary><strong>▶ Click here to view Diagram D · Scrutiny followed by EVC</strong></summary>
 
 Rows 3, 5, 9-Non-NBA, 6, 11, 13, 21: document scrutiny and then a required inspection.
 
@@ -224,7 +233,7 @@ flowchart TD
 </details>
 
 <details>
-<summary><strong>📍 Diagram E · Direct or category-specific EVC</strong></summary>
+<summary><strong>▶ Click here to view Diagram E · Direct or category-specific EVC</strong></summary>
 
 Site shifting (Row 14) or restoration of intake (Row 7): a visit is central to evaluation.
 
@@ -248,7 +257,7 @@ flowchart TD
 </details>
 
 <details>
-<summary><strong>🔒 Diagram F · Deficiency and differential re-scrutiny</strong></summary>
+<summary><strong>▶ Click here to view Diagram F · Deficiency and differential re-scrutiny</strong></summary>
 
 APH §1.8(g): cleared items are locked; only deficiencies are re-examined.
 
@@ -277,7 +286,7 @@ flowchart TD
 </details>
 
 <details>
-<summary><strong>👥 Diagram G · Standing Hearing Committee (SHC)</strong></summary>
+<summary><strong>▶ Click here to view Diagram G · Standing Hearing Committee (SHC)</strong></summary>
 
 APH §2.23.3: opportunity to address unresolved shortcomings before a decision.
 
@@ -300,7 +309,7 @@ flowchart TD
 </details>
 
 <details>
-<summary><strong>⚖️ Diagram H · Standing Appellate Committee (SAC)</strong></summary>
+<summary><strong>▶ Click here to view Diagram H · Standing Appellate Committee (SAC)</strong></summary>
 
 APH §§1.11 and 2.24: appeal handling with a seven-day filing window.
 
@@ -324,7 +333,7 @@ flowchart TD
 </details>
 
 <details>
-<summary><strong>✉️ Diagram I · Complaints and grievances</strong></summary>
+<summary><strong>▶ Click here to view Diagram I · Complaints and grievances</strong></summary>
 
 APH Chapter VII §7.10: identity screening, fact finding, and any applicable Council action.
 
@@ -348,7 +357,7 @@ flowchart TD
 </details>
 
 <details>
-<summary><strong>📅 Diagram J · Post-approval compliance</strong></summary>
+<summary><strong>▶ Click here to view Diagram J · Post-approval compliance</strong></summary>
 
 Order-linked obligations: Joint FDR, Fire NOC, land-lease validity, and faculty undertakings.
 
@@ -431,7 +440,7 @@ These are sample accounts for exploring the prototype, not official government a
 **Requirements:** Node.js 20 or 22 LTS and npm 9+. The source README describes a built-in memory mode for local demonstration.
 
 ```bash
-git clone https://github.com/Mayuresh-1306/SIH-2026-AICTE.git SIH-26-AICTE
+git clone https://github.com/Parth-Chavan-15/SIH-2026-AICTE.git SIH-26-AICTE
 cd SIH-26-AICTE
 npm install
 npx tsc --noEmit
