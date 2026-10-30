@@ -16,6 +16,7 @@
 
 <div align="center">
 
+
 **Clearer routes. Controlled reviews. Accountable decisions.**
 
 *Smart India Hackathon 2026 · AICTE Problem Statement 26262 · Team DEFENSOR*
@@ -24,9 +25,10 @@
 [![Watch Demo](https://img.shields.io/badge/WATCH_DEMO-YOUTUBE-C99716?style=for-the-badge)](https://youtu.be/NsloajwX8gU?si=_Frrt_TT22yQCJ8x)
 [![PS Coverage](https://img.shields.io/badge/REQUIREMENTS-36_TRACKED-0B2F54?style=for-the-badge)](./docs/PS_COMPLIANCE_MATRIX.md)
 
-**[🌐 Launch prototype](https://niyamsetu-aicte.onrender.com) · [▶ Watch demonstration](https://youtu.be/NsloajwX8gU?si=_Frrt_TT22yQCJ8x) · [📖 Explore user guide](https://drive.google.com/file/d/1DhHsp4X29YwySjYHP3_wgb6FaZRK0XGC/view?usp=sharing)**
+**[🌐 Launch prototype](https://niyamsetu-aicte.onrender.com) · [▶ Watch demonstration](https://youtu.be/NsloajwX8gU?si=_Frrt_TT22yQCJ8x) · [📖 Explore user guide](https://drive.google.com/file/d/1EYKGkXoUPD9FOBFJl66p46_111cJDODY/view?usp=sharing)**
 
 `22 application categories` · `6 role-based workspaces` · `11 expandable Mermaid diagrams`
+
 
 </div>
 
