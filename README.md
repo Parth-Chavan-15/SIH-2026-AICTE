@@ -37,31 +37,32 @@ Technical institutions need AICTE approval for new colleges, annual extensions, 
 
 **NiyamSetu connects these activities in one traceable workflow.** It selects the applicable route using the AICTE Approval Process Handbook (APH) 2024–27 and the 2026–27 Addendum Errata G02, explains each step, and tracks follow-up obligations. **Final approval remains with authorized officials.**
 
+
 ## ✨ Innovation & Uniqueness
 
 | Innovation | How it works and why it matters |
 |:--|:--|
-| 📋 **Version-Pinned Rule Registry** | Each application keeps a record of the AICTE rule version used to determine its route. Later rule updates do not silently change an ongoing case, and reviewers can see the relevant rule references. |
-| 🛡️ **Scope-Locked Scrutiny Snapshots** | When deficiencies are corrected, previously cleared checklist items remain protected and read-only. Reviewers examine only the items identified for re-scrutiny, reducing repeated checks and protecting earlier findings. |
-| 🏅 **Conditional NBA Fast-Track (Eligible Only)** | NBA accreditation can support a simpler route only when the applicable rules and eligibility conditions allow it. The system checks the case-specific conditions instead of automatically waiving scrutiny or inspection. |
-| 📄 **Five-State Document Verification** | Documents progress through **Submitted, Observed, Independently Verified, Rejected,** or **Superseded** states. Earlier versions remain recorded so reviewers can trace what was submitted, checked and replaced. |
-| 📅 **Four-Category Deadline Engine** | Tracks academic cutoffs, event-based deadlines, document validity and internal officer targets. Relevant reminders help institutions and officials act on upcoming obligations and overdue work. |
-| 🔄 **Optimistic Concurrency Protection** | The system checks whether a case changed after a user opened it. An outdated or conflicting update is rejected rather than silently overwriting another officer's work. |
-| 🔗 **SHA-256 Tamper-Evident Audit Chain** | Cryptographic hashes link recorded actions and evidence to help reveal unexpected changes in the case history. This supports integrity checks and accountability without claiming that tampering is impossible. |
-| ✉️ **Outbox Notifications & Dispatch Tracking** | Case events create traceable notification records that can be followed through dispatch. Institutions and officers can review the communication history alongside the actions that prompted each notice. |
+| 📋 **Version-Pinned Rule Registry** | Preserves each case's applicable AICTE rule version, preventing later updates from changing ongoing reviews. |
+| 🛡️ **Scope-Locked Scrutiny Snapshots** | Protects cleared items and restricts re-scrutiny to identified deficiencies. |
+| 🏅 **Conditional NBA Fast-Track (Eligible Only)** | Enables simplified routing only when NBA accreditation and applicable rules permit it. |
+| 📄 **Five-State Document Verification** | Tracks Submitted, Observed, Independently Verified, Rejected and Superseded states while retaining document history. |
+| 📅 **Four-Category Deadline Engine** | Tracks academic cutoffs, event deadlines, document validity and officer targets with reminders. |
+| 🔄 **Optimistic Concurrency Protection** | Rejects outdated updates to prevent conflicting changes from overwriting case records. |
+| 🔗 **SHA-256 Tamper-Evident Audit Chain** | Uses cryptographic hashes to help detect changes in recorded actions and evidence. |
+| ✉️ **Outbox Notifications & Dispatch Tracking** | Records case-triggered notices, dispatch progress and communication history. |
 
 ### ⚙️ Core Capabilities
 
 | Capability | What users can do |
 |:--|:--|
-| 🧭 **Explainable Case Routing** | Identify the applicable approval route and view the reason behind it, including the relevant rule reference. This makes the next steps clearer to institutions and reviewers. |
-| 🔒 **Protected Deficiency Re-Scrutiny** | Submit and review corrections only for recorded deficiencies. Previously cleared evidence stays protected, so the full application need not be checked again unnecessarily. |
-| 📍 **Conditional Expert Visits & Reports** | When the rules require a visit, EVC members record inspection observations, supporting evidence and findings. Applications that do not require an inspection follow their applicable route. |
-| 🗂️ **Role-Based Dashboards** | Six workspaces show the cases, responsibilities and actions relevant to each user. Role and institution permissions limit access to authorized information and operations. |
-| ⚖️ **Authorized Human Decisions** | Competent authorities review the case dossier, committee recommendations and required checks before recording a decision. Software supports the review but does not approve applications independently. |
-| 📑 **Approval Compliance & Renewals** | Connect approved cases to applicable conditions, renewal requirements and supporting documents. Institutions and officers can follow obligations after the approval order. |
-| 🔔 **Deadline Alerts, Escalation & Reporting** | Monitor upcoming due dates, overdue activities and pending work. Reminders, escalation records and reports help users identify actions that need attention. |
-| 🕘 **Traceable Case History** | Follow the history of applications, scrutiny, decisions, document changes, notices and compliance actions in one case record. This supports clear handoffs and later review. |
+| 🧭 **Explainable Case Routing** | Identify applicable routes with clear reasons and rule references. |
+| 🔒 **Protected Deficiency Re-Scrutiny** | Correct flagged deficiencies without reopening cleared items. |
+| 📍 **Conditional Expert Visits & Reports** | Record inspections, evidence and findings when visits are required. |
+| 🗂️ **Role-Based Dashboards** | Access authorized cases and tasks through six dedicated workspaces. |
+| ⚖️ **Authorized Human Decisions** | Review case evidence and recommendations before officials record decisions. |
+| 📑 **Approval Compliance & Renewals** | Track approval conditions, renewals and supporting documents. |
+| 🔔 **Deadline Alerts, Escalation & Reporting** | Monitor deadlines, pending tasks, reminders and escalations. |
+| 🕘 **Traceable Case History** | View applications, reviews, decisions, notices and compliance actions together. |
 
 ## 🖼️ Visual overview — approval to compliance
 
@@ -449,14 +450,16 @@ npm run dev
 
 Open **http://localhost:3000** or visit the **[live prototype](https://niyamsetu-aicte.onrender.com)**.
 
+
 ## 🎬 Five-minute guided demo
 
-1. **🏫 Institution / Applicant — `APP-2026-COEP`:** Open the institution workspace to check application status, notices, pending actions and the explanation for its inspection waiver. See how applicants understand their route and respond to permitted deficiencies.
-2. **🔍 Desk Scrutiny — `APP-2026-GIITS`:** Open the scrutiny checklist to examine recorded deficiencies and previously cleared items. See how reviewers check only the permitted corrections while earlier clearances remain read-only.
-3. **📍 Expert Visit Committee — GIITS inspection:** Explore the visit checklist, sample location information, video evidence and committee findings. See how inspection evidence is recorded when the selected regulatory route requires an EVC visit.
-4. **🗂️ Regional Office — case coordination:** Explore the Regional Office workspace to inspect assigned cases, pending reviews and committee handoffs where available. See how officers coordinate progress and follow up on cases awaiting action.
-5. **⚖️ Approval Bureau / Competent Authority — `APP-2026-PDIMTR`:** Review the case dossier and committee recommendations, then inspect the authorized decision flow and watermarked demonstration EoA. See how approval conditions become follow-up obligations without automatic approval.
-6. **⚙️ Policy Administration — rule oversight:** Explore the rule registry, version history, statistics and conflict checks. See how authorized administrators inspect rule references and maintain a traceable policy history.
+1. **🏫 Institution — `APP-2026-COEP`:** Explore your application dashboard, check its status, view notices and understand why an inspection is waived.
+2. **🔍 Desk Scrutiny — `APP-2026-GIITS`:** Explore the scrutiny checklist, identify deficiencies and see how already-approved items stay locked.
+3. **📍 Expert Visit Committee — GIITS:** Explore the inspection checklist, check location and video evidence, and view the committee's findings.
+4. **🗂️ Regional Office:** Explore assigned cases, track pending reviews and see how officers coordinate committees and case progress.
+5. **⚖️ Approval Bureau — `APP-2026-PDIMTR`:** Explore the complete case file, review recommendations and see how an authorized decision creates an EoA with follow-up obligations.
+6. **⚙️ Policy Administration:** Explore the rule registry, review rule versions, check statistics and see how policy changes are tracked.
+
 
 ## 🧱 Technology stack
 
