@@ -32,15 +32,24 @@ Smart India Hackathon 2026 · AICTE Problem Statement **26262** · Team **DEFENS
 
 ---
 
+
+---
+
 ## 🏛️ What is NiyamSetu?
 
 Technical institutions need AICTE approval for new colleges, annual extensions, intake changes and other activities. Applications can involve separate portals, document reviews, campus visits, decisions and later compliance checks.
 
 **NiyamSetu connects these activities in one traceable workflow.** It selects the applicable route using the AICTE Approval Process Handbook (APH) 2024–27 and the 2026–27 Addendum Errata G02, explains each step, and tracks follow-up obligations. **Final approval remains with authorized officials.**
 
+<details>
+<summary><strong>▶ Click here to view the NiyamSetu approval-to-compliance workflow animation</strong></summary>
+
 <p align="center">
   <img src="./docs/assets/niyamsetu-workflow.gif" width="750" alt="NiyamSetu approval-to-compliance workflow animation" />
 </p>
+
+</details>
+
 
 
 ## ✨ Innovation & Uniqueness
