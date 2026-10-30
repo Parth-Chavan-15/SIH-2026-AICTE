@@ -494,18 +494,34 @@ Evidence and supporting detail: [test directory](./tests/) · [performance verif
 
 ---
 
-## 📚 Essential resources
 
-**[🌐 Live prototype](https://niyamsetu-aicte.onrender.com)** · **[▶ Demonstration video](https://youtu.be/NsloajwX8gU?si=_Frrt_TT22yQCJ8x)** · **[📖 Complete user walkthrough](https://drive.google.com/file/d/1DhHsp4X29YwySjYHP3_wgb6FaZRK0XGC/view?usp=sharing)**
+## 📚 Essential Resources
 
-**Technical evidence:** [AICTE requirement matrix](./docs/PS_COMPLIANCE_MATRIX.md) · [Regulatory route matrix](./docs/workflows/ROUTE_TO_DIAGRAM_MATRIX.md) · [Source register](./docs/regulatory/SOURCE_REGISTER.md)
+### 🌐 Explore NiyamSetu
+
+| Resource | Access |
+|:--|:--|
+| 🌐 **Live Prototype** | [Launch NiyamSetu](https://niyamsetu-aicte.onrender.com) |
+| 🎬 **Prototype Demonstration** | [Watch on YouTube](https://youtu.be/NsloajwX8gU?si=_Frrt_TT22yQCJ8x) |
+| 📖 **Complete User Walkthrough** | [Explore User Guide](https://drive.google.com/file/d/1EYKGkXoUPD9FOBFJl66p46_111cJDODY/view?usp=sharing) |
+
+### 📑 Technical Documentation & Evidence
+
+| Document | Access |
+|:--|:--|
+| 🛡️ **AICTE Requirement Matrix** | [View Coverage](./docs/PS_COMPLIANCE_MATRIX.md) |
+| 🧭 **Regulatory Route Matrix** | [Explore Workflows](./docs/workflows/ROUTE_TO_DIAGRAM_MATRIX.md) |
+| 📚 **Regulatory Source Register** | [View References](./docs/regulatory/SOURCE_REGISTER.md) |
 
 ---
 
 <div align="center">
 
-**Built by Team DEFENSOR** · Smart India Hackathon 2026 · AICTE PS 26262
+### 🏛️ Built by Team DEFENSOR
+
+**Smart India Hackathon 2026** · **AICTE Problem Statement 26262**
 
 *NIYAMSETU — Connecting regulatory decisions, institutional obligations, and accountable governance.*
 
 </div>
+
