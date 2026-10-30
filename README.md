@@ -453,12 +453,12 @@ Open **http://localhost:3000** or visit the **[live prototype](https://niyamsetu
 
 ## 🎬 Five-minute guided demo
 
-1. **🏫 Institution — `APP-2026-COEP`:** Explore your application dashboard, check its status, view notices and understand why an inspection is waived.
-2. **🔍 Desk Scrutiny — `APP-2026-GIITS`:** Explore the scrutiny checklist, identify deficiencies and see how already-approved items stay locked.
-3. **📍 Expert Visit Committee — GIITS:** Explore the inspection checklist, check location and video evidence, and view the committee's findings.
-4. **🗂️ Regional Office:** Explore assigned cases, track pending reviews and see how officers coordinate committees and case progress.
-5. **⚖️ Approval Bureau — `APP-2026-PDIMTR`:** Explore the complete case file, review recommendations and see how an authorized decision creates an EoA with follow-up obligations.
-6. **⚙️ Policy Administration:** Explore the rule registry, review rule versions, check statistics and see how policy changes are tracked.
+1. **🏫 Institution — `APP-2026-COEP`:** Check your application status, notices, pending tasks and why an inspection is not required.
+2. **🔍 Desk Scrutiny — `APP-2026-GIITS`:** Review documents, find deficiencies and see how previously cleared items stay protected.
+3. **📍 Expert Visit Committee — GIITS:** Go through the inspection checklist, location details, video evidence and visit findings.
+4. **🗂️ Regional Office:** View assigned applications, track pending cases and understand how committees and reviews are coordinated.
+5. **⚖️ Approval Bureau — `APP-2026-PDIMTR`:** Check case reports, review decisions and view a sample approval letter with compliance conditions.
+6. **⚙️ Policy Administration:** Discover how AICTE rules are managed, updated and tracked through version history and statistics.
 
 
 ## 🧱 Technology stack
