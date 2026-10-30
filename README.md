@@ -1,34 +1,31 @@
 <table align="center">
   <tr>
-    <td align="center" width="30%">
-      <img src="./docs/assets/defensor-logo.jpg" width="220" alt="Official Team DEFENSOR logo" />
+    <td align="left" width="65%">
+      <img src="./docs/assets/defensor-logo.jpg" width="235" alt="Team DEFENSOR official logo" />
     </td>
-    <td align="center" width="48%">
-      <h1>NIYAMSETU</h1>
-      <strong>नियमसेतु</strong><br />
-      <sub>AICTE Approval &amp; Compliance Platform</sub>
-    </td>
-    <td align="center" width="22%">
-      <img src="./docs/assets/sih-2026-logo.png" width="75" alt="Official Smart India Hackathon 2026 logo" />
+    <td align="right" width="35%">
+      <img src="./docs/assets/sih-2026-logo.png" width="90" alt="Smart India Hackathon 2026 official logo" />
     </td>
   </tr>
 </table>
 
 <div align="center">
 
+# NIYAMSETU (नियमसेतु)
 
-**Clearer routes. Controlled reviews. Accountable decisions.**
+**A clearer way to manage AICTE approvals and post-approval compliance.**
 
-*Smart India Hackathon 2026 · AICTE Problem Statement 26262 · Team DEFENSOR*
+Smart India Hackathon 2026 · AICTE Problem Statement **26262** · Team **DEFENSOR**
 
-[![Live Prototype](https://img.shields.io/badge/LIVE_PROTOTYPE-EXPLORE-008C8C?style=for-the-badge)](https://niyamsetu-aicte.onrender.com)
-[![Watch Demo](https://img.shields.io/badge/WATCH_DEMO-YOUTUBE-C99716?style=for-the-badge)](https://youtu.be/NsloajwX8gU?si=_Frrt_TT22yQCJ8x)
-[![PS Coverage](https://img.shields.io/badge/REQUIREMENTS-36_TRACKED-0B2F54?style=for-the-badge)](./docs/PS_COMPLIANCE_MATRIX.md)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Explore_NiyamSetu-008C8C?style=for-the-badge)](https://niyamsetu-aicte.onrender.com)
+[![Requirements](https://img.shields.io/badge/Requirements-36_Tracked-0B2F54?style=for-the-badge)](./docs/PS_COMPLIANCE_MATRIX.md)
+[![Tests](https://img.shields.io/badge/Tests-388_Reported_Passing-16834B?style=for-the-badge)](./tests/)
 
-**[🌐 Launch prototype](https://niyamsetu-aicte.onrender.com) · [▶ Watch demonstration](https://youtu.be/NsloajwX8gU?si=_Frrt_TT22yQCJ8x) · [📖 Explore user guide](https://drive.google.com/file/d/1EYKGkXoUPD9FOBFJl66p46_111cJDODY/view?usp=sharing)**
+**[🌐 Live demo](https://niyamsetu-aicte.onrender.com) · [🎥 Demo video](https://youtu.be/NsloajwX8gU?si=_Frrt_TT22yQCJ8x) · [💻 Source code](https://github.com/Parth-Chavan-15/SIH-2026-AICTE) · [📖 User guide](https://drive.google.com/file/d/1EYKGkXoUPD9FOBFJl66p46_111cJDODY/view?usp=sharing)**
 
-`22 application categories` · `6 role-based workspaces` · `11 expandable Mermaid diagrams`
+<a href="./docs/assets/niyamsetu-main-ui.png"><img src="./docs/assets/niyamsetu-main-ui.png" width="870" alt="NiyamSetu demonstration dashboard showing the institution application workspace" /></a>
 
+**22 application categories · 6 role-based workspaces · 11 expandable workflow diagrams**
 
 </div>
 
@@ -36,62 +33,47 @@
 
 ## 🏛️ What is NiyamSetu?
 
-Technical institutions need AICTE approval for new colleges, annual extensions, intake changes and other activities. Applications can require different reviews, inspections, documents, decisions and later compliance checks.
+Technical institutions need AICTE approval for new colleges, annual extensions, intake changes and other activities. Applications can involve separate portals, document reviews, campus visits, decisions and later compliance checks.
 
-**NiyamSetu brings the approval-to-compliance journey into one traceable workflow.** Version-aware rules propose an applicable processing route with a **“Why this route?”** explanation. Role-specific workspaces organize evidence, permitted corrections, official decisions and follow-up obligations. **Authorized officials—not software—make the final regulatory decisions.**
+**NiyamSetu connects these activities in one traceable workflow.** It selects the applicable route using the AICTE Approval Process Handbook (APH) 2024–27 and the 2026–27 Addendum Errata G02, explains each step, and tracks follow-up obligations. **Final approval remains with authorized officials.**
 
-## ✨ Four ideas at the heart of NiyamSetu
+## ✨ What makes it different?
 
-| Innovation | What it means for users |
+| Capability | Value |
 |:--|:--|
-| 🧭 **Explainable routing** | Uses versioned rules to identify a route and explain why it applies. Unclear policies can pause for human review. |
-| 🔒 **Protected re-scrutiny** | Limits rechecks to flagged deficiencies while keeping previously cleared items read-only. |
-| ⚖️ **Human decision gate** | Supports competent authorities with a consolidated case record while preserving their decision-making responsibility. |
-| 📅 **Continuous compliance** | Connects approval conditions with renewals, documents, deadline reminders and case history. |
+| 🧭 **Explainable routing** | Determines the applicable route from versioned rules and shows **“Why this route?”** Unclear policies pause for human review. |
+| 🔒 **Protected re-scrutiny** | Rechecks only flagged deficiencies; previously cleared items stay locked. |
+| ⚖️ **Human decision gate** | Authorized officers issue decisions; the software never approves an application on its own. |
+| 📅 **Continuous compliance** | Links approval conditions with renewals, supporting documents, deadlines and case history. |
 
-**Supporting capabilities:** 22-category routing · simulated NSWS/DSC intake · evidence integrity checks · conditional EVC visits · permission-controlled corrections · appeals and alerts · four categories of post-approval obligations · guided demonstration cases.
+**Additional capabilities:**
 
-## 🖥️ Inside the prototype
+- **22-category routing** — Chapter I new institutions and 21 Chapter II categories, with visits or hearings only when applicable.
+- **Guided intake** — simulated NSWS data and Class-3 DSC checks for demonstration.
+- **Protected evidence** — separate institution records, reviewer notes and decision drafts, with SHA-256 integrity checks.
+- **EVC visits** — simulated 500 m geofence, inspection checklist and timestamped video evidence.
+- **Scope-controlled corrections** — only identified deficiencies can be revised during re-scrutiny.
+- **Alerts and appeals** — deadline notifications and the documented seven-day SAC appeal workflow.
+- **Four-clock monitoring** — order-linked obligations for FDR, Fire NOC, leases and faculty undertakings, where applicable.
+- **Guided demo scenarios** — preloaded cases to explore the complete journey across six workspaces.
 
-A view of the NiyamSetu applicant workspace, including case status, route, responsibility and pending actions.
+## 🖼️ Visual overview — approval to compliance
 
-<p align="center">
-  <a href="./docs/assets/niyamsetu-main-ui.png" title="Click for full-size NiyamSetu interface screenshot">
-    <img src="./docs/assets/niyamsetu-main-ui.png" width="900" alt="NiyamSetu applicant application-management dashboard, showing a case, route, stage and SLA status" />
-  </a>
-</p>
-<p align="center"><sub>🔎 Click the screenshot to inspect the full-size application interface.</sub></p>
-
-## 🎬 Watch NiyamSetu in action
-
-Explore the prototype walkthrough, then try the live application using the guided scenario below.
+Follow the journey from application intake through review, **human authorization**, post-approval compliance and audit history. The grey panel shows alternative outcomes that apply only when required.
 
 <p align="center">
-  <a href="https://youtu.be/NsloajwX8gU?si=_Frrt_TT22yQCJ8x" title="Watch NiyamSetu prototype demonstration on YouTube">
-    <img src="https://img.youtube.com/vi/NsloajwX8gU/hqdefault.jpg" width="510" alt="Click to watch the NiyamSetu prototype demonstration video" />
+  <a href="./docs/assets/niyamsetu-approval-to-compliance.png" title="Click to open the full-size workflow infographic">
+    <img src="./docs/assets/niyamsetu-approval-to-compliance.png" width="650" alt="NiyamSetu approval-to-compliance infographic with institution intake, government system adapters, the human decision gate, green approved outcome, grey alternative outcomes, post-approval compliance and audit trail" />
   </a>
 </p>
 
-<p align="center"><strong><a href="https://youtu.be/NsloajwX8gU?si=_Frrt_TT22yQCJ8x">▶ Click here to watch the complete prototype demonstration</a></strong></p>
-
-## 🖼️ From approval to compliance
-
-See how application intake, rule-based review, authorized decisions, post-approval obligations and audit records fit together. Corrections, hearings and appeals appear only when applicable.
-
-<p align="center">
-  <a href="./docs/assets/niyamsetu-approval-to-compliance.png" title="Click to open the full-size approval-to-compliance infographic">
-    <img src="./docs/assets/niyamsetu-approval-to-compliance.png" width="540" alt="NiyamSetu infographic showing application intake, government-system adapters, pre-approval review, authorized human decision, green approval stage, grey alternate outcomes, compliance and audit" />
-  </a>
-</p>
-<p align="center"><sub>🔎 Click the infographic to view the full workflow at its original resolution.</sub></p>
-
----
+<p align="center"><sub>🔎 <strong>Click the infographic to view it at full size.</strong></sub></p>
 
 ## 🔄 Complete workflow architecture
 
 **Application intake → rule-based routing → relevant scrutiny or inspection → authorized decision → applicable obligations → audit trail.** Corrections, hearings, appeals and grievances follow separate, conditional routes.
 
-Select the expandable architecture below to inspect the decision flow, conditional branches, and recorded obligations.
+Open the interactive diagram below for the complete decision flow, including exceptions and regulatory references. Its light colors are intended to be legible on GitHub.
 
 <details>
 <summary><strong>▶ Click here to view the complete workflow architecture (interactive diagram)</strong></summary>
@@ -158,11 +140,11 @@ flowchart TD
 
 </details>
 
-## 🧭 Explore 10 regulatory routes
+## 🧭 Detailed regulatory routes
 
-**Select any of the 10 expandable diagrams (A–J)** to explore an application route, re-scrutiny, hearing, appeal, grievance, or compliance workflow. Select again to collapse.
+**10 focused diagrams (A–J)** cover the major application routes, appeals, grievances, re-scrutiny and post-approval obligations. ▶ **Click a diagram title below to expand its flowchart.** Click it again to collapse.
 
-For the full regulatory mapping, see the [route-to-diagram matrix](./docs/workflows/ROUTE_TO_DIAGRAM_MATRIX.md).
+For the full regulatory mapping, refer to the [route-to-diagram matrix](./docs/workflows/ROUTE_TO_DIAGRAM_MATRIX.md).
 
 <details>
 <summary><strong>▶ Click here to view Diagram A · New technical institution (Chapter I)</strong></summary>
@@ -415,25 +397,26 @@ flowchart TD
 
 </details>
 
-## 👥 Six workspaces. One connected workflow.
 
-Each participant sees only the information and actions assigned to their role.
+## 👥 Six role-based workspaces
+
+Every user sees only the cases and actions allowed for their role.
 
 | Workspace | Main responsibility |
 |:--|:--|
 | 🏫 **Institution / Applicant** | Submit applications, respond to deficiencies, view orders and track obligations. |
-| 🔍 **Desk Scrutiny** | Review documents, record findings and verify permitted corrections. |
-| 📍 **Expert Visit Committee** | Record inspection observations, supporting evidence and recommendations. |
-| 🗂️ **Regional Office** | Coordinate committees, monitor pendency, manage stage handoffs and oversee compliance. |
-| ⚖️ **Approval Bureau / Council** | Review dossiers, record authorized decisions and manage applicable appeals. |
-| ⚙️ **Policy Administration** | Manage versioned rules, monitor trends and inspect audit records. |
+| 🔍 **Desk Scrutiny** | Check documents, record findings and review only permitted corrections. |
+| 📍 **Expert Visit Committee** | Record campus inspections, evidence and committee recommendations. |
+| 🗂️ **Regional Office** | Assign committees, monitor pending cases, coordinate hearings and check compliance. |
+| ⚖️ **Approval Bureau / Council** | Review dossiers, issue authorized decisions and handle appeals. |
+| ⚙️ **Policy Administration** | Maintain versioned rules, view statistics and inspect audit records. |
 
 <details>
-<summary><strong>🔑 Click to view demonstration accounts (sample data only)</strong></summary>
+<summary><strong>🔑 Show demonstration accounts</strong></summary>
 
-The accounts below are provided in the source README for exploring the prototype. They are demonstration identities, not official government accounts.
+These are sample accounts for exploring the prototype, not official government accounts. The uploaded README lists demo password **`password123`**.
 
-| Role | Demonstration email |
+| Role | Email |
 |:--|:--|
 | Institution | `principal@coep.ac.in` / `principal@pdimtr.ac.in` |
 | Scrutiny | `scrutiny.reviewer@aicte.gov.in` |
@@ -442,32 +425,30 @@ The accounts below are provided in the source README for exploring the prototype
 | Approval Bureau | `bureau.approval@aicte.gov.in` |
 | Policy Admin | `admin@aicte.gov.in` |
 
-Demonstration password listed in the supplied README: `password123`.
-
 </details>
 
-## 🧭 Explore the five-minute guided demo
+## 🎬 Five-minute guided demo
 
-1. **Institution:** Open `APP-2026-COEP` to inspect application status, notices and an explained inspection waiver.
-2. **Scrutiny:** Open `APP-2026-GIITS` to inspect locked checklist clearances during re-scrutiny.
-3. **EVC:** Review the GIITS inspection checklist, demonstration location information and video evidence; submit findings.
-4. **Approval Bureau:** Inspect `APP-2026-PDIMTR`, generate a watermarked demonstration EoA and view follow-up obligations.
-5. **Policy Administration:** Explore national statistics, versioned rules, historical changes and conflict checks.
+1. **Institution:** Open `APP-2026-COEP` to see application status, notices and an explained inspection waiver.
+2. **Scrutiny:** Open `APP-2026-GIITS` to see cleared checklist items locked during re-scrutiny.
+3. **EVC:** View the GIITS inspection checklist, sample location data and video evidence, then submit findings.
+4. **Approval Bureau:** Review `APP-2026-PDIMTR`, generate a watermarked demonstration EoA and see its follow-up obligations.
+5. **Policy Admin:** Explore national statistics, the rule registry, version history and conflict checks.
 
 ## 🧱 Technology stack
 
-| Area | Technologies and methods |
+| Layer | Technology |
 |:--|:--|
-| **Frontend** | React 19 · TypeScript 5.8 · Tailwind CSS · Vite 6 · Lucide |
-| **Backend** | Node.js 20/22 · Express · REST APIs |
-| **Data** | MongoDB Atlas · transactional in-memory engine |
-| **Performance** | Request deduplication · actor-scoped six-second read cache |
-| **Security** | HttpOnly cookies · SHA-256 evidence hashes · HMAC-SHA256 demonstration seals |
-| **Testing** | Vitest · Supertest · strict TypeScript |
+| **Frontend** | React 19, TypeScript 5.8, Tailwind CSS, Vite 6, Lucide |
+| **Backend** | Node.js 20/22, Express, REST APIs |
+| **Data** | MongoDB Atlas and transactional in-memory engine |
+| **Performance** | Request deduplication and actor-scoped six-second read cache |
+| **Security** | HttpOnly cookies, SHA-256 evidence hashes, HMAC-SHA256 demo seals |
+| **Testing** | Vitest, Supertest and strict TypeScript |
 
-## 🚀 Run NiyamSetu locally
+## 🚀 Run locally
 
-**Prerequisites:** Node.js 20 or 22 LTS and npm 9+. The supplied README describes a built-in memory mode for local demonstration.
+**Requirements:** Node.js 20 or 22 LTS and npm 9+. The source README describes a built-in memory mode for local demonstration.
 
 ```bash
 git clone https://github.com/Parth-Chavan-15/SIH-2026-AICTE.git SIH-26-AICTE
@@ -479,49 +460,26 @@ npm run build
 npm run dev
 ```
 
-Open **http://localhost:3000** or use the **[hosted prototype](https://niyamsetu-aicte.onrender.com)**.
+Open **http://localhost:3000** or visit the **[live prototype](https://niyamsetu-aicte.onrender.com)**.
 
-## 🧪 Engineering verification
+## 🧪 Testing and engineering checks
 
-**Reported in the supplied README:** 388 passing tests across 35 suites, including 38 deliverable regression checks. These are **source-reported results**, not the result of a new test run.
+**Source-reported results:** **388 passing tests** across **35 suites**, including **38 deliverable regression checks**. These figures come from the provided README; they are not a new test run.
 
-- **Rules and decisions:** Route classification (37 tests); decision authority and order generation (34).
-- **Access and isolation:** Authentication (18); institution separation (7); role-specific hearing controls (5).
-- **Operational checks:** Persistence and deadline safeguards (10); notifications (3); performance checks (5).
-- **Regression:** Deliverable regression suite (38 tests).
+- **Rules and decisions:** Route classification (37 tests), decision authority and order generation (34 tests).
+- **Access and isolation:** Authentication (18), institution separation (7) and role-specific hearing controls (5).
+- **Operational reliability:** Persistence and deadline safeguards (10), notifications (3) and performance checks (5).
+- **End-to-end verification:** Deliverable regression suite (38 tests).
 
-Evidence and supporting detail: [test directory](./tests/) · [performance verification](./docs/performance/PERFORMANCE_VERIFICATION.md).
+For individual test files and the complete test results, see the [test directory](./tests/) and [performance verification](./docs/performance/PERFORMANCE_VERIFICATION.md).
 
----
+## 📚 Essential resources
 
+- **[Live prototype](https://niyamsetu-aicte.onrender.com)** — explore the application.
+- **[Demonstration video](https://youtu.be/NsloajwX8gU?si=_Frrt_TT22yQCJ8x)** — watch the system in action.
+- **[Screen-by-screen walkthrough](https://drive.google.com/file/d/1EYKGkXoUPD9FOBFJl66p46_111cJDODY/view?usp=sharing)** — follow the user journey.
+- **[AICTE requirement matrix](./docs/PS_COMPLIANCE_MATRIX.md)** — trace problem-statement coverage.
+- **[Regulatory route matrix](./docs/workflows/ROUTE_TO_DIAGRAM_MATRIX.md)** — browse application categories and all ten detailed route diagrams.
+- **[Regulatory source register](./docs/regulatory/SOURCE_REGISTER.md)** — APH, AICTE Act and addendum references.
 
-## 📚 Essential Resources
-
-### 🌐 Explore NiyamSetu
-
-| Resource | Access |
-|:--|:--|
-| 🌐 **Live Prototype** | [Launch NiyamSetu](https://niyamsetu-aicte.onrender.com) |
-| 🎬 **Prototype Demonstration** | [Watch on YouTube](https://youtu.be/NsloajwX8gU?si=_Frrt_TT22yQCJ8x) |
-| 📖 **Complete User Walkthrough** | [Explore User Guide](https://drive.google.com/file/d/1EYKGkXoUPD9FOBFJl66p46_111cJDODY/view?usp=sharing) |
-
-### 📑 Technical Documentation & Evidence
-
-| Document | Access |
-|:--|:--|
-| 🛡️ **AICTE Requirement Matrix** | [View Coverage](./docs/PS_COMPLIANCE_MATRIX.md) |
-| 🧭 **Regulatory Route Matrix** | [Explore Workflows](./docs/workflows/ROUTE_TO_DIAGRAM_MATRIX.md) |
-| 📚 **Regulatory Source Register** | [View References](./docs/regulatory/SOURCE_REGISTER.md) |
-
----
-
-<div align="center">
-
-### 🏛️ Built by Team DEFENSOR
-
-**Smart India Hackathon 2026** · **AICTE Problem Statement 26262**
-
-*NIYAMSETU — Connecting regulatory decisions, institutional obligations, and accountable governance.*
-
-</div>
-
+<p align="center"><sub>Built by <strong>Team DEFENSOR</strong> for Smart India Hackathon 2026 · AICTE PS 26262</sub></p>
