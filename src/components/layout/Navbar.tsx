@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { login, logout, getSession } from '../../services/session';
+import { quickAccessLogin, logout, getSession } from '../../services/session';
 import { REGULATORY_ROLES } from '../../features/auth/SessionGate';
 import {
   Clock,
@@ -73,7 +73,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const handleSwitchRole = async (targetRoleNumber: number, targetEmail: string, targetTab: string) => {
     setSwitchingRole(true);
     try {
-      await login({ email: targetEmail, password: 'password123' });
+      await quickAccessLogin(targetEmail);
       onNavigateTab?.(targetTab);
     } catch (err) {
       console.error('Role switch failed:', err);

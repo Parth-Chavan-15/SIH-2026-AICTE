@@ -25,7 +25,12 @@ export async function requestJson<T>(path: string, init: RequestInit = {}): Prom
   // Status is authoritative even when a proxy returns HTML or an empty error body.
   if (response.status === 401) {
     if (started === revision) setCurrent(undefined);
-    throw new ApiHttpError(401, 'Authentication required');
+    let errorMsg = 'Authentication required';
+    try {
+      const errBody = await response.json() as any;
+      if (errBody?.error?.message) errorMsg = errBody.error.message;
+    } catch {}
+    throw new ApiHttpError(401, errorMsg);
   }
   let body: ApiResult<T>;
   try { body = await response.json() as ApiResult<T>; } catch {
@@ -45,6 +50,12 @@ async function authAction<T>(invalidate: boolean, work: () => Promise<T>): Promi
   authBusy = true;
   if (invalidate) setCurrent(undefined);
   try { return await work(); } finally { authBusy = false; }
+}
+export async function quickAccessLogin(personaId: string) {
+  return authAction(true, async () => {
+    setCurrent(sessionSchema.parse(await requestJson('/auth/demo-quick-access', { method: 'POST', body: JSON.stringify({ personaId }) })));
+    return getSession()!;
+  });
 }
 export async function login(credentials: LoginRequest) {
   return authAction(true, async () => {

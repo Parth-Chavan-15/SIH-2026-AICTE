@@ -125,6 +125,61 @@ export function createCoreRouter(options: { storage?: CaseStorage; identity?: ()
     const { token, session } = await auth.login(req.body, req.ip ?? 'unknown', req.headers.cookie);
     res.cookie('sih_demo_session', token, auth.cookieOptions).json({ success: true, data: session });
   }));
+  router.post('/auth/demo-quick-access', wrap(async (req, res) => {
+    if (process.env.NODE_ENV === 'production') {
+      throw new CoreError('FORBIDDEN', 'Quick access disabled in production mode');
+    }
+    const auth = identity();
+    auth.verifyOrigin(req.get('origin'));
+
+    const DEMO_PERSONA_MAP: Record<string, string> = {
+      'inst-coep': 'principal@coep.ac.in',
+      'inst-giits': 'principal@giits.ac.in',
+      'inst-pdimtr': 'principal@pdimtr.ac.in',
+      'inst-apex': 'principal@apex.ac.in',
+      'inst-batu': 'principal@batu.ac.in',
+      'role-1-inst': 'principal@coep.ac.in',
+      'role-2-scrutiny': 'scrutiny.reviewer@aicte.gov.in',
+      'role-3-evc': 'evc.chair@aicte.gov.in',
+      'role-4-ro': 'ro.western@aicte.gov.in',
+      'role-5-ca': 'bureau.approval@aicte.gov.in',
+      'role-6-admin': 'admin@aicte.gov.in',
+      'coep': 'principal@coep.ac.in',
+      'giits': 'principal@giits.ac.in',
+      'pdimtr': 'principal@pdimtr.ac.in',
+      'apex': 'principal@apex.ac.in',
+      'batu': 'principal@batu.ac.in',
+      'scrutiny': 'scrutiny.reviewer@aicte.gov.in',
+      'evc': 'evc.chair@aicte.gov.in',
+      'ro': 'ro.western@aicte.gov.in',
+      'ca': 'bureau.approval@aicte.gov.in',
+      'bureau': 'bureau.approval@aicte.gov.in',
+      'admin': 'admin@aicte.gov.in',
+      'principal@coep.ac.in': 'principal@coep.ac.in',
+      'principal@giits.ac.in': 'principal@giits.ac.in',
+      'principal@pdimtr.ac.in': 'principal@pdimtr.ac.in',
+      'principal@apex.ac.in': 'principal@apex.ac.in',
+      'principal@batu.ac.in': 'principal@batu.ac.in',
+      'scrutiny.reviewer@aicte.gov.in': 'scrutiny.reviewer@aicte.gov.in',
+      'evc.chair@aicte.gov.in': 'evc.chair@aicte.gov.in',
+      'ro.western@aicte.gov.in': 'ro.western@aicte.gov.in',
+      'bureau.approval@aicte.gov.in': 'bureau.approval@aicte.gov.in',
+      'admin@aicte.gov.in': 'admin@aicte.gov.in',
+    };
+
+    const targetKey = String(req.body?.personaId || req.body?.roleId || req.body?.email || '').trim().toLowerCase();
+    const mappedEmail = DEMO_PERSONA_MAP[targetKey];
+    if (!mappedEmail) {
+      throw new CoreError('VALIDATION_FAILED', 'Invalid demo persona identifier');
+    }
+
+    const { token, session } = await auth.login(
+      { email: mappedEmail, password: 'password123' },
+      req.ip ?? 'unknown',
+      req.headers.cookie
+    );
+    res.cookie('sih_demo_session', token, auth.cookieOptions).json({ success: true, data: session });
+  }));
   router.use(authenticate(identity));
   router.get('/auth/me', wrap(async (req, res) => { const { actor, expiresAt } = identity().authenticate(req.headers.cookie); res.json({ success: true, data: { actor, expiresAt } }); }));
   router.post('/auth/logout', wrap(async (req, res) => { const auth = identity(); auth.logout(req.headers.cookie); const { maxAge: _age, ...cookie } = auth.cookieOptions; res.clearCookie('sih_demo_session', cookie).json({ success: true, data: null }); }));

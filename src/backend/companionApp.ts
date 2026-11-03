@@ -113,11 +113,20 @@ export function createCompanionApp(options?: {
   // Authentication Middleware for /api/v1 companion routes
   const authMiddleware = authenticate(identityProvider);
   app.use('/api/v1', (req: Request, res: Response, next: NextFunction) => {
+    // 1. Unauthenticated public endpoints that must NEVER be intercepted by authMiddleware
+    if (
+      req.path === '/auth/login' ||
+      req.path === '/auth/demo-quick-access' ||
+      req.path.startsWith('/auth/quick-access') ||
+      req.path === '/health' ||
+      req.path === '/ready' ||
+      req.path === '/version' ||
+      req.path === '/api/version'
+    ) {
+      return next();
+    }
+
     const publicPrefixes = [
-      '/health',
-      '/ready',
-      '/version',
-      '/auth/login',
       '/timers/',
       '/alerts',
       '/demo/reset',

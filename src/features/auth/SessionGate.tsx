@@ -1,22 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { login, logout, restoreSession, getSessionRevision, getSession } from '../../services/session';
-import { api } from '../../services/api';
+import { quickAccessLogin, restoreSession, getSession } from '../../services/session';
 import {
   Lock,
-  Mail,
   Shield,
-  KeyRound,
-  AlertTriangle,
-  CheckCircle,
   Building2,
   FileCheck,
   Award,
-  Users,
   Sliders,
+  AlertTriangle,
+  RefreshCw,
   ArrowRight,
-  ExternalLink,
-  ChevronDown,
-  RefreshCw
+  GraduationCap
 } from 'lucide-react';
 
 export interface RegulatoryRole {
@@ -34,12 +28,42 @@ export interface RegulatoryRole {
   icon: any;
 }
 
-export const DEMO_COLLEGES = [
-  { id: 'coep', name: 'COEP Technological University, Pune', email: 'principal@coep.ac.in', code: '1-435789102', tag: 'Route 1: Scrutiny Only [NBA Fast-Track]' },
-  { id: 'giits', name: 'Gonna Institute of IT & Sciences (GIITS)', email: 'principal@giits.ac.in', code: '1-462589176', tag: 'Route 2: Scrutiny + EVC [Non-NBA Surge]' },
-  { id: 'pdimtr', name: 'Prerna / Univ BDT College (PDIMTR)', email: 'principal@pdimtr.ac.in', code: '1-109704178', tag: 'Route 3: Fast-Track EoA [Self-Disclosure & Lease]' },
-  { id: 'apex', name: 'Apex Institute of Technology & Management', email: 'principal@apex.ac.in', code: '1-331049280', tag: 'Route 4: EVC + SAC/SHC [Appellate Hearing]' },
-  { id: 'batu', name: 'Dr. Babasaheb Ambedkar Tech Univ (BATU)', email: 'principal@batu.ac.in', code: '1-192014810', tag: 'Route 5: Only EVC [§2.16.1 Restoration / Shifting]' },
+export const SEEDED_INSTITUTIONS = [
+  {
+    id: 'inst-coep',
+    name: 'COEP Technological University, Pune',
+    code: '1-435789102',
+    region: 'Western Region',
+    email: 'principal@coep.ac.in',
+  },
+  {
+    id: 'inst-giits',
+    name: 'Gonna Institute of Information Technology & Sciences (GIITS)',
+    code: '1-462589176',
+    region: 'South-Central Region',
+    email: 'principal@giits.ac.in',
+  },
+  {
+    id: 'inst-pdimtr',
+    name: 'Prerna / Univ BDT College of Engineering (PDIMTR)',
+    code: '1-109704178',
+    region: 'Western Region',
+    email: 'principal@pdimtr.ac.in',
+  },
+  {
+    id: 'inst-apex',
+    name: 'Apex Institute of Technology & Management',
+    code: '1-331049280',
+    region: 'Northern Region',
+    email: 'principal@apex.ac.in',
+  },
+  {
+    id: 'inst-batu',
+    name: 'Dr. Babasaheb Ambedkar Tech Univ (BATU Lonere)',
+    code: '1-192014810',
+    region: 'Western Region',
+    email: 'principal@batu.ac.in',
+  },
 ];
 
 export const REGULATORY_ROLES: RegulatoryRole[] = [
@@ -64,7 +88,7 @@ export const REGULATORY_ROLES: RegulatoryRole[] = [
     shortLabel: 'Document Verification',
     email: 'scrutiny.reviewer@aicte.gov.in',
     whatTheyDo: 'Examines uploaded checklists, marks verified vs. deficient items, digitally signs immutable scrutiny snapshots, and reviews institution resubmissions.',
-    legallyBlocked: 'Cannot re-open or reject items that were already verified and cleared in initial scrutiny.',
+    legallyBlocked: 'Cannot re-open or reject items that were already verified and cleared in initial scrutiny (Scope Lock USP B06).',
     pdfCitation: 'Scrutiny Committee',
     themeColor: 'from-amber-600 to-orange-700',
     borderColor: 'border-amber-500 hover:border-amber-600',
@@ -132,12 +156,8 @@ export const REGULATORY_ROLES: RegulatoryRole[] = [
 export function SessionGate({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [checking, setChecking] = useState(true);
-  const [email, setEmail] = useState('principal@coep.ac.in');
-  const [password, setPassword] = useState('password123');
-  const [selectedCollegeEmail, setSelectedCollegeEmail] = useState('principal@coep.ac.in');
   const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [showManualLogin, setShowManualLogin] = useState(false);
+  const [busyPersona, setBusyPersona] = useState<string | null>(null);
 
   useEffect(() => {
     let unmounted = false;
@@ -166,28 +186,21 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const handleAccessNode = async (targetEmail: string) => {
+  const handleAccessNode = async (personaIdentifier: string) => {
     setError('');
-    setBusy(true);
+    setBusyPersona(personaIdentifier);
     try {
-      await login({ email: targetEmail, password: 'password123' });
+      await quickAccessLogin(personaIdentifier);
+      const verified = await restoreSession();
+      if (!verified) {
+        throw new Error('Authentication could not be verified by server gateway');
+      }
+      setReady(true);
     } catch (err: any) {
       setError(err?.message || 'Authentication rejected by security gateway');
+      setReady(false);
     } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleManualLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setBusy(true);
-    try {
-      await login({ email, password });
-    } catch (err: any) {
-      setError(err?.message || 'Invalid credentials');
-    } finally {
-      setBusy(false);
+      setBusyPersona(null);
     }
   };
 
@@ -202,222 +215,216 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // When authenticated, render children without injecting any duplicate headers
+  // When authenticated, render children directly without any duplicate headers or footers
   if (ready) {
     return <>{children}</>;
   }
 
-  // Production-Grade Enterprise Access Gateway (Inspired by SpotFix Enterprise Gateway)
+  // Unauthenticated Landing Page: Clean, focused, without global header or footer
+  const nonApplicantRoles = REGULATORY_ROLES.filter((r) => r.roleNumber > 1);
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800">
-      {/* Top National Brand Bar */}
-      <header className="bg-[#071A2E] text-white border-b border-slate-800 px-6 py-3.5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-auto flex items-center justify-center p-0.5 rounded-md bg-white shadow-sm">
+      <main className="flex-1 flex flex-col items-center justify-start px-4 sm:px-6 lg:px-8 py-8 sm:py-12 max-w-7xl mx-auto w-full">
+        {/* Official Brand Hero */}
+        <div className="text-center space-y-3 mb-8 sm:mb-10 max-w-3xl">
+          <div className="inline-flex items-center justify-center p-2.5 rounded-2xl bg-white shadow-md border border-slate-200">
             <img
               src="/niyamsetu-logo.png"
               alt="NiyamSetu Logo"
-              className="h-7 w-auto object-contain rounded"
+              className="h-14 sm:h-16 w-auto object-contain rounded-xl"
             />
           </div>
-          <div className="flex items-center gap-2 font-mono text-xs tracking-wider">
-            <span className="font-extrabold text-white text-sm">NIYAMSETU</span>
-            <span className="text-slate-500">|</span>
-            <span className="text-teal-300 font-sans font-semibold">नियमसेतु</span>
-            <span className="text-slate-500 hidden sm:inline">|</span>
-            <span className="text-blue-300 hidden sm:inline">AICTE COMPLIANCE GATEWAY</span>
+          <div>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight">
+              NIYAMSETU <span className="font-normal text-teal-700">(नियमसेतु)</span>
+            </h1>
+            <p className="text-base sm:text-lg font-bold text-slate-700 tracking-tight mt-1">
+              AICTE Approval &amp; Compliance Management Platform
+            </p>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-blue-500/20 text-blue-300 border border-blue-400/30">
-            AY 2026–27
-          </span>
-          <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-            WORM HMAC-SHA256
-          </span>
-        </div>
-      </header>
-
-      {/* Main Enterprise Gateway Hero */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 max-w-6xl mx-auto w-full">
-        {/* Gateway Title with Official Logo */}
-        <div className="text-center space-y-2 mb-10">
-          <div className="inline-flex items-center justify-center p-2 rounded-2xl bg-white shadow-md border border-slate-200 mb-2">
-            <img
-              src="/niyamsetu-logo.png"
-              alt="NiyamSetu Logo"
-              className="h-16 w-auto object-contain rounded-xl"
-            />
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-900 font-extrabold text-[11px] sm:text-xs tracking-widest uppercase">
+            <span>Bridging Rules</span>
+            <span>&bull;</span>
+            <span>Empowering Institutions</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            NIYAMSETU <span className="text-2xl font-normal text-teal-700">(नियमसेतु)</span>
-          </h1>
-          <p className="text-sm sm:text-base font-bold text-slate-700 tracking-tight">
-            AICTE Approval &amp; Compliance Management Platform
+          <p className="text-xs sm:text-sm text-slate-600 max-w-2xl mx-auto">
+            Autonomous statutory workflow automation, dynamic regulatory routing, and tamper-evident compliance companion runtime for Academic Year 2026–27.
           </p>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-teal-900 font-extrabold text-xs tracking-widest uppercase">
-            Bridging Rules &bull; Empowering Institutions
-          </div>
         </div>
 
-        {/* Error Notice */}
+        {/* Actionable Error Banner */}
         {error && (
-          <div className="w-full max-w-md p-3.5 mb-6 rounded-xl bg-rose-50 border border-rose-300 text-rose-900 text-xs flex items-center gap-2 shadow-sm anim-fade-in">
-            <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-            <span>{error}</span>
+          <div className="w-full max-w-3xl p-3.5 mb-8 rounded-xl bg-rose-50 border border-rose-300 text-rose-900 text-xs sm:text-sm flex items-center gap-2.5 shadow-xs">
+            <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
+            <div className="flex-1 font-medium">{error}</div>
           </div>
         )}
 
-        {/* 6 Enterprise Access Nodes Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
-          {REGULATORY_ROLES.map((r) => {
-            const Icon = r.icon;
-            return (
-              <div
-                key={r.id}
-                className={`bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-200 border-2 ${r.borderColor} flex flex-col justify-between group relative overflow-hidden`}
-              >
-                {/* Top colored accent line */}
-                <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${r.themeColor}`} />
-
-                <div className="space-y-4">
-                  {/* Icon & Badge */}
-                  <div className="flex items-center justify-between">
-                    <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center group-hover:scale-105 transition-transform">
-                      <Icon className="w-6 h-6 text-slate-800" />
-                    </div>
-                    <span className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border ${r.badgeBg}`}>
-                      {r.pdfCitation}
+        {/* Section 1: Role 1 — Institution / Applicant Category with 5 Seeded Institution Cards */}
+        <div className="w-full mb-10">
+          <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-xs border-2 border-blue-500/80 relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700" />
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+              <div className="flex items-start gap-3.5">
+                <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0">
+                  <Building2 className="w-6 h-6 text-blue-700" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border bg-blue-50 text-blue-800 border-blue-200">
+                      Role #1 &bull; Applicant Node
                     </span>
                   </div>
+                  <h2 className="text-xl font-extrabold text-slate-900 mt-1">
+                    Institution Signatory Portal (Applicant Workspace)
+                  </h2>
+                  <p className="text-xs text-slate-600 mt-1 max-w-3xl">
+                    Submits new applications, tracks real-time workflow status across regulatory stages, uploads deficiency corrections, and submits post-approval statutory undertakings.
+                  </p>
+                </div>
+              </div>
+            </div>
 
-                  {/* Node Title & Subtitle */}
-                  <div>
-                    <h3 className="font-extrabold text-base text-slate-900 leading-snug">
-                      {r.roleTitle}
-                    </h3>
-                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">
-                      {r.shortLabel}
+            {/* 5 Seeded Institution Access Cards */}
+            <div className="mt-6">
+              <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <GraduationCap className="w-4 h-4 text-blue-600" />
+                <span>Select Seeded Technical Institution to Access:</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5">
+                {SEEDED_INSTITUTIONS.map((inst) => {
+                  const isBusy = busyPersona === inst.id || busyPersona === inst.email;
+                  return (
+                    <div
+                      key={inst.id}
+                      className="bg-slate-50 hover:bg-blue-50/50 rounded-xl p-4 border border-slate-200 hover:border-blue-300 transition-all flex flex-col justify-between group"
+                    >
+                      <div className="space-y-1.5 mb-3">
+                        <div className="font-bold text-xs text-slate-900 group-hover:text-blue-900 leading-snug line-clamp-2">
+                          {inst.name}
+                        </div>
+                        <div className="text-[11px] font-mono text-slate-500">
+                          Code: {inst.code}
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-medium">
+                          {inst.region}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleAccessNode(inst.id)}
+                        disabled={Boolean(busyPersona)}
+                        className="w-full py-2 px-3 rounded-lg text-xs font-bold bg-white group-hover:bg-blue-600 text-blue-700 group-hover:text-white border border-blue-200 group-hover:border-blue-600 transition-all flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-50 cursor-pointer"
+                      >
+                        {isBusy ? (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            <span>Authenticating…</span>
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-3.5 h-3.5" />
+                            <span>Access Node</span>
+                            <ArrowRight className="w-3.5 h-3.5 opacity-70 group-hover:translate-x-0.5 transition-transform" />
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 2: Roles 2 through 6 — Committee, Regional, Bureau & Oversight Nodes */}
+        <div className="w-full">
+          <div className="mb-4">
+            <h3 className="text-sm font-extrabold text-slate-700 uppercase tracking-wider">
+              Statutory Committees, Regional Desks &amp; Competent Authorities
+            </h3>
+            <p className="text-xs text-slate-500">
+              Direct access nodes for regulatory scrutiny, physical inspection, regional compliance, council approvals, and policy management.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
+            {nonApplicantRoles.map((r) => {
+              const Icon = r.icon;
+              const isBusy = busyPersona === r.id || busyPersona === r.email;
+              return (
+                <div
+                  key={r.id}
+                  className={`bg-white rounded-2xl p-5 shadow-xs hover:shadow-md transition-all border-2 ${r.borderColor} flex flex-col justify-between group relative overflow-hidden`}
+                >
+                  <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${r.themeColor}`} />
+
+                  <div className="space-y-3.5">
+                    <div className="flex items-center justify-between">
+                      <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center group-hover:scale-105 transition-transform">
+                        <Icon className="w-5 h-5 text-slate-800" />
+                      </div>
+                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${r.badgeBg}`}>
+                        Role #{r.roleNumber}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h4 className="font-extrabold text-sm text-slate-900 leading-snug">
+                        {r.roleTitle}
+                      </h4>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">
+                        {r.shortLabel}
+                      </p>
+                    </div>
+
+                    <p className="text-xs text-slate-600 leading-relaxed min-h-[56px]">
+                      {r.whatTheyDo}
                     </p>
-                    <div className="text-[11px] font-mono text-blue-700 mt-1">
-                      {r.roleNumber === 1 ? selectedCollegeEmail : r.email}
+
+                    <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 text-[10px] text-slate-500 leading-snug">
+                      <span className="font-bold text-slate-700">Statutory Bound: </span>
+                      <span>{r.legallyBlocked}</span>
                     </div>
                   </div>
 
-                  {/* Summary */}
-                  <p className="text-xs text-slate-600 leading-relaxed min-h-[48px]">
-                    {r.whatTheyDo}
-                  </p>
-
-                  {/* College Selector for Role 1 */}
-                  {r.roleNumber === 1 && (
-                    <div className="pt-2 border-t border-slate-100">
-                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
-                        Select Institution to Access:
-                      </label>
-                      <select
-                        value={selectedCollegeEmail}
-                        onChange={(e) => setSelectedCollegeEmail(e.target.value)}
-                        className="w-full text-xs font-semibold py-1.5 px-2.5 rounded-lg border border-slate-300 bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                      >
-                        {DEMO_COLLEGES.map((c) => (
-                          <option key={c.id} value={c.email}>
-                            {c.name} ({c.code})
-                          </option>
-                        ))}
-                      </select>
-                      <span className="text-[10px] text-blue-600 font-medium block mt-1">
-                        {DEMO_COLLEGES.find(c => c.email === selectedCollegeEmail)?.tag}
-                      </span>
-                    </div>
-                  )}
+                  <div className="pt-4 border-t border-slate-100 mt-4">
+                    <button
+                      onClick={() => handleAccessNode(r.id)}
+                      disabled={Boolean(busyPersona)}
+                      className={`w-full py-2.5 px-3.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer ${
+                        r.roleNumber === 2
+                          ? 'bg-amber-50 text-amber-900 hover:bg-amber-600 hover:text-white border border-amber-200'
+                          : r.roleNumber === 3
+                          ? 'bg-purple-50 text-purple-900 hover:bg-purple-600 hover:text-white border border-purple-200'
+                          : r.roleNumber === 4
+                          ? 'bg-emerald-50 text-emerald-900 hover:bg-emerald-600 hover:text-white border border-emerald-200'
+                          : r.roleNumber === 5
+                          ? 'bg-rose-50 text-rose-900 hover:bg-rose-600 hover:text-white border border-rose-200'
+                          : 'bg-slate-100 text-slate-800 hover:bg-slate-800 hover:text-white border border-slate-300'
+                      } disabled:opacity-50`}
+                    >
+                      {isBusy ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Authenticating…</span>
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-3.5 h-3.5" />
+                          <span>Access Node</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
-
-                {/* Action Button */}
-                <div className="pt-6 border-t border-slate-100 mt-4">
-                  <button
-                    onClick={() => handleAccessNode(r.roleNumber === 1 ? selectedCollegeEmail : r.email)}
-                    disabled={busy}
-                    className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-xs ${
-                      r.roleNumber === 1
-                        ? 'bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white border border-blue-200'
-                        : r.roleNumber === 2
-                        ? 'bg-amber-50 text-amber-800 hover:bg-amber-600 hover:text-white border border-amber-200'
-                        : r.roleNumber === 3
-                        ? 'bg-purple-50 text-purple-800 hover:bg-purple-600 hover:text-white border border-purple-200'
-                        : r.roleNumber === 4
-                        ? 'bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white border border-emerald-200'
-                        : r.roleNumber === 5
-                        ? 'bg-rose-50 text-rose-800 hover:bg-rose-600 hover:text-white border border-rose-200'
-                        : 'bg-slate-100 text-slate-800 hover:bg-slate-800 hover:text-white border border-slate-300'
-                    } disabled:opacity-50`}
-                  >
-                    <Lock className="w-3.5 h-3.5" />
-                    <span>Access Node</span>
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Manual Credentials Toggle Drawer */}
-        <div className="mt-12 text-center">
-          <button
-            onClick={() => setShowManualLogin(!showManualLogin)}
-            className="text-xs text-slate-500 hover:text-slate-800 font-medium inline-flex items-center gap-1 transition-colors"
-          >
-            <span>Manual Credentials Sign-In</span>
-            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showManualLogin ? 'rotate-180' : ''}`} />
-          </button>
-
-          {showManualLogin && (
-            <div className="mt-4 p-5 bg-white rounded-2xl shadow-sm border border-slate-200 max-w-md mx-auto text-left anim-scale-in">
-              <form onSubmit={handleManualLogin} className="space-y-3.5">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Registered Email Address
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Password
-                  </label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={busy}
-                  className="w-full py-2.5 px-4 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs transition-colors shadow-sm disabled:opacity-50"
-                >
-                  {busy ? 'Authenticating…' : 'Authenticate Session'}
-                </button>
-              </form>
-            </div>
-          )}
+              );
+            })}
+          </div>
         </div>
       </main>
-
-      {/* Gateway Footer */}
-      <footer className="p-4 bg-white border-t border-slate-200 text-center text-[11px] text-slate-500">
-        AICTE PravahReg National Gateway &bull; Smart India Hackathon 2026 &bull; HttpOnly &bull; SameSite=Strict &bull; WORM HMAC-SHA256
-      </footer>
     </div>
   );
 }
+
+export default SessionGate;
