@@ -7,13 +7,11 @@ import { Sidebar } from './components/layout/Sidebar';
 import { ToastContainer } from './components/common/ToastContainer';
 
 // Feature Views
-import { RegulatoryStudioView } from './features/regulatory/RegulatoryStudioView';
 import { GovernmentEndpointsView } from './features/regulatory/GovernmentEndpointsView';
 import { DashboardView } from './features/dashboard/DashboardView';
 import { ApplicationsListView } from './features/applications/ApplicationsListView';
 import { ApplicationDetailModal } from './features/applications/ApplicationDetailModal';
 import { NewApplicationModal } from './features/applications/NewApplicationModal';
-import { WorkflowView } from './features/workflow/WorkflowView';
 import { PendencyView } from './features/pendency/PendencyView';
 import { EVCView } from './features/evc/EVCView';
 import { EVCReportsView } from './features/evc/EVCReportsView';
@@ -30,7 +28,6 @@ import { CompetentAuthorityDecisionView } from './features/ca/CompetentAuthority
 import { NSWSSimulationView } from './features/nsws/NSWSSimulationView';
 import { PortalImportView } from './features/portalImport/PortalImportView';
 import { ROAllocationView } from './features/ro/ROAllocationView';
-import { AppealsAndHearingsView } from './features/appeals/AppealsAndHearingsView';
 import { ApplicantAppealsView } from './features/institution/ApplicantAppealsView';
 import { RegionalHearingCoordinationView } from './features/ro/RegionalHearingCoordinationView';
 import { CouncilSACAppealsView } from './features/ca/CouncilSACAppealsView';
@@ -195,7 +192,6 @@ const MainLayout: React.FC = () => {
             {currentTab === 'evc-inspect' && (
               <EVCView onSelectApplication={(id) => setSelectedAppId(id)} />
             )}
-            {currentTab === 'evc-sac' && <AppealsAndHearingsView />}
             {currentTab === 'evc-reports' && (
               <EVCReportsView onSelectApplication={(id) => setSelectedAppId(id)} />
             )}

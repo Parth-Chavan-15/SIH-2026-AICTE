@@ -1385,6 +1385,19 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
               Back to Identity
             </button>
             <div className="flex items-center gap-2">
+              {errorMsg && (
+                <button
+                  onClick={() => {
+                    setTokenType('ePass2003Auto');
+                    setErrorMsg(null);
+                    setSuccessMsg('Switched to valid Class-3 USB Token. Click Verify to proceed.');
+                  }}
+                  className="px-4 py-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs flex items-center gap-1.5 shadow-xs transition-colors"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Use Valid Class-3 Token & Continue</span>
+                </button>
+              )}
               <button
                 onClick={handleVerifyDSC}
                 disabled={loading}

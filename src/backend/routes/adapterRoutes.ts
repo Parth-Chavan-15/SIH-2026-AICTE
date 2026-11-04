@@ -6,6 +6,7 @@ import {
   getCommitteeRoster,
   verifyDSCSignature
 } from '../adapters/ecosystemAdapters';
+import { verifyAuditRecordIntegrity } from '../security/auditVerification';
 
 export function createAdapterRouter(storage: CaseStorage): Router {
   const router = Router();
@@ -186,6 +187,22 @@ export function createAdapterRouter(storage: CaseStorage): Router {
       return res.status(503).json({
         success: false,
         error: { code: 'STORAGE_UNAVAILABLE', message: err.message || 'DSC Verification gateway failed' }
+      });
+    }
+  });
+
+  // 3. POST /api/v1/adapter/audit-verify - Recompute & Cryptographically Verify WORM HMAC-SHA256 Audit Records
+  router.post('/adapter/audit-verify', (req: Request, res: Response) => {
+    try {
+      const result = verifyAuditRecordIntegrity(req.body?.record || req.body, req.body?.previousHash);
+      return res.status(200).json({
+        success: true,
+        data: result
+      });
+    } catch (err: any) {
+      return res.status(500).json({
+        success: false,
+        error: { code: 'VERIFICATION_ERROR', message: err.message || 'Audit verification failed' }
       });
     }
   });

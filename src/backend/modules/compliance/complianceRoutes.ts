@@ -24,12 +24,20 @@ export function createComplianceRouter(): Router {
   // GET /api/v1/compliance/obligations/:caseId - Obligations for case
   router.get('/compliance/obligations/:caseId', (req: Request, res: Response) => {
     const caseId = req.params.caseId;
-    const obligations = Array.from(complianceDB.obligations.values())
-      .filter((o: any) => o.caseId === caseId || o.applicationId === caseId)
-      .map((o: any) => ({
-        ...o,
-        caseId: o.caseId || o.applicationId
-      }));
+    const allMatching = Array.from(complianceDB.obligations.values())
+      .filter((o: any) => o.caseId === caseId || o.applicationId === caseId);
+
+    if (req.actor && req.actor.scope === 'scoped') {
+      const isForbidden = allMatching.some(o => !req.actor.institutionIds.includes(o.institutionId));
+      if (isForbidden) {
+        return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Record outside authorized scope' } });
+      }
+    }
+
+    const obligations = allMatching.map((o: any) => ({
+      ...o,
+      caseId: o.caseId || o.applicationId
+    }));
     res.json({ success: true, data: { obligations, count: obligations.length } });
   });
 

@@ -16,9 +16,27 @@ export function createAppealsAndHearingsRouter(): Router {
   const router = Router();
 
   // Helper to serialize hearings for frontend and API consistency
-  const getAppealsAndHearingsPayload = (caseIdFilter?: string) => {
+  const getAppealsAndHearingsPayload = (actor?: Actor, caseIdFilter?: string) => {
     let rawHearings = getAllHearings();
     let rawComplaints = getAllComplaints();
+
+    if (actor && actor.scope === 'scoped') {
+      const allowed = new Set(actor.institutionIds || []);
+      const matchesActor = (caseId?: string, instName?: string) => {
+        if (caseId && allowed.has(caseId)) return true;
+        const lowerName = (instName || '').toLowerCase();
+        const lowerCase = (caseId || '').toLowerCase();
+        if (allowed.has('INST-SOUTH') && (lowerCase.includes('coep') || lowerName.includes('coep'))) return true;
+        if (allowed.has('INST-NORTH') && (lowerCase.includes('giits') || lowerName.includes('giits'))) return true;
+        if (allowed.has('INST-WEST') && (lowerCase.includes('pdimtr') || lowerName.includes('pdimtr') || lowerName.includes('prerna'))) return true;
+        if (allowed.has('INST-APEX') && (lowerCase.includes('apex') || lowerName.includes('apex'))) return true;
+        if (allowed.has('INST-BATU') && (lowerCase.includes('batu') || lowerName.includes('batu') || lowerName.includes('ambedkar'))) return true;
+        return false;
+      };
+
+      rawHearings = rawHearings.filter(h => matchesActor(h.caseId, h.institutionName));
+      rawComplaints = rawComplaints.filter(c => matchesActor(c.caseId, c.institutionName));
+    }
 
     if (caseIdFilter) {
       rawHearings = rawHearings.filter(h => h.caseId === caseIdFilter);
@@ -80,8 +98,9 @@ export function createAppealsAndHearingsRouter(): Router {
 
   // GET /api/v1/appeals-hearings AND /api/v1/appeals-hearings/overview
   router.get('/appeals-hearings', (req: Request, res: Response) => {
+    const actor = (req as any).actor as Actor | undefined;
     const caseId = req.query.caseId as string | undefined;
-    const payload = getAppealsAndHearingsPayload(caseId);
+    const payload = getAppealsAndHearingsPayload(actor, caseId);
     return res.status(200).json({
       success: true,
       data: payload
@@ -89,8 +108,9 @@ export function createAppealsAndHearingsRouter(): Router {
   });
 
   router.get('/appeals-hearings/overview', (req: Request, res: Response) => {
+    const actor = (req as any).actor as Actor | undefined;
     const caseId = req.query.caseId as string | undefined;
-    const payload = getAppealsAndHearingsPayload(caseId);
+    const payload = getAppealsAndHearingsPayload(actor, caseId);
     return res.status(200).json({
       success: true,
       data: payload

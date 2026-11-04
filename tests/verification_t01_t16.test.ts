@@ -210,13 +210,13 @@ describe('T01–T16 Acceptance Verification Suite (SIH 2026 Problem Statement 26
 
   // --- T08: 5-State Document Evidence Lifecycle ---
   it('T08: Document evidence follows 5-state lifecycle (Submitted -> Verified)', async () => {
-    const { cookie: coepCookie } = await loginAs('principal@coep.ac.in');
+    const { cookie: pdimtrCookie } = await loginAs('principal@pdimtr.ac.in');
     const { cookie: roCookie } = await loginAs('ro.western@aicte.gov.in');
 
     // Upload compliance document
     const uploadRes = await request(app)
       .post('/api/v1/obligations/OBL-PDIMTR-LEASE/upload')
-      .set('Cookie', coepCookie)
+      .set('Cookie', pdimtrCookie)
       .set('Origin', 'http://localhost:3000')
       .send({
         fileName: 'Registered_30Yr_Lease_Renewal_Deed.pdf',
@@ -315,11 +315,11 @@ describe('T01–T16 Acceptance Verification Suite (SIH 2026 Problem Statement 26
 
     // 2. Mark Land Lease obligation as verified
     const { cookie: roCookie } = await loginAs('ro.western@aicte.gov.in');
-    const { cookie: coepCookie } = await loginAs('principal@coep.ac.in');
+    const { cookie: pdimtrCookie } = await loginAs('principal@pdimtr.ac.in');
 
     const upload = await request(app)
       .post('/api/v1/obligations/OBL-PDIMTR-FIRE-NOC/upload')
-      .set('Cookie', coepCookie)
+      .set('Cookie', pdimtrCookie)
       .set('Origin', 'http://localhost:3000')
       .send({ fileName: 'Fire_NOC.pdf' });
 

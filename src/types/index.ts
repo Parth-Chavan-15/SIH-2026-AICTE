@@ -230,6 +230,7 @@ export interface AuditEvent {
   tamperProofHash: string;
   ipAddress: string;
   result: 'SUCCESS' | 'FAILED' | 'FLAGGED';
+  isTamperedDemo?: boolean;
 }
 
 export interface ConfigRule {

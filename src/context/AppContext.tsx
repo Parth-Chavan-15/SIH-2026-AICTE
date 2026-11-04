@@ -188,9 +188,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const handleSessionChange = () => {
       const profile = api.getUserProfile();
       setUserState(profile);
+      // Immediately purge tenant-sensitive state to prevent cross-institution leakage in UI
+      setApplications([]);
+      setEvcInspections([]);
+      setComplianceItems([]);
+      setExpiringDocs([]);
+      setNotifications([]);
+      setEscalations([]);
+      setAuditLog([]);
+      setSelectedAppId(null);
+      setLoading(true);
+
       setRoleState((prevRole) => {
         if (prevRole === profile.role) {
-          refreshData();
+          // Force fresh fetch for new user even if role is the same (e.g., COEP -> PDIMTR)
+          setTimeout(() => refreshData(), 0);
           return prevRole;
         }
         return profile.role;

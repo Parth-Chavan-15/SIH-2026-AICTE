@@ -9,6 +9,7 @@ import mongoose from 'mongoose';
 import { createMongoStorage } from '../persistence/mongoCore';
 import { createDecisionService, type DecisionEvidenceReader } from './decisions';
 import type { DecisionObligationParticipant, ScrutinyPrerequisitePort } from '../../shared/ports';
+import { verifyAuditRecordIntegrity } from '../security/auditVerification';
 
 export function createCoreRouter(options: { storage?: CaseStorage; identity?: () => Identity; scrutiny?: ScrutinyPrerequisitePort; evidence?: EvidencePrerequisite; policyFacts?: PolicyFactsReader; obligations?: DecisionObligationParticipant; decisionEvidence?: DecisionEvidenceReader } = {}) {
   const router = Router();
@@ -196,6 +197,10 @@ export function createCoreRouter(options: { storage?: CaseStorage; identity?: ()
   router.post('/applications/:id/transition', requirePermission('case.transition'), wrap(async (req, res) => { const data = await service.transition(req.commandContext, String(req.params.id), req.body); res.json({ success: true, data, eventId: data.eventId }); }));
   router.get('/applications/:id/history', requirePermission('history.read'), wrap(async (req, res) => { const app = await get(req); const items = await service.storage.history(req.actor, app.id); res.json({ success: true, data: { items, total: items.length } }); }));
   router.get('/audit-logs', requirePermission('history.read'), wrap(async (req, res) => res.json({ success: true, data: await service.storage.history(req.actor) })));
+  router.post('/audit-logs/verify', requirePermission('history.read'), wrap(async (req, res) => {
+    const result = verifyAuditRecordIntegrity(req.body?.record || req.body, req.body?.previousHash);
+    res.json({ success: true, data: result });
+  }));
   router.get('/dashboard/summary', requirePermission('dashboard.read'), wrap(async (req, res) => {
     const filters = safeQueryFilter(req);
     if (filters.slaStatus) throw new CoreError('VALIDATION_FAILED', 'Legacy SLA filter is not supported by canonical case storage');
