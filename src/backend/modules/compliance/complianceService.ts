@@ -467,7 +467,10 @@ export function seedComplianceDB(obligations?: Obligation[]): void {
   complianceDB.timers.clear();
   complianceDB.deliveredAlerts.clear();
 
-  // Institutional Alert Fixtures: Scoped to Canonical Applications
+  // Role-Scoped Alert Fixtures across All 6 Roles (Strict Responsibility Scoping)
+  // -------------------------------------------------------------------------
+  // ROLE 1: Institutional Tenant Alerts (COEP, GIITS, PDIMTR, BATU, APEX, VVIT)
+  // -------------------------------------------------------------------------
   // 1. COEP Tech (APP-2026-COEP, INST-SOUTH) - 5 Coherent Workflow Events
   complianceDB.deliveredAlerts.set('ALERT-COEP-01-INTAKE', {
     id: 'ALT-COEP-01',
@@ -584,6 +587,249 @@ export function seedComplianceDB(obligations?: Obligation[]): void {
     category: 'Escalation',
     severity: 'info',
     isRead: false
+  });
+
+  // 6. VVIT Boundary (APP-2026-VVIT, INST-VVIT)
+  complianceDB.deliveredAlerts.set('ALERT-VVIT-BOUNDARY', {
+    id: 'ALT-VVIT-01',
+    dedupeKey: 'ALERT-VVIT-BOUNDARY',
+    title: 'Statutory Intake Boundary X=360 Policy Hold',
+    message: 'Application APP-2026-VVIT held under APH Table 2.3 Row 9 & Addendum Errata G02 p. 42 for Executive Committee policy determination.',
+    timestamp: '2026-10-24T10:30:00.000Z',
+    applicationId: 'APP-2026-VVIT',
+    institutionId: 'INST-VVIT',
+    category: 'Workflow',
+    severity: 'warning',
+    isRead: false
+  });
+
+  // -------------------------------------------------------------------------
+  // ROLE 2: Scrutiny Reviewer Desk Alerts
+  // -------------------------------------------------------------------------
+  complianceDB.deliveredAlerts.set('ALERT-SCR-01', {
+    id: 'ALT-SCR-01',
+    dedupeKey: 'ALERT-SCR-01',
+    title: 'Standing Scrutiny Committee Group Alpha Assigned',
+    message: 'Western Regional Office allocated case APP-2026-COEP to Scrutiny Group Alpha. 6-category statutory checklist review active.',
+    timestamp: '2026-10-23T09:30:00.000Z',
+    relatedCaseId: 'APP-2026-COEP',
+    institutionId: 'INST-SOUTH',
+    targetRole: 'reviewer',
+    category: 'Scrutiny',
+    severity: 'info',
+    isRead: false
+  });
+  complianceDB.deliveredAlerts.set('ALERT-SCR-02', {
+    id: 'ALT-SCR-02',
+    dedupeKey: 'ALERT-SCR-02',
+    title: 'Rescrutiny Submission Received (GIITS Visakhapatnam)',
+    message: 'GIITS submitted cured Faculty Cadre Roster evidence (DOC-GIITS-D1-v2). 10-day re-scrutiny SLA clock running.',
+    timestamp: '2026-10-24T06:15:00.000Z',
+    applicationId: 'APP-2026-GIITS',
+    institutionId: 'INST-NORTH',
+    targetRole: 'reviewer',
+    category: 'Scrutiny',
+    severity: 'warning',
+    isRead: false
+  });
+  complianceDB.deliveredAlerts.set('ALERT-SCR-03', {
+    id: 'ALT-SCR-03',
+    dedupeKey: 'ALERT-SCR-03',
+    title: 'WORM Checklist Integrity Seal Applied',
+    message: 'Scrutiny snapshot 2-SOC1770029225 sealed into immutable WORM storage with SHA-256 integrity digest.',
+    timestamp: '2026-10-24T07:45:00.000Z',
+    relatedCaseId: 'APP-2026-COEP',
+    institutionId: 'INST-SOUTH',
+    targetRole: 'reviewer',
+    category: 'Scrutiny',
+    severity: 'success',
+    isRead: true
+  });
+
+  // -------------------------------------------------------------------------
+  // ROLE 3: EVC Committee Desk Alerts
+  // -------------------------------------------------------------------------
+  complianceDB.deliveredAlerts.set('ALERT-EVC-01', {
+    id: 'ALT-EVC-01',
+    dedupeKey: 'ALERT-EVC-01',
+    title: 'EVC Physical Verification Mandate (BATU Lonere)',
+    message: 'BATU Lonere Break-in-EoA Restoration requires on-site infrastructure verification per APH §2.16.1 & Table 2.3 Row 7.',
+    timestamp: '2026-10-24T09:00:00.000Z',
+    applicationId: 'APP-2026-BATU',
+    institutionId: 'INST-BATU',
+    targetRole: 'evc',
+    category: 'EVC',
+    severity: 'warning',
+    isRead: false
+  });
+  complianceDB.deliveredAlerts.set('ALERT-EVC-02', {
+    id: 'ALT-EVC-02',
+    dedupeKey: 'ALERT-EVC-02',
+    title: '3-Member Expert Committee Allocation Confirmed',
+    message: 'EVC Panel allocated: Dr. S. K. Roy (Chairman, IITB), Dr. Anjali Mehta (NIT), Dr. R. K. Sharma. 10-Day report SLA active.',
+    timestamp: '2026-10-24T09:30:00.000Z',
+    applicationId: 'APP-2026-BATU',
+    institutionId: 'INST-BATU',
+    targetRole: 'evc',
+    category: 'EVC',
+    severity: 'info',
+    isRead: false
+  });
+  complianceDB.deliveredAlerts.set('ALERT-EVC-03', {
+    id: 'ALT-EVC-03',
+    dedupeKey: 'ALERT-EVC-03',
+    title: 'Geo-Tagged Video Walkthrough Upload Pending',
+    message: 'Campus inspection video with GPS coordinate stamps required before submitting final proforma evaluation.',
+    timestamp: '2026-10-24T10:00:00.000Z',
+    applicationId: 'APP-2026-BATU',
+    institutionId: 'INST-BATU',
+    targetRole: 'evc',
+    category: 'EVC',
+    severity: 'warning',
+    isRead: false
+  });
+
+  // -------------------------------------------------------------------------
+  // ROLE 4: Regional Desk / Regional Officer Alerts
+  // -------------------------------------------------------------------------
+  complianceDB.deliveredAlerts.set('ALERT-RO-01', {
+    id: 'ALT-RO-01',
+    dedupeKey: 'ALERT-RO-01',
+    title: 'New NSWS Application Ingested (WRO Western Region)',
+    message: 'Application APP-2026-COEP ingested from NSWS. Allocation to Standing Scrutiny Committee Group Alpha completed.',
+    timestamp: '2026-10-22T08:10:00.000Z',
+    relatedCaseId: 'APP-2026-COEP',
+    institutionId: 'INST-SOUTH',
+    targetRole: 'regional_officer',
+    category: 'Regional Intake',
+    severity: 'info',
+    isRead: true
+  });
+  complianceDB.deliveredAlerts.set('ALERT-RO-02', {
+    id: 'ALT-RO-02',
+    dedupeKey: 'ALERT-RO-02',
+    title: 'Regional Office Concurrence Window Active (15-Day SLA)',
+    message: 'State DTE concurrence period for AY 2026–27 intake expansions active. Western Regional Office SLA tracking normal.',
+    timestamp: '2026-10-23T11:00:00.000Z',
+    targetRole: 'regional_officer',
+    category: 'Concurrence',
+    severity: 'info',
+    isRead: false
+  });
+  complianceDB.deliveredAlerts.set('ALERT-RO-03', {
+    id: 'ALT-RO-03',
+    dedupeKey: 'ALERT-RO-03',
+    title: '30-Year Lease Expiry Notice (PDIMTR Davangere)',
+    message: 'Form-6 renewal undertaking and valid lease deed registration required under APH Table 1 within 30 days.',
+    timestamp: '2026-10-24T08:00:00.000Z',
+    applicationId: 'APP-2026-PDIMTR',
+    institutionId: 'INST-WEST',
+    targetRole: 'regional_officer',
+    category: 'Compliance',
+    severity: 'warning',
+    isRead: false
+  });
+
+  // -------------------------------------------------------------------------
+  // ROLE 5: National Approval Bureau / Council Executive Committee Alerts
+  // -------------------------------------------------------------------------
+  complianceDB.deliveredAlerts.set('ALERT-CA-01', {
+    id: 'ALT-CA-01',
+    dedupeKey: 'ALERT-CA-01',
+    title: 'Cleared Dossier Tabled for Executive Committee Approval',
+    message: 'COEP Pune APP-2026-COEP cleared 100% desk scrutiny. Ready for Council decision recording & Extension of Approval order.',
+    timestamp: '2026-10-24T07:45:00.000Z',
+    relatedCaseId: 'APP-2026-COEP',
+    institutionId: 'INST-SOUTH',
+    targetRole: 'bureau_officer',
+    category: 'Council Docket',
+    severity: 'success',
+    isRead: false
+  });
+  complianceDB.deliveredAlerts.set('ALERT-CA-02', {
+    id: 'ALT-CA-02',
+    dedupeKey: 'ALERT-CA-02',
+    title: 'Standing Appellate Committee (SAC) Hearing Scheduled',
+    message: 'Apex Institute contested EVC appeal listed for hearing under APH §1.11. Speaking order draft pending adjudication.',
+    timestamp: '2026-10-24T09:15:00.000Z',
+    applicationId: 'APP-2026-APEX',
+    institutionId: 'INST-APEX',
+    targetRole: 'bureau_officer',
+    category: 'Judicial / SAC',
+    severity: 'info',
+    isRead: false
+  });
+  complianceDB.deliveredAlerts.set('ALERT-CA-03', {
+    id: 'ALT-CA-03',
+    dedupeKey: 'ALERT-CA-03',
+    title: 'Decision Letter Digital Signing Authorized',
+    message: 'Approval Bureau Authority DSC key ready for HMAC-SHA256 prototype seal application on AY 2026-27 orders.',
+    timestamp: '2026-10-24T10:00:00.000Z',
+    targetRole: 'bureau_officer',
+    category: 'Order Dispatch',
+    severity: 'info',
+    isRead: true
+  });
+
+  // -------------------------------------------------------------------------
+  // ROLE 6: Central Policy Administrator — SYSTEM ALERTS & TELEMETRY LOGS
+  // -------------------------------------------------------------------------
+  complianceDB.deliveredAlerts.set('ALERT-ADM-01', {
+    id: 'ALT-ADM-01',
+    dedupeKey: 'ALERT-ADM-01',
+    title: 'Rule Conflict Detected: RULE-CONFLICT-NBA-THRESHOLD-360',
+    message: 'APH Table 2.3 Row 9 & Addendum Errata G02 p. 42 specifies intake formulas for X < 360 and X > 360, but omits X = 360 exact boundary. Case APP-2026-VVIT halted for policy clarification.',
+    timestamp: '2026-10-24T10:35:00.000Z',
+    applicationId: 'APP-2026-VVIT',
+    institutionId: 'INST-VVIT',
+    targetRole: 'policy_admin',
+    category: 'Rule Engine Conflict',
+    severity: 'critical',
+    isRead: false
+  });
+  complianceDB.deliveredAlerts.set('ALERT-ADM-02', {
+    id: 'ALT-ADM-02',
+    dedupeKey: 'ALERT-ADM-02',
+    title: 'WORM Audit Ledger Verification: Cryptographic Chain Intact',
+    message: 'HMAC-SHA256 non-repudiation verification executed across 4,280 immutable audit blocks. Zero tampering detected; historical integrity verified.',
+    timestamp: '2026-10-24T09:00:00.000Z',
+    targetRole: 'policy_admin',
+    category: 'WORM Audit Ledger',
+    severity: 'success',
+    isRead: true
+  });
+  complianceDB.deliveredAlerts.set('ALERT-ADM-03', {
+    id: 'ALT-ADM-03',
+    dedupeKey: 'ALERT-ADM-03',
+    title: 'Upstream Ecosystem Adapters: 99.98% Health Check',
+    message: 'NSWS Ingestion Webhook, DigiLocker Academic Depository, and CCA Class-3 DSC gateway adapters operational with < 12ms latency.',
+    timestamp: '2026-10-24T08:30:00.000Z',
+    targetRole: 'policy_admin',
+    category: 'Ecosystem Adapters',
+    severity: 'info',
+    isRead: true
+  });
+  complianceDB.deliveredAlerts.set('ALERT-ADM-04', {
+    id: 'ALT-ADM-04',
+    dedupeKey: 'ALERT-ADM-04',
+    title: 'Automated SLA Escalation Daemon: Level 1-3 Monitoring Active',
+    message: 'Autonomous SLA compliance monitor verified all institutional workflows. 1 SLA notice active for GIITS cadre rectification.',
+    timestamp: '2026-10-24T07:00:00.000Z',
+    targetRole: 'policy_admin',
+    category: 'SLA Escalation',
+    severity: 'warning',
+    isRead: false
+  });
+  complianceDB.deliveredAlerts.set('ALERT-ADM-05', {
+    id: 'ALT-ADM-05',
+    dedupeKey: 'ALERT-ADM-05',
+    title: 'Worker Outbox & Idempotency Telemetry: Healthy',
+    message: 'Transactional outbox processor dispatched 18 events with 0 duplicate deliveries. Idempotency receipt collision tests passed.',
+    timestamp: '2026-10-24T06:00:00.000Z',
+    targetRole: 'policy_admin',
+    category: 'Worker Health',
+    severity: 'info',
+    isRead: true
   });
   complianceDB.simulatedClockTimestamp = Date.parse('2026-10-24T00:00:00.000Z');
 

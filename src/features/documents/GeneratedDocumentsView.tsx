@@ -28,14 +28,15 @@ export const GeneratedDocumentsView: React.FC = () => {
   );
   const canGenerate = Boolean(actor?.permissions?.includes('decision.record'));
 
-  // Target application identification for institution scoping
+  // Target application identification for institution scoping (Strict canonical mapping)
   const targetAppId = isInstitution
     ? (actor?.id === 'usr-inst-coep' || (actor as any)?.email === 'principal@coep.ac.in') ? 'APP-2026-COEP'
       : (actor?.id === 'usr-inst-giits' || (actor as any)?.email === 'principal@giits.ac.in') ? 'APP-2026-GIITS'
       : (actor?.id === 'usr-inst-pdimtr' || (actor as any)?.email === 'principal@pdimtr.ac.in') ? 'APP-2026-PDIMTR'
       : (actor?.id === 'usr-inst-apex' || (actor as any)?.email === 'principal@apex.ac.in') ? 'APP-2026-APEX'
       : (actor?.id === 'usr-inst-batu' || (actor as any)?.email === 'principal@batu.ac.in') ? 'APP-2026-BATU'
-      : (actor?.institutionIds?.[0] ? applications.find(a => a.institutionCode === actor.institutionIds[0] || a.id === actor.institutionIds[0])?.id : null) || applications[0]?.id
+      : (actor?.id === 'usr-inst-vvit' || (actor as any)?.email === 'principal@vvit.ac.in') ? 'APP-2026-VVIT'
+      : (actor?.institutionIds?.[0] ? applications.find(a => a.institutionCode === actor.institutionIds[0] || a.id === actor.institutionIds[0])?.id : null) || (applications.length > 0 ? applications[0].id : null)
     : null;
 
   const [selectedCaseId, setSelectedCaseId] = useState<string>(targetAppId || '');
@@ -96,9 +97,18 @@ export const GeneratedDocumentsView: React.FC = () => {
     }
   };
 
-  // Filter documents: institutions only see their own official orders
-  const displayedDocs = isInstitution && targetAppId
-    ? docsList.filter((doc) => doc.caseId === targetAppId || (doc.institutionName && activeApp && doc.institutionName.toLowerCase().includes(activeApp.institutionName.toLowerCase().split(' ')[0])))
+  // Filter documents: institutions strictly see only their own official orders with zero cross-tenant leakage
+  const displayedDocs = isInstitution
+    ? docsList.filter((doc) => {
+        // Direct caseId match
+        if (targetAppId && (doc.caseId === targetAppId || doc.applicationId === targetAppId)) return true;
+        // Tenant permanent ID match
+        if (actor?.institutionIds && actor.institutionIds.length > 0 && doc.permanentInstituteId) {
+          if (actor.institutionIds.includes(doc.permanentInstituteId)) return true;
+        }
+        // Match against loaded tenant application IDs
+        return applications.some(a => a.id === doc.caseId || a.id === doc.applicationId || (a.institutionCode && a.institutionCode === doc.permanentInstituteId));
+      })
     : docsList;
 
   return (

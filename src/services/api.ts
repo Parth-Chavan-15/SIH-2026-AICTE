@@ -172,19 +172,24 @@ export function mapCanonicalToUi(c: CanonicalApplication): Application {
 
   const isBATU = c.id === 'APP-2026-BATU' || c.id.includes('BATU');
 
-  const instName = (c.facts?.institutionName as string) ||
+  const isVVIT = c.id === 'APP-2026-VVIT' || c.id.includes('VVIT') || c.id.includes('BOUNDARY') || c.id.includes('TRAP-360') || c.id.includes('EVIT') || c.id.includes('EAST') || c.institutionId === 'INST-VVIT' || c.institutionId === 'INST-EAST-VALLEY';
+  const isVJTI = c.id.includes('VJTI') || c.institutionId === 'INST-VJTI';
 
+  let rawInstName = (c.facts?.institutionName as string) ||
     (isGIITS ? 'Gonna Institute of Information Technology and Sciences (GIITS), Visakhapatnam'
-
       : isCOEP ? 'College of Engineering Pune (COEP Technological University)'
-
       : isPDIMTR ? 'Prerna / Univ BDT College of Engineering (PDIMTR)'
-
       : isAPEX ? 'Apex Institute of Technology & Management'
-
       : isBATU ? 'Dr. Babasaheb Ambedkar Technological University (BATU Lonere)'
-
+      : isVVIT ? 'Vidya Vardhini Institute of Technology (Boundary X=360)'
+      : isVJTI ? 'Veermata Jijabai Technological Institute (VJTI), Mumbai'
       : c.institutionId);
+
+  // Sanitize any residual East Valley/EVIT strings into canonical VVIT Boundary X=360
+  if (rawInstName && (rawInstName.includes('East Valley') || rawInstName.includes('EVIT'))) {
+    rawInstName = 'Vidya Vardhini Institute of Technology (Boundary X=360)';
+  }
+  const instName = rawInstName;
 
 
 
@@ -412,9 +417,9 @@ export function mapCanonicalToUi(c: CanonicalApplication): Application {
 
     region,
 
-    state: region === 'Western' ? 'Maharashtra' : region === 'South-Central' ? 'Andhra Pradesh' : region === 'Northern' ? 'Uttar Pradesh' : region === 'Eastern' ? 'West Bengal' : 'Delhi NCR',
+    state: isVVIT ? 'Maharashtra' : region === 'Western' ? 'Maharashtra' : region === 'South-Central' ? 'Andhra Pradesh' : region === 'Northern' ? 'Uttar Pradesh' : region === 'Eastern' ? 'West Bengal' : 'Maharashtra',
 
-    city: isGIITS ? 'Visakhapatnam' : isCOEP ? 'Pune' : isPDIMTR ? 'Davangere / Nagpur' : isAPEX ? 'Kanpur' : isBATU ? 'Lonere, Raigad' : 'Kolkata',
+    city: isGIITS ? 'Visakhapatnam' : isCOEP ? 'Pune' : isPDIMTR ? 'Davangere / Nagpur' : isAPEX ? 'Kanpur' : isBATU ? 'Lonere, Raigad' : isVVIT ? 'Palghar / Mumbai' : 'Mumbai',
 
     applicationType: c.category === 'intake_increase' ? 'Increase in Intake / Additional Course' : c.category === 'restoration_or_shifting' ? 'Change of Site / Location' : 'Extension of Approval (EoA)',
 
@@ -2177,61 +2182,43 @@ class APIService {
 
 
     try {
-
       const res = await requestJson<any>('/alerts');
-
       const list = Array.isArray(res) ? res : res?.data || [];
-
       if (list.length > 0) {
-
-        const liveAlerts = list.map((a: any) => ({
-
+        return list.map((a: any) => ({
           id: a.id,
-
           title: a.title,
-
           message: a.message,
-
           timestamp: a.timestamp,
-
           isRead: Boolean(a.isRead),
-
           category: a.category || 'Workflow',
-
           severity: (a.severity as any) || 'info',
-
-          applicationId: a.applicationId || (a.id?.includes('COEP') ? 'APP-2026-COEP' : a.id?.includes('GIITS') ? 'APP-2026-GIITS' : a.id?.includes('PDIMTR') ? 'APP-2026-PDIMTR' : a.id?.includes('BATU') ? 'APP-2026-BATU' : a.id?.includes('APEX') ? 'APP-2026-APEX' : 'APP-2026-COEP')
-
+          applicationId: a.applicationId || ''
         }));
-
-        return [...liveAlerts, ...defaultAlerts.filter(d => !liveAlerts.some((l: any) => l.title === d.title || l.id === d.id))];
-
       }
-
-      return defaultAlerts;
-
+      return [];
     } catch {
-
-      return defaultAlerts;
-
+      return [];
     }
 
   }
 
 
 
-  public async markNotificationAsRead(_id: string): Promise<void> {
-
-    return;
-
+  public async markNotificationAsRead(id: string): Promise<void> {
+    try {
+      await requestJson(`/alerts/${encodeURIComponent(id)}/read`, { method: 'PATCH' });
+    } catch {
+      // Local state fallback
+    }
   }
 
-
-
   public async markAllNotificationsAsRead(): Promise<void> {
-
-    return;
-
+    try {
+      await requestJson('/alerts/mark-all-read', { method: 'POST' });
+    } catch {
+      // Local state fallback
+    }
   }
 
 

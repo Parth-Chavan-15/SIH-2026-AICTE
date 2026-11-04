@@ -171,32 +171,80 @@ export function createComplianceRouter(): Router {
     });
   });
 
-  // GET /api/v1/alerts - View delivered and provenance alerts (Test T12 & Tenant Scoping)
+  // GET /api/v1/alerts - View delivered alerts (Strictly scoped by caller role)
   router.get('/alerts', (req: Request, res: Response) => {
     const actor = (req as any).actor;
     let alerts = Array.from(complianceDB.deliveredAlerts.values());
-    if (actor && (actor.roles?.includes('institution') || actor.id?.startsWith('usr-inst-'))) {
-      const allowedInsts = new Set(actor.institutionIds || []);
-      const isCOEP = actor.email === 'principal@coep.ac.in' || actor.id === 'usr-inst-coep';
-      const isGIITS = actor.email === 'principal@giits.ac.in' || actor.id === 'usr-inst-giits';
-      const isPDIMTR = actor.email === 'principal@pdimtr.ac.in' || actor.id === 'usr-inst-pdimtr';
-      const isBATU = actor.email === 'principal@batu.ac.in' || actor.id === 'usr-inst-batu';
-      const isAPEX = actor.email === 'principal@apex.ac.in' || actor.id === 'usr-inst-apex';
 
-      alerts = alerts.filter(a => {
-        if (a.institutionId && allowedInsts.has(a.institutionId)) return true;
-        if (isCOEP && (a.applicationId === 'APP-2026-COEP' || a.institutionId === 'INST-SOUTH')) return true;
-        if (isGIITS && (a.applicationId === 'APP-2026-GIITS' || a.institutionId === 'INST-NORTH')) return true;
-        if (isPDIMTR && (a.applicationId === 'APP-2026-PDIMTR' || a.institutionId === 'INST-PDIMTR')) return true;
-        if (isBATU && (a.applicationId === 'APP-2026-BATU' || a.institutionId === 'INST-BATU')) return true;
-        if (isAPEX && (a.applicationId === 'APP-2026-APEX' || a.institutionId === 'INST-APEX')) return true;
-        return false;
-      });
+    if (actor) {
+      const isInstitution = actor.roles?.includes('institution') || actor.id?.startsWith('usr-inst-');
+      const isReviewer = actor.roles?.includes('reviewer') && !actor.roles?.includes('regional_officer');
+      const isEvc = actor.roles?.includes('evc');
+      const isRegionalOfficer = actor.roles?.includes('regional_officer');
+      const isBureauOfficer = actor.roles?.includes('bureau_officer') || actor.roles?.includes('demo_authority');
+      const isPolicyAdmin = actor.roles?.includes('policy_admin');
+
+      if (isInstitution) {
+        const allowedInsts = new Set(actor.institutionIds || []);
+        const isCOEP = actor.email === 'principal@coep.ac.in' || actor.id === 'usr-inst-coep';
+        const isGIITS = actor.email === 'principal@giits.ac.in' || actor.id === 'usr-inst-giits';
+        const isPDIMTR = actor.email === 'principal@pdimtr.ac.in' || actor.id === 'usr-inst-pdimtr';
+        const isBATU = actor.email === 'principal@batu.ac.in' || actor.id === 'usr-inst-batu';
+        const isAPEX = actor.email === 'principal@apex.ac.in' || actor.id === 'usr-inst-apex';
+        const isVVIT = actor.email === 'principal@vvit.ac.in' || actor.id === 'usr-inst-vvit';
+
+        alerts = alerts.filter(a => {
+          if ((a as any).targetRole && (a as any).targetRole !== 'institution') return false;
+          if (a.institutionId && allowedInsts.has(a.institutionId)) return true;
+          if (isCOEP && (a.applicationId === 'APP-2026-COEP' || a.institutionId === 'INST-SOUTH')) return true;
+          if (isGIITS && (a.applicationId === 'APP-2026-GIITS' || a.institutionId === 'INST-NORTH')) return true;
+          if (isPDIMTR && (a.applicationId === 'APP-2026-PDIMTR' || a.institutionId === 'INST-WEST' || a.institutionId === 'INST-PDIMTR')) return true;
+          if (isBATU && (a.applicationId === 'APP-2026-BATU' || a.institutionId === 'INST-BATU')) return true;
+          if (isAPEX && (a.applicationId === 'APP-2026-APEX' || a.institutionId === 'INST-APEX')) return true;
+          if (isVVIT && (a.applicationId === 'APP-2026-VVIT' || a.institutionId === 'INST-VVIT')) return true;
+          return false;
+        });
+      } else if (isReviewer) {
+        alerts = alerts.filter(a => (a as any).targetRole === 'reviewer' || a.category === 'Scrutiny');
+      } else if (isEvc) {
+        alerts = alerts.filter(a => (a as any).targetRole === 'evc' || a.category === 'EVC');
+      } else if (isRegionalOfficer) {
+        alerts = alerts.filter(a => (a as any).targetRole === 'regional_officer' || a.category === 'Regional Intake' || a.category === 'Concurrence');
+      } else if (isBureauOfficer) {
+        // Bureau Officer / Council Authority: Global oversight across all institutional cases + bureau actions
+        alerts = alerts.filter(a => (a as any).targetRole !== 'policy_admin');
+      } else if (isPolicyAdmin) {
+        // Role 6: Overhauled to System Alerts & Logs exclusively
+        alerts = alerts.filter(a => (a as any).targetRole === 'policy_admin' || ['Rule Engine Conflict', 'WORM Audit Ledger', 'Ecosystem Adapters', 'SLA Escalation', 'Worker Health'].includes(a.category));
+      }
     }
+
     res.json({
       success: true,
       data: alerts,
     });
+  });
+
+  // PATCH /api/v1/alerts/:id/read - Mark alert as read
+  router.patch('/alerts/:id/read', (req: Request, res: Response) => {
+    const alertId = req.params.id;
+    for (const [key, alert] of complianceDB.deliveredAlerts.entries()) {
+      if (alert.id === alertId || key === alertId) {
+        alert.isRead = true;
+        complianceDB.deliveredAlerts.set(key, alert);
+        return res.json({ success: true, data: alert });
+      }
+    }
+    return res.json({ success: true, message: 'Alert state updated' });
+  });
+
+  // POST /api/v1/alerts/mark-all-read - Mark all visible alerts as read
+  router.post('/alerts/mark-all-read', (_req: Request, res: Response) => {
+    for (const [key, alert] of complianceDB.deliveredAlerts.entries()) {
+      alert.isRead = true;
+      complianceDB.deliveredAlerts.set(key, alert);
+    }
+    return res.json({ success: true, message: 'All alerts marked as read' });
   });
 
   // GET /api/v1/compliance/dashboard - Dynamic dashboard metrics projection (Test T14)

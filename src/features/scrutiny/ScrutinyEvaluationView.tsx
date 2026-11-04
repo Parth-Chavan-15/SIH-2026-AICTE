@@ -43,6 +43,11 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
   );
 
   const currentApp = applications.find((a) => a.id === selectedCaseId) || applications[0];
+  const isPolicyHalted = Boolean(
+    currentApp?.routeType === 'Policy review required' ||
+    currentApp?.currentStage === 'Draft' ||
+    (currentApp as any)?.state === 'policy_review_required'
+  );
 
   const {
     latestSnapshot,
@@ -813,6 +818,21 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
                 </table>
               </div>
 
+              {/* Statutory Policy Review Halt Banner */}
+              {isPolicyHalted && (
+                <div className="p-4 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 text-xs flex items-start gap-3 shadow-xs">
+                  <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <div className="font-bold text-amber-900 uppercase tracking-wider text-[11px]">
+                      Statutory Route Halted — Policy Review Required (APH Table 2.3 Row 9 Boundary X=360)
+                    </div>
+                    <p className="text-amber-800 text-[11px] leading-relaxed">
+                      The Dynamic Policy Routing Engine held this application because division boundary X = 360 is ambiguous under AY 2026–27 Addendum Errata G02 p. 42 (omitted between X &lt; 360 and X &gt; 360). Desk scrutiny checklist evaluation and signing actions are suspended pending Central Policy Bureau / Executive Committee clarification in the Active Rules Registry.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Snapshot v1 Signing Action Bar */}
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div>
@@ -820,16 +840,18 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
                     Official Scrutiny Actions &amp; Digital Seal
                   </span>
                   <span className="text-[11px] text-slate-500">
-                    Signing seals accepted items into immutable WORM storage. Select an authoritative regulatory action below:
+                    {isPolicyHalted
+                      ? 'Desk Scrutiny signing suspended while statutory policy review is pending.'
+                      : 'Signing seals accepted items into immutable WORM storage. Select an authoritative regulatory action below:'}
                   </span>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={handleAcceptAndClearScrutiny}
-                    disabled={scrutinyLoading}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
-                    title="Accept all parameters, sign snapshot v1, and advance application"
+                    disabled={scrutinyLoading || isPolicyHalted}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                    title={isPolicyHalted ? 'Disabled: Case held for Policy Review' : 'Accept all parameters, sign snapshot v1, and advance application'}
                   >
                     <CheckCircle2 className="w-4 h-4 text-emerald-200" />
                     <span>Accept &amp; Clear Scrutiny</span>
@@ -837,9 +859,9 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
 
                   <button
                     onClick={handleFlagDeficiencies}
-                    disabled={scrutinyLoading}
-                    className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
-                    title="Flag deficiencies in Faculty Cadre & Fire NOC, open rectification window"
+                    disabled={scrutinyLoading || isPolicyHalted}
+                    className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                    title={isPolicyHalted ? 'Disabled: Case held for Policy Review' : 'Flag deficiencies in Faculty Cadre & Fire NOC, open rectification window'}
                   >
                     <AlertTriangle className="w-4 h-4 text-slate-950" />
                     <span>Flag Deficiencies</span>
@@ -847,9 +869,9 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
 
                   <button
                     onClick={handleSignSnapshot}
-                    disabled={scrutinyLoading}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
-                    title="Sign snapshot v1 with current toggle states"
+                    disabled={scrutinyLoading || isPolicyHalted}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                    title={isPolicyHalted ? 'Disabled: Case held for Policy Review' : 'Sign snapshot v1 with current toggle states'}
                   >
                     <ShieldCheck className="w-4 h-4" />
                     <span>{scrutinyLoading ? 'Signing...' : 'Sign Snapshot v1'}</span>
@@ -857,9 +879,9 @@ export const ScrutinyEvaluationView: React.FC<ScrutinyEvaluationViewProps> = ({
 
                   <button
                     onClick={handleRejectScrutiny}
-                    disabled={scrutinyLoading}
-                    className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
-                    title="Formally reject application due to regulatory non-compliance"
+                    disabled={scrutinyLoading || isPolicyHalted}
+                    className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                    title={isPolicyHalted ? 'Disabled: Case held for Policy Review' : 'Formally reject application due to regulatory non-compliance'}
                   >
                     <XCircle className="w-4 h-4 text-rose-200" />
                     <span>Reject</span>

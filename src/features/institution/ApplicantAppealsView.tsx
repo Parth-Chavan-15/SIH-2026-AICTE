@@ -31,7 +31,8 @@ export const ApplicantAppealsView: React.FC = () => {
     : (actor?.id === 'usr-inst-pdimtr' || (actor as any)?.email === 'principal@pdimtr.ac.in') ? 'APP-2026-PDIMTR'
     : (actor?.id === 'usr-inst-apex' || (actor as any)?.email === 'principal@apex.ac.in') ? 'APP-2026-APEX'
     : (actor?.id === 'usr-inst-batu' || (actor as any)?.email === 'principal@batu.ac.in') ? 'APP-2026-BATU'
-    : (actor?.institutionIds?.[0] ? applications.find(a => a.institutionCode === actor.institutionIds[0] || a.id === actor.institutionIds[0])?.id : null) || applications[0]?.id;
+    : (actor?.id === 'usr-inst-vvit' || (actor as any)?.email === 'principal@vvit.ac.in') ? 'APP-2026-VVIT'
+    : (actor?.institutionIds?.[0] ? applications.find(a => a.institutionCode === actor.institutionIds[0] || a.id === actor.institutionIds[0])?.id : null) || (applications.length > 0 ? applications[0].id : null);
 
   const currentApp = applications.find(a => a.id === targetAppId) || applications[0];
 

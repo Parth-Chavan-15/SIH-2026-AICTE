@@ -219,9 +219,39 @@ export function createDecisionDocumentsRouter(storage?: CaseStorage): Router {
     }
   }
 
-  // GET /api/v1/decision-docs - List generated decision docs
-  router.get('/decision-docs', (_req: Request, res: Response) => {
-    const docs = getAllGeneratedDocuments();
+  // GET /api/v1/decision-docs - List generated decision docs (Strictly scoped by caller role)
+  router.get('/decision-docs', (req: Request, res: Response) => {
+    let docs = getAllGeneratedDocuments();
+    const actor = req.actor;
+    const requestedCaseId = req.query.caseId as string | undefined;
+
+    // Optional query param filter
+    if (requestedCaseId) {
+      docs = docs.filter(d => d.applicationId === requestedCaseId);
+    }
+
+    // Tenant Scoping: Institution actors can strictly ONLY view their own decision letters
+    if (actor && (actor.roles?.includes('institution') || actor.id?.startsWith('usr-inst-'))) {
+      const allowedInsts = new Set(actor.institutionIds || []);
+      const isCOEP = actor.email === 'principal@coep.ac.in' || actor.id === 'usr-inst-coep';
+      const isGIITS = actor.email === 'principal@giits.ac.in' || actor.id === 'usr-inst-giits';
+      const isPDIMTR = actor.email === 'principal@pdimtr.ac.in' || actor.id === 'usr-inst-pdimtr';
+      const isBATU = actor.email === 'principal@batu.ac.in' || actor.id === 'usr-inst-batu';
+      const isAPEX = actor.email === 'principal@apex.ac.in' || actor.id === 'usr-inst-apex';
+      const isVVIT = actor.email === 'principal@vvit.ac.in' || actor.id === 'usr-inst-vvit';
+
+      docs = docs.filter(d => {
+        if (d.permanentInstituteId && allowedInsts.has(d.permanentInstituteId)) return true;
+        if (isCOEP && (d.applicationId === 'APP-2026-COEP' || d.permanentInstituteId === 'INST-SOUTH')) return true;
+        if (isGIITS && (d.applicationId === 'APP-2026-GIITS' || d.permanentInstituteId === 'INST-NORTH')) return true;
+        if (isPDIMTR && (d.applicationId === 'APP-2026-PDIMTR' || d.permanentInstituteId === 'INST-WEST' || d.permanentInstituteId === 'INST-PDIMTR')) return true;
+        if (isBATU && (d.applicationId === 'APP-2026-BATU' || d.permanentInstituteId === 'INST-BATU')) return true;
+        if (isAPEX && (d.applicationId === 'APP-2026-APEX' || d.permanentInstituteId === 'INST-APEX')) return true;
+        if (isVVIT && (d.applicationId === 'APP-2026-VVIT' || d.permanentInstituteId === 'INST-VVIT')) return true;
+        return false;
+      });
+    }
+
     return res.status(200).json({
       success: true,
       data: {

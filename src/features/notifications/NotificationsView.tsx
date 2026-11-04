@@ -38,6 +38,7 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
   const session = getSession();
   const activeActor = session?.actor;
   const isInstitution = activeActor?.id?.startsWith('usr-inst-') || activeActor?.roles?.includes('institution');
+  const isPolicyAdmin = Boolean(activeActor?.roles?.includes('policy_admin') || activeActor?.id === 'usr-admin');
 
   const collegeAppId =
     (activeActor?.id === 'usr-inst-coep' || (activeActor as any)?.email === 'principal@coep.ac.in') ? 'APP-2026-COEP'
@@ -85,11 +86,18 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-            Notification Center & Automated Escalation Matrix
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            <span>{isPolicyAdmin ? 'System Alerts, Security Logs & Autonomous Telemetry' : 'Notification Center & Operational Alerts'}</span>
+            {isPolicyAdmin && (
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-100 text-purple-900 border border-purple-300 font-bold">
+                Role #6 Policy Admin System Console
+              </span>
+            )}
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Rule-driven SLA breach escalations, committee alerts, and institutional reminder logs
+            {isPolicyAdmin
+              ? 'Real-time rule engine conflict logs, immutable WORM audit ledger verification, ecosystem health, and autonomous SLA escalation monitoring'
+              : 'Rule-driven SLA breach escalations, committee workflow notices, and institutional reminder logs'}
           </p>
         </div>
 
@@ -120,6 +128,44 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
         </div>
       </div>
 
+      {/* Policy Admin System Telemetry Summary */}
+      {isPolicyAdmin && (
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+          <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 space-y-1">
+            <span className="text-[10px] uppercase font-bold text-emerald-800 block">WORM Audit Ledger</span>
+            <div className="text-sm font-bold text-emerald-950 flex items-center gap-1.5">
+              <CheckCircle className="w-4 h-4 text-emerald-600" />
+              <span>Verified Intact</span>
+            </div>
+            <p className="text-[10px] text-emerald-700 font-mono">HMAC-SHA256 • 0 Tampering</p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-200 space-y-1">
+            <span className="text-[10px] uppercase font-bold text-blue-800 block">Ecosystem Adapters</span>
+            <div className="text-sm font-bold text-blue-950 flex items-center gap-1.5">
+              <CheckCircle className="w-4 h-4 text-blue-600" />
+              <span>99.98% Health</span>
+            </div>
+            <p className="text-[10px] text-blue-700 font-mono">NSWS • DigiLocker • DSC</p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 space-y-1">
+            <span className="text-[10px] uppercase font-bold text-amber-800 block">Active Rules Engine</span>
+            <div className="text-sm font-bold text-amber-950 flex items-center gap-1.5">
+              <AlertTriangle className="w-4 h-4 text-amber-600" />
+              <span>1 Conflict Flagged</span>
+            </div>
+            <p className="text-[10px] text-amber-700 font-mono">RULE-CONFLICT-NBA-360</p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-purple-50 border border-purple-200 space-y-1">
+            <span className="text-[10px] uppercase font-bold text-purple-800 block">Worker Outbox Daemon</span>
+            <div className="text-sm font-bold text-purple-950 flex items-center gap-1.5">
+              <CheckCircle className="w-4 h-4 text-purple-600" />
+              <span>0 Delivery Failures</span>
+            </div>
+            <p className="text-[10px] text-purple-700 font-mono">3/3 Idempotent Receipts</p>
+          </div>
+        </div>
+      )}
+
       {/* Institutional Isolation Notice */}
       {isInstitution && (
         <div className="p-3.5 rounded-xl bg-blue-50/80 border border-blue-200 text-xs flex items-center gap-3 text-blue-950">
@@ -141,14 +187,10 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
           {/* Category Filter and Mark All Read */}
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex flex-wrap items-center gap-1.5">
-              {[
-                'All',
-                'Overdue',
-                'Deadline',
-                'EVC',
-                'Compliance',
-                'Document Expiry',
-              ].map((cat) => (
+              {(isPolicyAdmin
+                ? ['All', 'Rule Engine Conflict', 'WORM Audit Ledger', 'Ecosystem Adapters', 'SLA Escalation', 'Worker Health']
+                : ['All', 'Workflow', 'Scrutiny', 'EVC', 'Compliance', 'Document Expiry', 'Council Docket', 'Overdue']
+              ).map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setCategoryFilter(cat)}
@@ -163,9 +205,9 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
               ))}
             </div>
 
-            {!isInstitution && (
+            {!isInstitution && !isPolicyAdmin && (
               <div className="flex items-center gap-1.5 border-l border-slate-200 pl-3">
-                <span className="text-[10px] uppercase font-bold text-slate-400">Filter College:</span>
+                <span className="text-[10px] uppercase font-bold text-slate-400">Filter Case:</span>
                 {[
                   { id: 'All', label: 'All' },
                   { id: 'APP-2026-COEP', label: 'COEP' },

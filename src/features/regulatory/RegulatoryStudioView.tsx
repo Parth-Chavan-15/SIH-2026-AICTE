@@ -241,25 +241,27 @@ export const RegulatoryStudioView: React.FC = () => {
           }
         },
         D: {
-          reference: '1-360360360-EAST',
+          reference: '1-55449921001',
           source: 'NSWS_INVESTOR_PORTAL',
           application: {
-            id: 'APP-2026-TRAP-360',
-            reference: '1-360360360-EAST',
-            institutionId: 'INST-EAST-VALLEY',
-            regionId: 'Eastern',
+            id: 'APP-2026-VVIT',
+            reference: '1-55449921001',
+            institutionId: 'INST-VVIT',
+            regionId: 'Western',
             category: 'increase_intake',
             session: '2026-2027',
             facts: {
-              institutionName: 'East Valley Institute of Science & Tech',
-              program: 'Computer Science & Engineering',
-              proposedIntake: 360,
+              institutionName: 'Vidya Vardhini Institute of Technology (Boundary X=360)',
+              permanentInstituteId: '1-55449921',
+              program: 'Engineering & Technology',
+              currentIntake: 360,
+              proposedIntake: 420,
               nbaAccredited: false,
               nbaScore: 0,
-              dscSignatory: 'Dr. A. K. Banerjee',
+              dscSignatory: 'Dr. Ramesh Kadam',
               dscSerial: '6611099823441005',
-              panNumber: 'EASTB4567M',
-              nswsApplicationId: 'NSWS-2026-TRAP-360'
+              panNumber: 'AAATV5544P',
+              nswsApplicationId: 'NSWS-2026-VVIT-360'
             }
           }
         }
@@ -585,7 +587,7 @@ export const RegulatoryStudioView: React.FC = () => {
                       { key: 'A', name: 'College A (North Tech)', spec: '180 seats • Non-NBA' },
                       { key: 'B', name: 'College B (South Tech)', spec: '180 seats • NBA Accredited' },
                       { key: 'C', name: 'College C (West Poly)', spec: 'Name Change • Self Disclosure' },
-                      { key: 'D', name: 'College D (East Valley)', spec: '360 seats • Boundary Trap' },
+                      { key: 'D', name: 'College 6: VVIT (Boundary X=360)', spec: '360 seats • Boundary Trap' },
                     ].map(c => (
                       <button
                         key={c.key}
@@ -648,7 +650,7 @@ export const RegulatoryStudioView: React.FC = () => {
                     </div>
 
                     <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 space-y-1">
-                      <div className="font-bold text-rose-900">College D (East Valley)</div>
+                      <div className="font-bold text-rose-900">College 6: VVIT (Boundary X=360)</div>
                       <div className="text-[11px] text-rose-700 font-semibold">Route: X=360 Boundary Pause</div>
                       <p className="text-[10px] text-rose-800">
                         Intake right at statutory ceiling (360) → Pauses at policy_review_required for Council clearance.

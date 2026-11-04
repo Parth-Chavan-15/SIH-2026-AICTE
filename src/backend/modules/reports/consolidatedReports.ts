@@ -173,6 +173,7 @@ export function compileElectronicCaseSummary(
   const isPDIMTR = app.id.includes('PDIMTR') || app.institutionId.includes('WEST');
   const isApex = app.id.includes('APEX') || app.institutionId.includes('APEX');
   const isBATU = app.id.includes('BATU') || app.institutionId.includes('BATU');
+  const isVVIT = app.id.includes('VVIT') || app.institutionId.includes('VVIT') || app.id.includes('EVIT') || app.id.includes('TRAP-360') || app.institutionId.includes('EAST');
 
   // Exact real-world names from AICTE vault dossiers
   const institutionName = isGIITS
@@ -183,9 +184,13 @@ export function compileElectronicCaseSummary(
     ? 'University BDT College of Engineering (UBDTCE), Davangere'
     : isApex
     ? 'Apex Institute of Technology & Management'
-    : 'Dr. Babasaheb Ambedkar Technological University (BATU Lonere)';
+    : isBATU
+    ? 'Dr. Babasaheb Ambedkar Technological University (BATU Lonere)'
+    : isVVIT
+    ? 'Vidya Vardhini Institute of Technology (Boundary X=360)'
+    : (app.facts?.institutionName as string) || 'Technical Institution';
 
-  const permanentId = isGIITS ? '1-6055691' : isCOEP ? '1-1437622971' : isPDIMTR ? '1-447718433' : isApex ? '1-33104928' : '1-19201481';
+  const permanentId = isGIITS ? '1-6055691' : isCOEP ? '1-1437622971' : isPDIMTR ? '1-447718433' : isApex ? '1-33104928' : isBATU ? '1-19201481' : isVVIT ? '1-55449921' : '1-109704178';
   const nswsRef = isGIITS ? 'NSWS-2026-SCRO-101' : isCOEP ? 'NSWS-2026-WRO-202' : isPDIMTR ? 'NSWS-2026-WRO-303' : isApex ? 'NSWS-2026-NRO-404' : 'NSWS-2026-WRO-505';
 
   const routeStages = app.route?.stages || ['submitted', 'scrutiny_pending', 'decision_pending'];

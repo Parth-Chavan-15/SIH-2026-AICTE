@@ -179,7 +179,8 @@ export const caseAssignments: Map<string, { scrutinyGroupId?: string; evcGroupId
   ['APP-2026-COEP', { scrutinyGroupId: 'SCR-GROUP-A' }], // EVC bypassed for COEP NBA
   ['APP-2026-PDIMTR', { scrutinyGroupId: 'SCR-GROUP-A' }],
   ['APP-2026-APEX', { scrutinyGroupId: 'SCR-GROUP-B', evcGroupId: 'EVC-GROUP-A' }],
-  ['APP-2026-BATU', { evcGroupId: 'EVC-GROUP-B' }] // Only EVC route
+  ['APP-2026-BATU', { evcGroupId: 'EVC-GROUP-B' }], // Only EVC route
+  ['APP-2026-VVIT', { scrutinyGroupId: 'SCR-GROUP-A' }]
 ]);
 
 // Auditable Assignment History
