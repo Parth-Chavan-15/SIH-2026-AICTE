@@ -127,8 +127,8 @@ export function createCoreRouter(options: { storage?: CaseStorage; identity?: ()
     res.cookie('sih_demo_session', token, auth.cookieOptions).json({ success: true, data: session });
   }));
   router.post('/auth/demo-quick-access', wrap(async (req, res) => {
-    if (process.env.NODE_ENV === 'production') {
-      throw new CoreError('FORBIDDEN', 'Quick access disabled in production mode');
+    if (process.env.DISABLE_DEMO_ACCESS === 'true') {
+      throw new CoreError('FORBIDDEN', 'Quick access disabled');
     }
     const auth = identity();
     auth.verifyOrigin(req.get('origin'));
@@ -149,6 +149,10 @@ export function createCoreRouter(options: { storage?: CaseStorage; identity?: ()
       'role-4-ro': 'ro.western@aicte.gov.in',
       'role-5-ca': 'bureau.approval@aicte.gov.in',
       'role-6-admin': 'admin@aicte.gov.in',
+      'ro-western': 'ro.western@aicte.gov.in',
+      'scrutiny-reviewer': 'scrutiny.reviewer@aicte.gov.in',
+      'evc-chair': 'evc.chair@aicte.gov.in',
+      'bureau-approval': 'bureau.approval@aicte.gov.in',
       'coep': 'principal@coep.ac.in',
       'giits': 'principal@giits.ac.in',
       'pdimtr': 'principal@pdimtr.ac.in',
