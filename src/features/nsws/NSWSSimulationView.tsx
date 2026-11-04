@@ -631,12 +631,14 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
 
       } else {
 
+        setDscVerified(false);
         setErrorMsg('DSC signature verification rejected by gateway');
 
       }
 
     } catch (err: any) {
 
+      setDscVerified(false);
       setErrorMsg(err.message || 'DSC Verification failed');
 
     } finally {
@@ -1296,7 +1298,12 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
 
               value={tokenType}
 
-              onChange={(e: any) => setTokenType(e.target.value)}
+              onChange={(e: any) => {
+                setTokenType(e.target.value);
+                setDscVerified(false);
+                setErrorMsg(null);
+                setSuccessMsg(null);
+              }}
 
             >
 
@@ -1324,53 +1331,85 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
 
 
 
-          <div className="flex justify-between pt-3 border-t border-slate-100">
-
-            <button
-
-              onClick={() => {
-
-                setCurrentStep(1);
-
-                setErrorMsg(null);
-
-                setSuccessMsg(null);
-
-              }}
-
-              className="px-3 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50"
-
-            >
-
-              Back to Identity
-
-            </button>
-
-            <button
-
-              onClick={handleVerifyDSC}
-
-              disabled={loading}
-
-              className="px-5 py-2.5 rounded-lg bg-indigo-700 hover:bg-indigo-800 text-white font-semibold text-xs flex items-center gap-2 shadow-xs transition-colors"
-
-            >
-
-              <ShieldCheck className="w-4 h-4" />
-
-              <span>Verify DSC Token via emBridge Gateway</span>
-
-            </button>
-
+          {/* Real-time Hardware / Token Verification Status Indicator */}
+          <div className="p-3.5 rounded-xl border text-xs flex items-center justify-between gap-3 shadow-2xs"
+               style={{
+                 background: dscVerified ? '#f0fdf4' : errorMsg ? '#fff1f2' : '#f8fafc',
+                 borderColor: dscVerified ? '#86efac' : errorMsg ? '#fecdd3' : '#e2e8f0'
+               }}>
+            <div className="flex items-center gap-2.5">
+              {dscVerified ? (
+                <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
+              ) : errorMsg ? (
+                <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+              ) : (
+                <KeyRound className="w-5 h-5 text-slate-400 shrink-0" />
+              )}
+              <div>
+                <p className="font-bold text-xs" style={{ color: dscVerified ? '#166534' : errorMsg ? '#9f1239' : '#334155' }}>
+                  {dscVerified
+                    ? 'Class-3 Cryptographic DSC Validated & Sealed'
+                    : errorMsg
+                    ? 'Cryptographic Verification Rejected'
+                    : 'Awaiting Hardware Token Verification'}
+                </p>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  {dscVerified
+                    ? 'eMudhra / NIC CA Certificate & SHA-256 Digest confirmed for ' + signatoryName
+                    : errorMsg
+                    ? errorMsg
+                    : 'Connect USB Token via emBridge driver port 127.0.0.1:4501.'}
+                </p>
+              </div>
+            </div>
+            <span className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-md border ${
+              dscVerified
+                ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                : errorMsg
+                ? 'bg-rose-100 text-rose-900 border-rose-300'
+                : 'bg-slate-100 text-slate-700 border-slate-300'
+            }`}>
+              {dscVerified ? 'GATE_PASSED' : errorMsg ? 'GATE_BLOCKED' : 'READY'}
+            </span>
           </div>
 
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-3 border-t border-slate-100">
+            <button
+              onClick={() => {
+                setCurrentStep(1);
+                setErrorMsg(null);
+                setSuccessMsg(null);
+              }}
+              className="px-3.5 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors"
+            >
+              Back to Identity
+            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleVerifyDSC}
+                disabled={loading}
+                className="px-5 py-2.5 rounded-lg bg-indigo-700 hover:bg-indigo-800 text-white font-semibold text-xs flex items-center gap-2 shadow-xs transition-colors"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>{dscVerified ? 'Re-Verify Token' : 'Verify DSC Token via emBridge Gateway'}</span>
+              </button>
+              {dscVerified && (
+                <button
+                  onClick={() => {
+                    setCurrentStep(3);
+                    setErrorMsg(null);
+                    setSuccessMsg(null);
+                  }}
+                  className="px-5 py-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs flex items-center gap-2 shadow-xs transition-colors"
+                >
+                  <span>Proceed to Application Details</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
-
       )}
-
-
-
-      {/* STEP 3: AICTE Application Form */}
 
       {currentStep === 3 && (
 

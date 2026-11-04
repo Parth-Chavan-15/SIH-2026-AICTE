@@ -74,7 +74,7 @@ export type EventEnvelope<K extends EventType = EventType> = { [T in K]: {
 export interface Outbox { eventId: ID; event: EventEnvelope; attempts: number; status: 'pending' | 'delivered' | 'failed'; }
 export interface Timer { id: ID; obligationId: ID; obligationVersion: number; generation: number; kind: TimerKind; originEventId: ID; policyRevisionId?: ID; dueAt: ISODate; dedupeKey: string; status: 'active' | 'canceled' | 'fired'; }
 export interface Notification { id: ID; recipientId: ID; eventId: ID; dedupeKey: string; explanation: string; readAt?: ISODate; }
-export const ERROR_STATUS = { UNAUTHENTICATED: 401, FORBIDDEN: 403, SCOPE_VIOLATION: 403, NOT_FOUND: 404, VERSION_CONFLICT: 409, PRECONDITION_FAILED: 409, POLICY_REVIEW_REQUIRED: 409, IDEMPOTENCY_CONFLICT: 409, VALIDATION_FAILED: 422, FILE_TOO_LARGE: 413, UNSUPPORTED_MEDIA_TYPE: 415, STORAGE_UNAVAILABLE: 503 } as const;
+export const ERROR_STATUS = { UNAUTHENTICATED: 401, FORBIDDEN: 403, SCOPE_VIOLATION: 403, NOT_FOUND: 404, VERSION_CONFLICT: 409, PRECONDITION_FAILED: 409, POLICY_REVIEW_REQUIRED: 409, IDEMPOTENCY_CONFLICT: 409, VALIDATION_FAILED: 422, DSC_SIGNATURE_REQUIRED: 422, DSC_CERTIFICATE_EXPIRED: 422, DSC_CERTIFICATE_REVOKED: 422, FILE_TOO_LARGE: 413, UNSUPPORTED_MEDIA_TYPE: 415, STORAGE_UNAVAILABLE: 503 } as const;
 export type ErrorCode = keyof typeof ERROR_STATUS;
 export interface ApiError { code: ErrorCode; message: string; failedRule?: string; currentVersion?: number; issues?: { path: string; message: string }[]; }
 export type ApiResult<T> = { success: true; data: T; eventId?: ID } | { success: false; error: ApiError };

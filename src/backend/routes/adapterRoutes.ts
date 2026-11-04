@@ -183,7 +183,7 @@ export function createAdapterRouter(storage: CaseStorage): Router {
           }
         });
       }
-      return res.status(500).json({
+      return res.status(503).json({
         success: false,
         error: { code: 'STORAGE_UNAVAILABLE', message: err.message || 'DSC Verification gateway failed' }
       });

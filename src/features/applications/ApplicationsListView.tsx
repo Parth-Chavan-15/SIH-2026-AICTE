@@ -21,11 +21,13 @@ import {
 interface ApplicationsListViewProps {
   onSelectApplication: (appId: string) => void;
   onOpenNewAppModal: () => void;
+  onStartNSWSIntake?: () => void;
 }
 
 export const ApplicationsListView: React.FC<ApplicationsListViewProps> = ({
   onSelectApplication,
   onOpenNewAppModal,
+  onStartNSWSIntake,
 }) => {
   const { role, applications, loading } = useApp();
   const session = getSession();
@@ -89,7 +91,7 @@ export const ApplicationsListView: React.FC<ApplicationsListViewProps> = ({
       if (sortBy === 'intake') return b.proposedIntake - a.proposedIntake;
       return new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime();
     });
-  }, [applications, searchQuery, selectedRegion, selectedType, selectedStage, selectedSLA, sortBy]);
+  }, [scopedApps, searchQuery, selectedRegion, selectedType, selectedStage, selectedSLA, sortBy]);
 
   // Pagination logic
   const totalPages = Math.ceil(filteredApps.length / itemsPerPage) || 1;
@@ -156,6 +158,15 @@ export const ApplicationsListView: React.FC<ApplicationsListViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5">
+          {isInstitution && onStartNSWSIntake && (
+            <button
+              onClick={onStartNSWSIntake}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold shadow-xs transition-colors"
+            >
+              <span>+ New Application (NSWS)</span>
+            </button>
+          )}
+
           <button
             onClick={exportToCSV}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors"
@@ -257,11 +268,29 @@ export const ApplicationsListView: React.FC<ApplicationsListViewProps> = ({
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           {paginatedApps.length === 0 ? (
-            <div className="p-12 text-center">
-              <Building className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-              <p className="text-sm font-semibold text-slate-800">No applications match your filter</p>
-              <p className="text-xs text-slate-500 mt-1">Try clearing your search query or reset filter dropdowns.</p>
-            </div>
+            isInstitution && scopedApps.length === 0 ? (
+              <div className="p-12 text-center max-w-md mx-auto">
+                <Building className="w-12 h-12 text-blue-300 mx-auto mb-3" />
+                <h3 className="text-base font-bold text-slate-900">No applications are available for this institution yet.</h3>
+                <p className="text-xs text-slate-500 mt-1 mb-5">
+                  Initiate your statutory approval intake through the National Single Window System (NSWS) simulation.
+                </p>
+                {onStartNSWSIntake && (
+                  <button
+                    onClick={onStartNSWSIntake}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs shadow-xs transition-colors"
+                  >
+                    <span>Start Application Through NSWS</span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="p-12 text-center">
+                <Building className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                <p className="text-sm font-semibold text-slate-800">No applications match your filter</p>
+                <p className="text-xs text-slate-500 mt-1">Try clearing your search query or reset filter dropdowns.</p>
+              </div>
+            )
           ) : (
             <table className="w-full text-left text-xs border-collapse">
               <thead>

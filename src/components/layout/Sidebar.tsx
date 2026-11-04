@@ -47,11 +47,11 @@ export const ROLE_NAV_ITEMS: Record<RolePortalId, { portalTitle: string; subtitl
     subtitle: 'Technical Institution Signatory Workspace',
     items: [
       { id: 'inst-apps', label: '1. My Applications & Live Status', icon: FolderKanban },
-      { id: 'inst-nsws', label: '2. NSWS Onboarding & Dynamic Route', icon: Globe2 },
-      { id: 'inst-deficiencies', label: '3. Deficiency Responses & Document Cures', icon: FileWarning },
-      { id: 'inst-decision-docs', label: '4. Decision Letters (LoA / EoA)', icon: FileText },
-      { id: 'inst-renewals', label: '5. Post-Approval Obligations & Undertakings', icon: ShieldCheck },
-      { id: 'appeals-hearings', label: '6. Standing Appellate Committee (SAC)', icon: Scale },
+      { id: 'inst-deficiencies', label: '2. Deficiency Responses & Document Cures', icon: FileWarning },
+      { id: 'inst-decision-docs', label: '3. Decision Letters (LoA / EoA)', icon: FileText },
+      { id: 'inst-renewals', label: '4. Post-Approval Obligations & Undertakings', icon: ShieldCheck },
+      { id: 'inst-dossier', label: '5. Document Validity & Lease Expiry', icon: FileCheck },
+      { id: 'inst-appeals', label: '6. Applicant Appeals & Grievance Desk', icon: Scale },
       { id: 'notifications', label: '7. Official Notices & Deadline Alerts', icon: Bell },
     ]
   },
@@ -258,6 +258,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Dedicated Role Navigation Items */}
         <div className="flex-1 overflow-y-auto py-4 px-2.5 space-y-1.5">
+          {roleNumber === 1 && (
+            <div className="mb-3 px-1">
+              <button
+                onClick={() => onSelectTab('inst-nsws')}
+                className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all border ${
+                  currentTab === 'inst-nsws'
+                    ? 'bg-blue-600 text-white border-blue-400 ring-2 ring-blue-400/50'
+                    : 'bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 text-white border-blue-500/40'
+                }`}
+                title="Start a new AICTE Approval Application via National Single Window System"
+              >
+                <Globe2 className="w-4 h-4 text-cyan-300 shrink-0" />
+                {isOpen && <span>+ Start NSWS Intake</span>}
+              </button>
+            </div>
+          )}
           {isOpen && (
             <p className="px-3 text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400/80 mb-2">
               Role #{roleNumber} Workspace Tabs

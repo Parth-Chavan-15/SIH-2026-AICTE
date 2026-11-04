@@ -31,6 +31,9 @@ import { NSWSSimulationView } from './features/nsws/NSWSSimulationView';
 import { PortalImportView } from './features/portalImport/PortalImportView';
 import { ROAllocationView } from './features/ro/ROAllocationView';
 import { AppealsAndHearingsView } from './features/appeals/AppealsAndHearingsView';
+import { ApplicantAppealsView } from './features/institution/ApplicantAppealsView';
+import { RegionalHearingCoordinationView } from './features/ro/RegionalHearingCoordinationView';
+import { CouncilSACAppealsView } from './features/ca/CouncilSACAppealsView';
 import { GeneratedDocumentsView } from './features/documents/GeneratedDocumentsView';
 
 import { Search, X } from 'lucide-react';
@@ -147,6 +150,7 @@ const MainLayout: React.FC = () => {
               <ApplicationsListView
                 onSelectApplication={(id) => setSelectedAppId(id)}
                 onOpenNewAppModal={() => setShowNewAppModal(true)}
+                onStartNSWSIntake={() => setCurrentTab('inst-nsws')}
               />
             )}
             {currentTab === 'inst-nsws' && (
@@ -156,7 +160,7 @@ const MainLayout: React.FC = () => {
               <InstitutionDeficiencyCureView onSelectApplication={(id) => setSelectedAppId(id)} />
             )}
             {currentTab === 'inst-decision-docs' && <GeneratedDocumentsView />}
-            {currentTab === 'appeals-hearings' && <AppealsAndHearingsView />}
+            {(currentTab === 'inst-appeals' || currentTab === 'appeals-hearings') && <ApplicantAppealsView />}
             {currentTab === 'inst-renewals' && <ComplianceView />}
             {currentTab === 'inst-dossier' && <DocumentExpiryView />}
 
@@ -201,7 +205,7 @@ const MainLayout: React.FC = () => {
             {currentTab === 'ro-pendency' && (
               <PendencyView onSelectApplication={(id) => setSelectedAppId(id)} />
             )}
-            {currentTab === 'ro-appeals-hearings' && <AppealsAndHearingsView />}
+            {currentTab === 'ro-appeals-hearings' && <RegionalHearingCoordinationView />}
             {currentTab === 'ro-schedule' && (
               <EVCView onSelectApplication={(id) => setSelectedAppId(id)} />
             )}
@@ -223,7 +227,7 @@ const MainLayout: React.FC = () => {
               />
             )}
             {currentTab === 'ca-decision-docs' && <GeneratedDocumentsView />}
-            {currentTab === 'ca-appeals' && <AppealsAndHearingsView />}
+            {currentTab === 'ca-appeals' && <CouncilSACAppealsView />}
             {currentTab === 'ca-gazette' && <ReportsView />}
             {currentTab === 'ca-dispatch' && <GovernmentEndpointsView />}
 

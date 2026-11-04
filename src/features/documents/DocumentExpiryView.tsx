@@ -49,13 +49,13 @@ export const DocumentExpiryView: React.FC = () => {
         return doc.institutionName.includes('PDIMTR') || doc.institutionName.includes('Prerna');
       }
       if (actorId === 'usr-inst-coep' || email === 'principal@coep.ac.in') {
-        return doc.institutionName.includes('COEP') || doc.institutionName.includes('PDIMTR');
+        return doc.institutionName.includes('COEP') || doc.institutionCode === 'INST-SOUTH' || doc.institutionCode === 'INST-COEP';
       }
       if (actorId === 'usr-inst-giits' || email === 'principal@giits.ac.in') {
-        return doc.institutionName.includes('GIITS') || doc.institutionName.includes('Gonna');
+        return doc.institutionName.includes('GIITS') || doc.institutionName.includes('Gonna') || doc.institutionCode === 'INST-NORTH' || doc.institutionCode === 'INST-GIITS';
       }
       
-      return true;
+      return false;
     });
   }, [expiringDocs, isInstitution, actor]);
 
