@@ -188,7 +188,11 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
 
     const handleSessionChange = () => {
       const active = getSession();
-      setReady(Boolean(active));
+      const isAuth = Boolean(active);
+      setReady(isAuth);
+      if (isAuth) {
+        setViewMode('landing');
+      }
     };
 
     window.addEventListener('sih:sessionchanged', handleSessionChange);
@@ -304,6 +308,7 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
             onBackToGateway={() => setViewMode('landing')}
             onOpenInstitutionModal={() => setShowInstModal(true)}
             onContinueToInstitutionPortal={async (presetId, email) => {
+              setViewMode('landing');
               await handleAccessNode(presetId || email);
             }}
           />

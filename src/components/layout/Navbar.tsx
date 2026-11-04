@@ -27,7 +27,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenNotifications,
   onNavigateTab,
 }) => {
-  const { notifications, resetDemoData, triggerAdvanceClock, simulationTime } = useApp();
+  const { notifications, resetDemoData, triggerAdvanceClock, simulationTime, addToast } = useApp();
   const session = getSession();
   const activeActor = session?.actor;
   const [showClockPopover, setShowClockPopover] = useState(false);
@@ -71,13 +71,42 @@ export const Navbar: React.FC<NavbarProps> = ({
     { num: 6, label: 'Policy Admin', icon: Sliders, email: 'admin@aicte.gov.in', tab: 'admin-policy', activeClass: 'bg-slate-700 text-white shadow-xs' },
   ];
 
+  const EMAIL_TO_ACTOR_ID: Record<string, string> = {
+    'principal@coep.ac.in': 'usr-inst-coep',
+    'principal@giits.ac.in': 'usr-inst-giits',
+    'principal@pdimtr.ac.in': 'usr-inst-pdimtr',
+    'principal@apex.ac.in': 'usr-inst-apex',
+    'principal@batu.ac.in': 'usr-inst-batu',
+    'principal@vvit.ac.in': 'usr-inst-vvit',
+    'scrutiny.reviewer@aicte.gov.in': 'usr-scrutiny-reviewer',
+    'evc.chair@aicte.gov.in': 'usr-evc-chair',
+    'ro.western@aicte.gov.in': 'usr-ro-western',
+    'bureau.approval@aicte.gov.in': 'usr-bureau-hq',
+    'admin@aicte.gov.in': 'usr-admin',
+  };
+
   const handleSwitchRole = async (targetRoleNumber: number, targetEmail: string, targetTab: string) => {
+    if (switchingRole) return;
     setSwitchingRole(true);
     try {
+      const activeSession = getSession();
+      const currentActor = activeSession?.actor;
+      const targetActorId = EMAIL_TO_ACTOR_ID[targetEmail];
+
+      if (currentActor && targetActorId && currentActor.id === targetActorId) {
+        onNavigateTab?.(targetTab);
+        return;
+      }
+
       await quickAccessLogin(targetEmail);
       onNavigateTab?.(targetTab);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Role switch failed:', err);
+      addToast?.({
+        type: 'error',
+        title: 'Role Switch Failed',
+        message: err?.message || 'Unable to authenticate into selected role'
+      });
     } finally {
       setSwitchingRole(false);
     }

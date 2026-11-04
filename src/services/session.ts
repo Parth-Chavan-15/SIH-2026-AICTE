@@ -52,13 +52,13 @@ async function authAction<T>(invalidate: boolean, work: () => Promise<T>): Promi
   try { return await work(); } finally { authBusy = false; }
 }
 export async function quickAccessLogin(personaId: string) {
-  return authAction(true, async () => {
+  return authAction(false, async () => {
     setCurrent(sessionSchema.parse(await requestJson('/auth/demo-quick-access', { method: 'POST', body: JSON.stringify({ personaId }) })));
     return getSession()!;
   });
 }
 export async function login(credentials: LoginRequest) {
-  return authAction(true, async () => {
+  return authAction(false, async () => {
     setCurrent(sessionSchema.parse(await requestJson('/auth/login', { method: 'POST', body: JSON.stringify({ email: credentials.email, password: credentials.password }) })));
     return getSession()!;
   });

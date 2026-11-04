@@ -13,6 +13,7 @@ import {
   WorkflowStage,
 } from '../types';
 import { api } from '../services/api';
+import { getSession } from '../services/session';
 
 export interface ToastMessage {
   id: string;
@@ -144,20 +145,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
   };
 
-  const isRefreshingRef = useRef(false);
+  const refreshCounter = useRef(0);
 
   const refreshData = async (activeRole?: UserRole) => {
-    if (isRefreshingRef.current) return;
-    isRefreshingRef.current = true;
+    const requestId = ++refreshCounter.current;
     const currentRole = activeRole || role;
+    const session = getSession();
+    if (!session) {
+      setLoading(false);
+      return;
+    }
     if (applications.length === 0) {
       setLoading(true);
     }
     try {
       const isInst = currentRole === 'institution';
-      const isScrutiny = currentRole === 'scrutiny';
-      const isEvc = currentRole === 'evc';
-      const isOfficer = currentRole === 'officer' || currentRole === 'admin' || currentRole === 'superadmin';
+      const isScrutiny = currentRole === 'scrutiny' || (currentRole as any) === 'reviewer';
+      const isEvc = currentRole === 'evc' || currentRole === 'evc_committee';
+      const isOfficer = currentRole === 'officer' || currentRole === 'admin' || currentRole === 'superadmin' || currentRole === 'regional_officer' || currentRole === 'bureau_officer';
 
       const fetchApps = api.getApplications(currentRole).catch(() => []);
       const fetchNotifs = api.getNotifications().catch(() => []);
@@ -178,6 +183,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         fetchAudits,
         fetchRules,
       ]);
+
+      // If a newer refresh request was initiated while waiting, discard this stale payload
+      if (requestId !== refreshCounter.current) {
+        return;
+      }
+
       setApplications(apps);
       setEvcInspections(evcs);
       setComplianceItems(comps);
@@ -189,18 +200,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } catch (err) {
       // Retain existing state on background revalidation failure
     } finally {
-      setLoading(false);
-      isRefreshingRef.current = false;
+      if (requestId === refreshCounter.current) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
     refreshData();
-  }, [role]);
+  }, []);
 
   // Reactive multi-role session switcher synchronization (deduplicated)
   useEffect(() => {
     const handleSessionChange = () => {
+      const session = getSession();
+      if (!session) {
+        setApplications([]);
+        setEvcInspections([]);
+        setComplianceItems([]);
+        setExpiringDocs([]);
+        setNotifications([]);
+        setEscalations([]);
+        setAuditLog([]);
+        setSelectedAppId(null);
+        setLoading(false);
+        return;
+      }
+
       const profile = api.getUserProfile();
       setUserState(profile);
       // Immediately purge tenant-sensitive state to prevent cross-institution leakage in UI
