@@ -195,7 +195,7 @@ export const GovernmentEndpointsView: React.FC = () => {
             The 5 Government Endpoints & Upstream Ingestion
           </h2>
           <p className="text-sm text-slate-300 max-w-3xl leading-relaxed">
-            PravahReg acts as a sovereign companion layer communicating with official national systems: 
+            NIYAMSETU (नियमसेतु) acts as a sovereign companion layer communicating with official national systems: 
             <strong> NSWS</strong>, <strong>AICTE Siebel CRM</strong>, <strong>CCA India (AICTESigner)</strong>, 
             <strong> API Setu</strong>, and <strong>State DTE Portals</strong>.
           </p>

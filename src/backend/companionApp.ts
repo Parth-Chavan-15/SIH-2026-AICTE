@@ -121,7 +121,8 @@ export function createCompanionApp(options?: {
       req.path === '/health' ||
       req.path === '/ready' ||
       req.path === '/version' ||
-      req.path === '/api/version'
+      req.path === '/api/version' ||
+      req.path.startsWith('/nsws/')
     ) {
       return next();
     }

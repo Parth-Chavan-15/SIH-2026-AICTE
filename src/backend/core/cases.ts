@@ -10,8 +10,85 @@ import { evaluatePolicy, type VerifiedFacts } from '../policy/evaluator';
 import { approvedRule } from '../policy/registry';
 import { prerequisiteIds, readerContext } from './integrationGuards';
 
-export const CATEGORIES = ['extension_of_approval', 'new_institution', 'increase_intake', 'closure', 'conversion_coeducation', 'change_site'] as const;
-const validatedIntake = intakeSchema.extend({ category: z.enum(CATEGORIES), session: z.string().regex(/^20\d{2}-\d{2}$/).refine(s => Number(s.slice(5)) === (Number(s.slice(0, 4)) + 1) % 100), facts: z.strictObject({ program: z.enum(['engineering', 'management', 'pharmacy', 'architecture', 'applied_arts']), proposedIntake: z.number().int().positive().max(100_000), nbaAccreditation: z.boolean().optional() }) });
+export const CATEGORIES = [
+  // Chapter I: Setting up New Technical Institution
+  'new_institution',
+  'new_technical_institution',
+
+  // Chapter II Table 2.3 - Rows 1 to 21
+  'extension_of_approval', // Row 1
+  'eoa',
+  'self_disclosure',
+  'nri_seats', // Row 2
+  'non_resident_indian',
+  'conversion_diploma_degree', // Row 3
+  'name_change_institution', // Row 4
+  'change_name',
+  'name_change',
+  'new_programme_level', // Row 5
+  'new_programme',
+  'merger_institutions', // Row 6
+  'merger',
+  'break_restoration_hibernation', // Row 7
+  'restoration_or_shifting',
+  'hibernation',
+  'supernumerary_fn_oci', // Row 8
+  'oci_seats',
+  'increase_intake', // Row 9
+  'intake_increase',
+  'additional_course',
+  'integrated_dual_degree', // Row 10
+  'dual_degree',
+  'fellow_programme_fpm', // Row 11
+  'fpm',
+  'course_name_change', // Row 12
+  'reduction_intake',
+  'course_merger',
+  'collaboration_twinning', // Row 13
+  'twinning',
+  'change_of_site', // Row 14
+  'change_site',
+  'closure', // Row 15
+  'closure_institution',
+  'institution_closure',
+  'conversion_coeducation', // Row 16
+  'conversion_women_coed',
+  'coed',
+  'closure_course', // Row 17
+  'programme_closure',
+  'bank_change', // Row 18
+  'change_bank',
+  'trust_change', // Row 19
+  'change_trust',
+  'conversion_deemed_university', // Row 20
+  'deemed_university',
+  'odl_courses', // Row 21
+  'online_learning',
+  'odl_online',
+
+  // Sessional Addenda & Specialized Categories
+  'bba_bca_bms',
+  'bba_bca_as_is',
+  'university_technical'
+] as const;
+const validatedIntake = intakeSchema.extend({
+  category: z.enum(CATEGORIES),
+  session: z.string().regex(/^20\d{2}-\d{2}$/).refine(s => Number(s.slice(5)) === (Number(s.slice(0, 4)) + 1) % 100),
+  facts: z.object({
+    program: z.string().transform(p => {
+      const lower = p.toLowerCase();
+      if (lower.includes('eng')) return 'engineering';
+      if (lower.includes('man') || lower.includes('bba') || lower.includes('mba')) return 'management';
+      if (lower.includes('phar')) return 'pharmacy';
+      if (lower.includes('arch')) return 'architecture';
+      if (lower.includes('art')) return 'applied_arts';
+      return lower;
+    }).pipe(z.enum(['engineering', 'management', 'pharmacy', 'architecture', 'applied_arts'])).optional().default('engineering'),
+    proposedIntake: z.number().int().positive().max(100_000).optional().default(180),
+    nbaAccreditation: z.boolean().optional(),
+    institutionName: z.string().optional()
+  }).passthrough()
+});
 const canonical = (value: unknown): string => {
   if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
   if (value && typeof value === 'object') return `{${Object.keys(value).sort().map(k => `${JSON.stringify(k)}:${canonical((value as Record<string, unknown>)[k])}`).join(',')}}`;
@@ -76,7 +153,7 @@ export function createCaseService(storage: CaseStorage, dependencies: { scrutiny
           return previous;
         }
         const time = new Date().toISOString();
-        const application: Application = { id: randomUUID(), reference: `DEMO-${randomUUID()}`, institutionId: institution.id, regionId: institution.regionId, category: command.category, session: command.session, facts: command.facts, state: 'policy_review_required', version: 1, route: { result: 'review_required', category: command.category, session: command.session, evaluatedFacts: command.facts, stages: [], reasons: ['Policy review required'], reviewReasons: ['Reviewed source mapping required'], sources: [] }, createdAt: time, updatedAt: time, stageEnteredAt: time };
+        const application: Application = { id: randomUUID(), reference: `DEMO-${randomUUID()}`, institutionId: institution.id, regionId: institution.regionId, category: command.category, session: command.session, facts: { ...command.facts, policyVersionPinned: 'AY-2026-27-V1' }, state: 'policy_review_required', version: 1, route: { result: 'review_required', category: command.category, session: command.session, evaluatedFacts: command.facts, stages: [], reasons: ['Policy review required'], reviewReasons: ['Reviewed source mapping required'], sources: [] }, createdAt: time, updatedAt: time, stageEnteredAt: time };
         const registry = unit.policies ? await unit.policies(command.session, command.category) : [];
         const verified = dependencies.policyFacts ? await dependencies.policyFacts.load(readerContext(unit.context(context, application))) : undefined;
         application.route = evaluatePolicy({ ...application, asOf: time, sessionMode: verified?.sessionMode }, registry, verified?.facts);

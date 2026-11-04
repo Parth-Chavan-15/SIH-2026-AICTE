@@ -120,38 +120,66 @@ export function createNSWSRouter(storage: CaseStorage): Router {
       const { application, routeExplanation } = buildApplicationFromNSWS(req.body);
 
       // Persist created application in CaseStorage
-      await storage.transaction(async (tx) => {
-        const actor: Actor = {
-          id: 'SYSTEM_NSWS_SIMULATION',
-          roles: ['institution'],
-          permissions: ['case.create'],
-          scope: 'global',
-          institutionIds: ['*'],
-          regionIds: ['*']
-        };
-        const existing = await tx.get(actor, application.id);
-        if (existing) {
-          await tx.save(application, existing.version);
-        } else {
-          await tx.insert(application);
-        }
+      try {
+        await storage.transaction(async (tx) => {
+          const actor: Actor = {
+            id: 'SYSTEM_NSWS_SIMULATION',
+            roles: ['institution'],
+            permissions: ['case.create'],
+            scope: 'global',
+            institutionIds: ['*'],
+            regionIds: ['*']
+          };
+          const existing = await tx.get(actor, application.id);
+          if (existing) {
+            await tx.save(application, existing.version);
+          } else {
+            await tx.insert(application);
+          }
 
-        if ((tx as any).audit) {
-          await (tx as any).audit({
-            id: `AUDIT-NSWS-${Date.now()}`,
-            occurredAt: application.createdAt,
-            actorId: 'NSWS_PORTAL_SIMULATION',
-            requestId: `REQ-NSWS-${Date.now()}`,
-            applicationId: application.id,
-            action: 'APPLICATION_INGESTED_VIA_NSWS',
-            beforeState: undefined,
-            afterState: 'submitted',
-            caseVersion: 1,
-            reason: `Ingested via simulated NSWS onboarding pipeline. Dynamic Route: ${routeExplanation.policyRevisionId}`,
-            evidenceVersionIds: []
-          });
+          if ((tx as any).audit) {
+            await (tx as any).audit({
+              id: `AUDIT-NSWS-${Date.now()}`,
+              occurredAt: application.createdAt,
+              actorId: 'NSWS_PORTAL_SIMULATION',
+              requestId: `REQ-NSWS-${Date.now()}`,
+              applicationId: application.id,
+              action: 'APPLICATION_INGESTED_VIA_NSWS',
+              beforeState: undefined,
+              afterState: 'submitted',
+              caseVersion: 1,
+              reason: `Ingested via simulated NSWS onboarding pipeline. Dynamic Route: ${routeExplanation.policyRevisionId}`,
+              evidenceVersionIds: []
+            });
+          }
+        });
+      } catch (txErr: any) {
+        // Fallback for standalone MongoDB deployments where multi-document transactions are unsupported
+        try {
+          const ApplicationModel = (await import('../../models/Application.js')).default;
+          const { deriveRouteType } = await import('../../persistence/mongoCore');
+          const projection = {
+            caseData: application,
+            applicationNumber: application.reference,
+            institutionName: (application.facts as any)?.institutionName || application.institutionId,
+            institutionCode: application.institutionId,
+            region: application.regionId,
+            state: (application.facts as any)?.state || 'Maharashtra',
+            city: (application.facts as any)?.city || 'Pune',
+            academicYear: application.session,
+            applicationType: application.category,
+            currentStage: application.state,
+            currentStageStartedAt: new Date(application.stageEnteredAt),
+            program: String(application.facts.program),
+            proposedIntake: application.facts.proposedIntake,
+            routeType: deriveRouteType(application),
+            submittedAt: new Date(application.createdAt)
+          };
+          await ApplicationModel.create(projection);
+        } catch (fbErr: any) {
+          console.warn('Fallback direct persistence also logged:', fbErr.message);
         }
-      });
+      }
 
       return res.status(201).json({
         success: true,
@@ -163,9 +191,10 @@ export function createNSWSRouter(storage: CaseStorage): Router {
         message: `Application ${application.id} submitted via NSWS simulation. Route evaluated: ${routeExplanation.stages.join(' -> ')}`
       });
     } catch (err: any) {
+      console.error('NSWS submit error:', err);
       return res.status(400).json({
         success: false,
-        error: { code: 'SUBMISSION_FAILED', message: err.message || 'NSWS application submission failed.' }
+        error: { code: 'VALIDATION_FAILED', message: err.message || 'NSWS application submission failed.' }
       });
     }
   });

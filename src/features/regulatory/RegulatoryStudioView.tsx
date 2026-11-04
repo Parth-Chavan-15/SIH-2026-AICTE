@@ -316,7 +316,7 @@ export const RegulatoryStudioView: React.FC = () => {
       }
       setApiResponse(data);
     } catch (err: any) {
-      setTamperError(`HTTP 409 Conflict: APH_1_8_G_SCOPE_VIOLATION — Intercepted by PravahReg Server Guard`);
+      setTamperError(`HTTP 409 Conflict: APH_1_8_G_SCOPE_VIOLATION — Intercepted by NIYAMSETU Server Guard`);
       flash('Security Guard Activated: Backend rejected tampering with HTTP 409 Conflict!', 'info');
     } finally {
       setLoading(false);

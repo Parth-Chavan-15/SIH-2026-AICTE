@@ -393,7 +393,7 @@ export const EVCView: React.FC<EVCViewProps> = ({ onSelectApplication }) => {
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-slate-700 flex items-center gap-1">
                         <MapPin className="w-3.5 h-3.5 text-rose-500" />
-                        GPS Telemetry:
+                        GPS Telemetry <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-bold">[DEMO Telemetry Fixture]</span>:
                       </span>
                       <span className="font-mono text-slate-800 text-[10px]">
                         {evc.applicationId === 'APP-2026-GIITS' ? '17.7028° N, 83.1132° E' : '18.1652° N, 73.3361° E'}
@@ -684,7 +684,7 @@ export const EVCView: React.FC<EVCViewProps> = ({ onSelectApplication }) => {
                   </label>
                   <label className="flex items-center gap-2 text-slate-700 cursor-pointer">
                     <input type="checkbox" defaultChecked className="rounded text-blue-600 focus:ring-blue-500" />
-                    <span><strong>APH §1.9(g):</strong> Geo-coordinates verified: <code>17.702834° N, 83.113288° E</code> (&plusmn;10m radius)</span>
+                    <span><strong>APH §1.9(g):</strong> Geo-coordinates verified: <code>17.702834° N, 83.113288° E</code> (&plusmn;10m radius) <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-bold">[DEMO Telemetry Fixture]</span></span>
                   </label>
                   <label className="flex items-center gap-2 text-slate-700 cursor-pointer">
                     <input type="checkbox" defaultChecked className="rounded text-blue-600 focus:ring-blue-500" />

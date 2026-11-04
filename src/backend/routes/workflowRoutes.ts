@@ -1,5 +1,5 @@
 /**
- * PravahReg — Workflow, Revert, Case Summary & Consolidated Reporting Routes
+ * NIYAMSETU — Workflow, Revert, Case Summary & Consolidated Reporting Routes
  * Smart India Hackathon 2026 | Problem Statement 26262: AICTE Regulation Bureau
  */
 
@@ -20,6 +20,91 @@ import {
 
 export function createWorkflowRouter(storage: CaseStorage): Router {
   const router = Router();
+  // GET /api/v1/dashboard/summary - Live Aggregation from CaseStorage for Companion Workspaces
+  router.get('/dashboard/summary', async (req: Request, res: Response) => {
+    const actor = ((req as any).actor as Actor) || {
+      id: 'usr-admin',
+      roles: ['admin', 'regional_officer', 'bureau_officer'],
+      permissions: ['dashboard.read', 'case.read'],
+      scope: 'global',
+      institutionIds: [],
+      regionIds: []
+    };
+    try {
+      const apps = await storage.list(actor);
+      const totalApplications = apps.length;
+      const approvedApplications = apps.filter(a => a.state === 'approved' || (a as any).currentStage === 'Approval Issued').length;
+      const rejectedApplications = apps.filter(a => a.state === 'rejected' || (a as any).currentStage === 'Application Rejected').length;
+      const pendingApplications = totalApplications - approvedApplications - rejectedApplications;
+      const overdueApplications = apps.filter(a => (a as any).slaStatus === 'overdue' || (a as any).isOverdue).length;
+
+      const casesByState: Record<string, number> = {};
+      for (const app of apps) {
+        casesByState[app.state] = (casesByState[app.state] || 0) + 1;
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          totalApplications,
+          pendingApplications,
+          approvedApplications,
+          rejectedApplications,
+          overdueApplications,
+          casesByState,
+          asOf: new Date().toISOString()
+        }
+      });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: { code: 'STORAGE_UNAVAILABLE', message: err.message } });
+    }
+  });
+
+  // GET /api/v1/notifications - Live Notifications from Storage & Timers for Companion Workspaces
+  router.get('/notifications', async (req: Request, res: Response) => {
+    const actor = ((req as any).actor as Actor) || {
+      id: 'usr-admin',
+      roles: ['admin', 'regional_officer'],
+      permissions: ['notification.read'],
+      scope: 'global',
+      institutionIds: [],
+      regionIds: []
+    };
+    try {
+      const timers = getTimers();
+      const obligations = getObligations();
+      const notifications = [
+        ...timers.slice(0, 10).map((t, idx) => ({
+          id: `NOTIF-TMR-${idx + 1}`,
+          recipientId: actor.id,
+          title: `Deadline Alert: ${t.clockType}`,
+          message: `Timer ${t.timerId} due at ${t.dueAt}: ${t.dueReason}`,
+          severity: Date.now() > t.dueTimestamp ? 'high' : 'medium',
+          isRead: false,
+          createdAt: new Date().toISOString(),
+          applicationId: t.applicationId
+        })),
+        ...obligations.slice(0, 5).map((o, idx) => ({
+          id: `NOTIF-OBL-${idx + 1}`,
+          recipientId: actor.id,
+          title: `Compliance Obligation: ${o.conditionKey}`,
+          message: `${o.dueReason} (Due: ${o.dueAt})`,
+          severity: o.status === 'pending' ? 'medium' : 'low',
+          isRead: true,
+          createdAt: new Date().toISOString(),
+          applicationId: o.applicationId
+        }))
+      ];
+
+      return res.status(200).json({
+        success: true,
+        data: notifications
+      });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: { code: 'STORAGE_UNAVAILABLE', message: err.message } });
+    }
+  });
+
   // POST /api/v1/applications/:id/workflow-action - Authoritative stage update (Accept, Reject, Advance, Flag Deficiencies)
   router.post('/applications/:id/workflow-action', async (req: Request, res: Response) => {
     const actor = ((req as any).actor as Actor) || {

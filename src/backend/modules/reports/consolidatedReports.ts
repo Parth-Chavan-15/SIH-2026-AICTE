@@ -1,5 +1,5 @@
 /**
- * PravahReg — Electronic Case Summary & Consolidated Reporting Engine
+ * NIYAMSETU — Electronic Case Summary & Consolidated Reporting Engine
  * Smart India Hackathon 2026 | Problem Statement 26262: AICTE Regulation Bureau
  * 
  * Enforces PS 26262 Deliverables:

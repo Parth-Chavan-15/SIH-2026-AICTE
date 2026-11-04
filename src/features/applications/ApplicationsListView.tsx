@@ -35,30 +35,30 @@ export const ApplicationsListView: React.FC<ApplicationsListViewProps> = ({
   // Enforce tenant isolation for institution logins: show ONLY that college's application
   const scopedApps = useMemo(() => {
     if (!isInstitution) return applications;
+    const actorId = actor?.id || '';
+    const email = (actor as any)?.email || '';
+    const actorInstIds = actor?.institutionIds || [];
     return applications.filter((app) => {
-      const actorId = actor?.id || '';
-      const email = (actor as any)?.email || '';
+      const code = app.institutionCode || (app as any).institutionId || '';
+      if (actorInstIds.includes(code)) return true;
       if (actorId === 'usr-inst-coep' || actorId === 'SYN-ACTOR-COEP' || email === 'principal@coep.ac.in') {
-        return app.id.includes('COEP') || app.institutionCode === 'INST-SOUTH';
+        return app.id.includes('COEP') || code === 'INST-SOUTH' || code === 'INST-COEP' || code.includes('COEP');
       }
       if (actorId === 'usr-inst-giits' || email === 'principal@giits.ac.in') {
-        return app.id.includes('GIITS') || app.institutionCode === 'INST-NORTH';
+        return app.id.includes('GIITS') || code === 'INST-NORTH' || code === 'INST-GIITS' || code.includes('GIITS');
       }
       if (actorId === 'usr-inst-pdimtr' || email === 'principal@pdimtr.ac.in') {
-        return app.id.includes('PDIMTR') || app.institutionCode === 'INST-WEST';
+        return app.id.includes('PDIMTR') || code === 'INST-WEST' || code === 'INST-PDIMTR' || code.includes('PDIMTR');
       }
       if (actorId === 'usr-inst-apex' || email === 'principal@apex.ac.in') {
-        return app.id.includes('APEX') || app.id.includes('Apex') || app.institutionCode === 'INST-APEX';
+        return app.id.includes('APEX') || app.id.includes('Apex') || code === 'INST-APEX' || code.includes('APEX');
       }
       if (actorId === 'usr-inst-batu' || email === 'principal@batu.ac.in') {
-        return app.id.includes('BATU') || app.institutionCode === 'INST-BATU';
+        return app.id.includes('BATU') || code === 'INST-BATU' || code.includes('BATU');
       }
-      if (actor?.institutionIds && actor.institutionIds.length > 0) {
-        return actor.institutionIds.includes(app.institutionCode);
-      }
-      return true;
+      return false;
     });
-  }, [applications, isInstitution, actor?.id]);
+  }, [applications, isInstitution, actor]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('All');
@@ -318,42 +318,48 @@ export const ApplicationsListView: React.FC<ApplicationsListViewProps> = ({
                       </span>
                     </td>
 
-                    {/* Highlighted Statutory Route Type */}
+                    {/* Highlighted Statutory Route Type (Authoritative Route Engine) */}
                     <td className="py-3 px-4">
-                      {app.routeType === 'Scrutiny Only' || app.id.includes('COEP') ? (
+                      {app.routeType === 'Scrutiny Only' ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-2xs">
                           <span className="text-emerald-600">⚡</span>
                           <span>Scrutiny Only</span>
-                          <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-200/60 font-mono text-emerald-900">NBA</span>
+                          <span className="text-[9px] px-1 py-0.5 rounded bg-emerald-200/60 font-mono text-emerald-900">NBA Fast-Track</span>
                         </span>
-                      ) : app.routeType === 'Scrutiny + EVC' || app.id.includes('GIITS') ? (
+                      ) : app.routeType === 'Scrutiny + EVC' ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-300 shadow-2xs">
                           <span className="text-amber-600">🔍</span>
                           <span>Scrutiny + EVC</span>
-                          <span className="text-[9px] px-1 py-0.2 rounded bg-amber-200/60 font-mono text-amber-900">Non-NBA</span>
+                          <span className="text-[9px] px-1 py-0.5 rounded bg-amber-200/60 font-mono text-amber-900">Dual-Track</span>
                         </span>
-                      ) : app.routeType === 'Fast-Track EoA' || app.id.includes('PDIMTR') ? (
+                      ) : app.routeType === 'Fast-Track EoA' ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-blue-50 text-blue-800 border border-blue-300 shadow-2xs">
-                          <span>📜</span>
-                          <span>Self-Disclosure</span>
-                          <span className="text-[9px] px-1 py-0.2 rounded bg-blue-200/60 font-mono text-blue-900">EoA</span>
+                          <span>🚀</span>
+                          <span>Fast-Track EoA</span>
+                          <span className="text-[9px] px-1 py-0.5 rounded bg-blue-200/60 font-mono text-blue-900">§2.5 Self-Disc</span>
                         </span>
-                      ) : app.routeType === 'Scrutiny + EVC + SAC/SHC' || app.id.includes('Apex') || app.id.includes('60293') ? (
+                      ) : app.routeType === 'Scrutiny + EVC + SAC/SHC' ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-purple-50 text-purple-900 border border-purple-300 shadow-2xs">
                           <span className="text-purple-600">⚖️</span>
-                          <span>EVC + SAC/SHC</span>
-                          <span className="text-[9px] px-1 py-0.2 rounded bg-purple-200/60 font-mono text-purple-900">Appellate</span>
+                          <span>Scrutiny + EVC + SAC/SHC</span>
+                          <span className="text-[9px] px-1 py-0.5 rounded bg-purple-200/60 font-mono text-purple-900">Appellate</span>
                         </span>
-                      ) : app.routeType === 'Only EVC' || app.id.includes('BATU') || app.id.includes('19201') ? (
+                      ) : app.routeType === 'Only EVC' ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-indigo-50 text-indigo-900 border border-indigo-300 shadow-2xs">
-                          <span className="text-indigo-600">🚁</span>
+                          <span className="text-indigo-600">📍</span>
                           <span>Only EVC</span>
-                          <span className="text-[9px] px-1 py-0.2 rounded bg-indigo-200/60 font-mono text-indigo-900">§2.16.1</span>
+                          <span className="text-[9px] px-1 py-0.5 rounded bg-indigo-200/60 font-mono text-indigo-900">Shifting/Restoration</span>
+                        </span>
+                      ) : app.routeType === 'Policy review required' ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-rose-50 text-rose-900 border border-rose-300 shadow-2xs">
+                          <span className="text-rose-600">⚠️</span>
+                          <span>Policy Review Required</span>
+                          <span className="text-[9px] px-1 py-0.5 rounded bg-rose-200/60 font-mono text-rose-900">X=360 Boundary</span>
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-800 border border-slate-300 shadow-2xs">
-                          <span>⚠️</span>
-                          <span>{app.routeType}</span>
+                          <span>📋</span>
+                          <span>{app.routeType || 'Statutory Evaluation'}</span>
                         </span>
                       )}
                     </td>

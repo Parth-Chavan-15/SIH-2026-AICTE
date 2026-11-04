@@ -30,7 +30,7 @@ export interface MemoryDbState {
   evcTasks: EVCTask[];
 }
 
-const WORM_HMAC_SECRET = 'AICTE-PRAVAHREG-WORM-GOVERNANCE-KEY-2026';
+const WORM_HMAC_SECRET = process.env.WORM_HMAC_SECRET || 'local-dev-audit-key-2026';
 
 function computeAuditHash(previousHash: string, event: AuditEvent): string {
   const payload = `${previousHash}|${event.id}|${event.action}|${event.actorId}|${event.occurredAt}|${event.applicationId || ''}|${event.afterState || ''}|${event.caseVersion || 0}`;

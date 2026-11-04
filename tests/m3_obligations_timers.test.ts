@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { addCalendarMonths } from '../src/backend/modules/compliance/complianceService';
 
 // --- 1. Pure Obligation Materialization ---
 export interface DecisionEvent {
@@ -156,5 +157,42 @@ describe('Member 3 — Obligations, Documents, Timers & Dashboard Projections', 
     expect(proj.totalApplications).toBe(1);
     expect(proj.compliancePending).toBe(2);
     expect(proj.evcVisitsPending).toBe(0);
+  });
+
+  it('correctly calculates 6-calendar-month deadline for conditional EoA undertakings', () => {
+    // APH 2024-27 Chapter II §2.25 conditional undertaking 6-calendar-month calculation
+    const baseDate = new Date('2026-05-15T00:00:00.000Z');
+    const sixMonthsLater = addCalendarMonths(baseDate, 6);
+
+    expect(sixMonthsLater.toISOString().slice(0, 10)).toBe('2026-11-15');
+    // Ensure it accurately handles month boundaries without naive 180-day drift
+    const diffDays = (sixMonthsLater.getTime() - baseDate.getTime()) / (1000 * 60 * 60 * 24);
+    expect(diffDays).toBe(184); // May to Nov has 184 days, not 180!
+  });
+
+  describe('addCalendarMonths month-end clamping safeguards', () => {
+    it('clamps August 31 + 6 months to February 28 in non-leap year without March rollover', () => {
+      const base = new Date('2026-08-31T00:00:00.000Z');
+      const target = addCalendarMonths(base, 6);
+      expect(target.toISOString().slice(0, 10)).toBe('2027-02-28');
+    });
+
+    it('clamps August 31 + 6 months to February 29 in leap year', () => {
+      const base = new Date('2023-08-31T00:00:00.000Z');
+      const target = addCalendarMonths(base, 6);
+      expect(target.toISOString().slice(0, 10)).toBe('2024-02-29');
+    });
+
+    it('clamps March 31 + 6 months to September 30 (30-day month)', () => {
+      const base = new Date('2026-03-31T00:00:00.000Z');
+      const target = addCalendarMonths(base, 6);
+      expect(target.toISOString().slice(0, 10)).toBe('2026-09-30');
+    });
+
+    it('preserves exact date when target month has sufficient days', () => {
+      const base = new Date('2026-01-15T00:00:00.000Z');
+      const target = addCalendarMonths(base, 6);
+      expect(target.toISOString().slice(0, 10)).toBe('2026-07-15');
+    });
   });
 });

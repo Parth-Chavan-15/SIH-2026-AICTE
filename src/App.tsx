@@ -16,6 +16,7 @@ import { NewApplicationModal } from './features/applications/NewApplicationModal
 import { WorkflowView } from './features/workflow/WorkflowView';
 import { PendencyView } from './features/pendency/PendencyView';
 import { EVCView } from './features/evc/EVCView';
+import { EVCReportsView } from './features/evc/EVCReportsView';
 import { ComplianceView } from './features/compliance/ComplianceView';
 import { DocumentExpiryView } from './features/documents/DocumentExpiryView';
 import { NotificationsView } from './features/notifications/NotificationsView';
@@ -191,7 +192,9 @@ const MainLayout: React.FC = () => {
               <EVCView onSelectApplication={(id) => setSelectedAppId(id)} />
             )}
             {currentTab === 'evc-sac' && <AppealsAndHearingsView />}
-            {currentTab === 'evc-reports' && <ReportsView />}
+            {currentTab === 'evc-reports' && (
+              <EVCReportsView onSelectApplication={(id) => setSelectedAppId(id)} />
+            )}
 
             {/* Role 4: Regional / Bureau Officer Pages */}
             {currentTab === 'ro-allocation' && <ROAllocationView />}

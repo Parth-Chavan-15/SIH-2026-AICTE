@@ -614,3 +614,23 @@ export function seedComplianceDB(obligations?: Obligation[]): void {
     }
   }
 }
+
+/**
+ * Accurately adds calendar months avoiding native JS Date rollover overflow.
+ * If target month has fewer days than original date (e.g. Aug 31 + 6 months),
+ * clamps to the last calendar day of the target month (e.g. Feb 28/29).
+ */
+export function addCalendarMonths(baseDate: Date | string, months: number): Date {
+  const d = typeof baseDate === 'string' ? new Date(baseDate) : new Date(baseDate.getTime());
+  const originalDay = d.getUTCDate();
+  const targetYear = d.getUTCFullYear() + Math.floor((d.getUTCMonth() + months) / 12);
+  const targetMonth = ((d.getUTCMonth() + months) % 12 + 12) % 12;
+
+  // Set year and month with 1st of month first to avoid mid-transition overflow
+  const res = new Date(Date.UTC(targetYear, targetMonth, 1, d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds(), d.getUTCMilliseconds()));
+  // Find max days in target month
+  const daysInTargetMonth = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate();
+  const clampedDay = Math.min(originalDay, daysInTargetMonth);
+  res.setUTCDate(clampedDay);
+  return res;
+}

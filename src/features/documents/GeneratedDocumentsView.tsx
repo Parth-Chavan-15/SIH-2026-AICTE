@@ -135,8 +135,8 @@ export const GeneratedDocumentsView: React.FC = () => {
         <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
             <h3 className="font-bold text-slate-900 text-base">Generate Institute-Specific Decision Document</h3>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-100 text-blue-800">
-              pdf-lib &bull; SHA-256 Digest
+            <span className="text-[10px] font-mono px-2.5 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold">
+              [Prototype Integrity Seal — HMAC-SHA256] &bull; pdf-lib
             </span>
           </div>
 
@@ -225,9 +225,14 @@ export const GeneratedDocumentsView: React.FC = () => {
                 >
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200">
-                        {doc.documentType}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200">
+                          {doc.documentType}
+                        </span>
+                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300">
+                          [Prototype Integrity Seal — HMAC-SHA256]
+                        </span>
+                      </div>
                       <span className="text-[10px] font-mono text-slate-400">{doc.dispatchNumber}</span>
                     </div>
 

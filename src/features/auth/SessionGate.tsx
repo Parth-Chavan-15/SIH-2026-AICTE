@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { quickAccessLogin, restoreSession, getSession } from '../../services/session';
+import { NSWSSimulationView } from '../nsws/NSWSSimulationView';
 import {
   Lock,
   Shield,
@@ -10,7 +11,9 @@ import {
   AlertTriangle,
   RefreshCw,
   ArrowRight,
-  GraduationCap
+  GraduationCap,
+  X,
+  ExternalLink
 } from 'lucide-react';
 
 export interface RegulatoryRole {
@@ -73,7 +76,7 @@ export const REGULATORY_ROLES: RegulatoryRole[] = [
     roleTitle: 'Institution Signatory Portal',
     shortLabel: 'Applicant Workspace',
     email: 'principal@coep.ac.in',
-    whatTheyDo: 'Submits new applications, tracks real-time status across stages, uploads deficiency corrections, and submits post-approval lease/NOC compliance.',
+    whatTheyDo: 'Submits new applications, tracks real-time workflow status across regulatory stages, uploads deficiency corrections, and submits post-approval statutory undertakings.',
     legallyBlocked: 'Cannot edit unflagged documents during re-scrutiny; cannot approve own submissions.',
     pdfCitation: 'Applicant Node',
     themeColor: 'from-blue-600 to-indigo-700',
@@ -158,6 +161,8 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
   const [checking, setChecking] = useState(true);
   const [error, setError] = useState('');
   const [busyPersona, setBusyPersona] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'landing' | 'nsws-intake'>('landing');
+  const [showInstModal, setShowInstModal] = useState(false);
 
   useEffect(() => {
     let unmounted = false;
@@ -215,14 +220,94 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // When authenticated, render children directly without any duplicate headers or footers
+  // When authenticated, render children directly without unauthenticated gateway
   if (ready) {
     return <>{children}</>;
   }
 
-  // Unauthenticated Landing Page: Clean, focused, without global header or footer
-  const nonApplicantRoles = REGULATORY_ROLES.filter((r) => r.roleNumber > 1);
+  // Modal for Selecting a Seeded Technical Institution
+  const renderInstitutionModal = () => (
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2.5">
+            <GraduationCap className="w-5 h-5 text-blue-600" />
+            <h3 className="font-extrabold text-base text-slate-900">
+              Sign In to Existing Technical Institution
+            </h3>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowInstModal(false)}
+            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <p className="text-xs text-slate-600">
+          Select one of the 5 seeded technical institutions to immediately access its Applicant Workspace:
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pt-1">
+          {SEEDED_INSTITUTIONS.map((inst) => {
+            const isBusy = busyPersona === inst.id || busyPersona === inst.email;
+            return (
+              <button
+                key={inst.id}
+                type="button"
+                disabled={Boolean(busyPersona)}
+                onClick={async () => {
+                  setShowInstModal(false);
+                  await handleAccessNode(inst.id);
+                }}
+                className="text-left p-3.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-all group cursor-pointer flex flex-col justify-between disabled:opacity-50"
+              >
+                <div>
+                  <div className="font-bold text-xs text-slate-900 group-hover:text-blue-900 line-clamp-2">
+                    {inst.name}
+                  </div>
+                  <div className="text-[11px] font-mono text-slate-500 mt-1">
+                    Code: {inst.code}
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-medium">
+                    {inst.region}
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center justify-between text-[11px] font-bold text-blue-700">
+                  <span>{isBusy ? 'Authenticating…' : 'Access Workspace'}</span>
+                  {isBusy ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
 
+  // If in NSWS Single-Window Intake Mode
+  if (viewMode === 'nsws-intake') {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800">
+        <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto w-full">
+          <NSWSSimulationView
+            isUnauthenticatedFlow={true}
+            onBackToGateway={() => setViewMode('landing')}
+            onOpenInstitutionModal={() => setShowInstModal(true)}
+            onContinueToInstitutionPortal={async (presetId, email) => {
+              await handleAccessNode(presetId || email);
+            }}
+          />
+        </main>
+        {showInstModal && renderInstitutionModal()}
+      </div>
+    );
+  }
+
+  // Symmetrical 6-Role Statutory Landing Page
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800">
       <main className="flex-1 flex flex-col items-center justify-start px-4 sm:px-6 lg:px-8 py-8 sm:py-12 max-w-7xl mx-auto w-full">
@@ -261,138 +346,96 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
-        {/* Section 1: Role 1 — Institution / Applicant Category with 5 Seeded Institution Cards */}
-        <div className="w-full mb-10">
-          <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-xs border-2 border-blue-500/80 relative overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700" />
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100">
-              <div className="flex items-start gap-3.5">
-                <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0">
-                  <Building2 className="w-6 h-6 text-blue-700" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border bg-blue-50 text-blue-800 border-blue-200">
-                      Role #1 &bull; Applicant Node
-                    </span>
-                  </div>
-                  <h2 className="text-xl font-extrabold text-slate-900 mt-1">
-                    Institution Signatory Portal (Applicant Workspace)
-                  </h2>
-                  <p className="text-xs text-slate-600 mt-1 max-w-3xl">
-                    Submits new applications, tracks real-time workflow status across regulatory stages, uploads deficiency corrections, and submits post-approval statutory undertakings.
-                  </p>
-                </div>
-              </div>
+        {/* Section Header */}
+        <div className="w-full mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
+            <div>
+              <h2 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider">
+                Official Statutory Access Nodes
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Select your statutory role node to enter the respective workspace or initiate single-window applicant intake.
+              </p>
             </div>
-
-            {/* 5 Seeded Institution Access Cards */}
-            <div className="mt-6">
-              <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                <GraduationCap className="w-4 h-4 text-blue-600" />
-                <span>Select Seeded Technical Institution to Access:</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5">
-                {SEEDED_INSTITUTIONS.map((inst) => {
-                  const isBusy = busyPersona === inst.id || busyPersona === inst.email;
-                  return (
-                    <div
-                      key={inst.id}
-                      className="bg-slate-50 hover:bg-blue-50/50 rounded-xl p-4 border border-slate-200 hover:border-blue-300 transition-all flex flex-col justify-between group"
-                    >
-                      <div className="space-y-1.5 mb-3">
-                        <div className="font-bold text-xs text-slate-900 group-hover:text-blue-900 leading-snug line-clamp-2">
-                          {inst.name}
-                        </div>
-                        <div className="text-[11px] font-mono text-slate-500">
-                          Code: {inst.code}
-                        </div>
-                        <div className="text-[10px] text-slate-400 font-medium">
-                          {inst.region}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleAccessNode(inst.id)}
-                        disabled={Boolean(busyPersona)}
-                        className="w-full py-2 px-3 rounded-lg text-xs font-bold bg-white group-hover:bg-blue-600 text-blue-700 group-hover:text-white border border-blue-200 group-hover:border-blue-600 transition-all flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-50 cursor-pointer"
-                      >
-                        {isBusy ? (
-                          <>
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                            <span>Authenticating…</span>
-                          </>
-                        ) : (
-                          <>
-                            <Lock className="w-3.5 h-3.5" />
-                            <span>Access Node</span>
-                            <ArrowRight className="w-3.5 h-3.5 opacity-70 group-hover:translate-x-0.5 transition-transform" />
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
+            <div className="text-xs text-slate-500 font-medium">
+              Academic Year <span className="font-bold text-slate-800">2026–27</span> &bull; 6 Statutory Nodes
             </div>
           </div>
         </div>
 
-        {/* Section 2: Roles 2 through 6 — Committee, Regional, Bureau & Oversight Nodes */}
-        <div className="w-full">
-          <div className="mb-4">
-            <h3 className="text-sm font-extrabold text-slate-700 uppercase tracking-wider">
-              Statutory Committees, Regional Desks &amp; Competent Authorities
-            </h3>
-            <p className="text-xs text-slate-500">
-              Direct access nodes for regulatory scrutiny, physical inspection, regional compliance, council approvals, and policy management.
-            </p>
-          </div>
+        {/* Pristine Symmetrical 6-Role Grid (3 columns on lg, 2 on md, 1 on sm) */}
+        <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {REGULATORY_ROLES.map((r) => {
+            const Icon = r.icon;
+            const isApplicantRole = r.roleNumber === 1;
+            const isBusy = busyPersona === r.id || busyPersona === r.email;
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
-            {nonApplicantRoles.map((r) => {
-              const Icon = r.icon;
-              const isBusy = busyPersona === r.id || busyPersona === r.email;
-              return (
-                <div
-                  key={r.id}
-                  className={`bg-white rounded-2xl p-5 shadow-xs hover:shadow-md transition-all border-2 ${r.borderColor} flex flex-col justify-between group relative overflow-hidden`}
-                >
-                  <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${r.themeColor}`} />
+            return (
+              <div
+                key={r.id}
+                className={`bg-white rounded-2xl p-6 shadow-xs hover:shadow-md transition-all border-2 ${r.borderColor} flex flex-col justify-between group relative overflow-hidden`}
+              >
+                <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${r.themeColor}`} />
 
-                  <div className="space-y-3.5">
-                    <div className="flex items-center justify-between">
-                      <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center group-hover:scale-105 transition-transform">
-                        <Icon className="w-5 h-5 text-slate-800" />
-                      </div>
-                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${r.badgeBg}`}>
-                        Role #{r.roleNumber}
-                      </span>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="w-11 h-11 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <Icon className="w-6 h-6 text-slate-800" />
                     </div>
-
-                    <div>
-                      <h4 className="font-extrabold text-sm text-slate-900 leading-snug">
-                        {r.roleTitle}
-                      </h4>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">
-                        {r.shortLabel}
-                      </p>
-                    </div>
-
-                    <p className="text-xs text-slate-600 leading-relaxed min-h-[56px]">
-                      {r.whatTheyDo}
-                    </p>
-
-                    <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 text-[10px] text-slate-500 leading-snug">
-                      <span className="font-bold text-slate-700">Statutory Bound: </span>
-                      <span>{r.legallyBlocked}</span>
-                    </div>
+                    <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${r.badgeBg}`}>
+                      Role #{r.roleNumber} &bull; {r.pdfCitation}
+                    </span>
                   </div>
 
-                  <div className="pt-4 border-t border-slate-100 mt-4">
+                  <div>
+                    <h3 className="font-extrabold text-base text-slate-900 leading-snug">
+                      {r.roleTitle}
+                    </h3>
+                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">
+                      {r.shortLabel}
+                    </p>
+                  </div>
+
+                  <p className="text-xs text-slate-600 leading-relaxed min-h-[50px]">
+                    {r.whatTheyDo}
+                  </p>
+
+                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 text-[11px] text-slate-500 leading-snug">
+                    <span className="font-bold text-slate-700">Statutory Bound: </span>
+                    <span>{r.legallyBlocked}</span>
+                  </div>
+                </div>
+
+                <div className="pt-5 border-t border-slate-100 mt-5 space-y-2">
+                  {isApplicantRole ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setViewMode('nsws-intake')}
+                        className="w-full py-2.5 px-4 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Begin Application Intake (NSWS)</span>
+                        <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                      </button>
+
+                      <div className="text-center pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setShowInstModal(true)}
+                          className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer inline-flex items-center gap-1"
+                        >
+                          <GraduationCap className="w-3 h-3" />
+                          <span>Existing Institution? Sign In</span>
+                        </button>
+                      </div>
+                    </>
+                  ) : (
                     <button
+                      type="button"
                       onClick={() => handleAccessNode(r.id)}
                       disabled={Boolean(busyPersona)}
-                      className={`w-full py-2.5 px-3.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer ${
+                      className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer ${
                         r.roleNumber === 2
                           ? 'bg-amber-50 text-amber-900 hover:bg-amber-600 hover:text-white border border-amber-200'
                           : r.roleNumber === 3
@@ -416,13 +459,16 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
                         </>
                       )}
                     </button>
-                  </div>
+                  )}
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
       </main>
+
+      {/* Institution Quick Sign-In Modal */}
+      {showInstModal && renderInstitutionModal()}
     </div>
   );
 }

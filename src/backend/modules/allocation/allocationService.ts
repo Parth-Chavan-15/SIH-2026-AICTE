@@ -289,3 +289,60 @@ export function assignCommitteeGroup(params: {
   allocationHistory.push(record);
   return { success: true, assignment: record };
 }
+
+/**
+ * APH 2024-27 Annexure 16.5 EVC Composition Statutory Qualification Validation
+ * Committee Composition:
+ * 1. Chair/Convener: Professor/Dean level
+ * 2. Subject Expert: Professor/Associate Professor in relevant domain
+ * 3. Infrastructure/Architecture Expert:
+ *    - Council of Architecture (COA) registered Architect OR
+ *    - Professor/Associate Professor in Civil Engineering or Structural Engineering OR
+ *    - Professor/Associate Professor in Urban/Town Planning OR
+ *    - Empanelled Senior/Chief Engineer from CPWD, NBCC, Military Engineer Services (MES), or State PWD.
+ */
+export function validateEVCRosterComposition(members: CommitteeMember[]): {
+  valid: boolean;
+  governingClause: string;
+  hasConvener: boolean;
+  hasSubjectExpert: boolean;
+  hasInfraExpert: boolean;
+  infraExpertDetail?: string;
+  violations: string[];
+} {
+  const clause = 'APH 2024-27 Annexure 16.5 Expert Visit Committee (EVC) Composition';
+  const violations: string[] = [];
+
+  const hasConvener = members.some(m => m.role === 'Chair / Convener');
+  if (!hasConvener) violations.push('MISSING_CONVENER: EVC must include a Chair / Convener.');
+
+  const hasSubjectExpert = members.some(m => m.role === 'Subject Expert');
+  if (!hasSubjectExpert) violations.push('MISSING_SUBJECT_EXPERT: EVC must include at least one Subject Expert.');
+
+  const infraExpert = members.find(m =>
+    m.role === 'Architect Expert' ||
+    m.organization.includes('COA') ||
+    m.organization.includes('Architecture') ||
+    m.designation.toLowerCase().includes('architect') ||
+    m.designation.toLowerCase().includes('civil') ||
+    m.designation.toLowerCase().includes('structural') ||
+    m.organization.includes('CPWD') ||
+    m.organization.includes('NBCC') ||
+    m.organization.includes('PWD')
+  );
+
+  const hasInfraExpert = !!infraExpert;
+  if (!hasInfraExpert) {
+    violations.push('MISSING_INFRA_EXPERT: Annexure 16.5 requires a qualified Infrastructure/Architecture Expert (COA Architect, Civil/Structural Professor, Urban Planning Professor, or CPWD/NBCC/PWD Senior Engineer).');
+  }
+
+  return {
+    valid: violations.length === 0,
+    governingClause: clause,
+    hasConvener,
+    hasSubjectExpert,
+    hasInfraExpert,
+    infraExpertDetail: infraExpert ? `${infraExpert.name} (${infraExpert.designation}, ${infraExpert.organization})` : undefined,
+    violations
+  };
+}

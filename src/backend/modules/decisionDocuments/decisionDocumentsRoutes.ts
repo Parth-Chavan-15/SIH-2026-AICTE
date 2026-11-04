@@ -21,7 +21,8 @@ export function createDecisionDocumentsRouter(storage?: CaseStorage): Router {
     caseId: string,
     rawRequestedType: string | undefined,
     bodyApplicationId: string | undefined,
-    res: Response
+    res: Response,
+    customSpeakingOrderSummary?: string
   ) {
     // 1. Cross-case protection: Validate application ID consistency
     if (bodyApplicationId && bodyApplicationId !== caseId) {
@@ -176,11 +177,11 @@ export function createDecisionDocumentsRouter(storage?: CaseStorage): Router {
         }))
       : [];
 
-    const speakingOrderSummary = outcome === 'rejected'
+    const speakingOrderSummary = customSpeakingOrderSummary || (outcome === 'rejected'
       ? `Council Executive Committee rejected application ${caseId} under AICTE Act §10(k) based on recorded statutory shortcomings.`
       : outcome === 'conditional'
         ? `Council Executive Committee granted Extension of Approval for Academic Year ${academicYear} subject to fulfillment of mandatory recorded undertakings under APH §2.25.`
-        : `Council Executive Committee granted Extension of Approval for Academic Year ${academicYear} per APH norms.`;
+        : `Council Executive Committee granted Extension of Approval for Academic Year ${academicYear} per APH norms.`);
 
     try {
       const doc = await generateAndSignDecisionDocument({
@@ -250,7 +251,8 @@ export function createDecisionDocumentsRouter(storage?: CaseStorage): Router {
       caseId,
       req.body.documentType,
       req.body.applicationId,
-      res
+      res,
+      req.body.speakingOrderSummary
     );
   });
 
@@ -274,7 +276,8 @@ export function createDecisionDocumentsRouter(storage?: CaseStorage): Router {
       caseId,
       req.body.documentType,
       req.body.applicationId,
-      res
+      res,
+      req.body.speakingOrderSummary
     );
   });
 

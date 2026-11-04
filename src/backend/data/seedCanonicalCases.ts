@@ -242,8 +242,8 @@ export const CANONICAL_APPLICATIONS: Application[] = [
       category: 'restoration_or_shifting',
       evaluatedFacts: { siteVerificationRequired: true },
       result: 'selected',
-      stages: ['submitted', 'evc_pending', 'decision_pending'],
-      reasons: ['APH 2024-27 §§2.16.1(c)/(d) & §2.17(e): Restoration / Site Shifting mandates physical on-site EVC inspection only, waiving preliminary desk scrutiny'],
+      stages: ['submitted', 'scrutiny_pending', 'evc_pending', 'decision_pending'],
+      reasons: ['APH 2024-27 Clause 2.16.1 & Table 2.3 Row 7: Break-in-EoA Restoration mandates Desk Scrutiny followed by physical verification by Expert Visit Committee (EVC)'],
       sources: [SRC_APH_2024_27]
     },
     version: 1,

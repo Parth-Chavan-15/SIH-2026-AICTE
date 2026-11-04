@@ -143,7 +143,8 @@ describe('NIYAMSETU Full Deliverables Regression Suite (Mandatory Prototype Retr
         category: 'increase_intake',
         program: 'Engineering and Technology',
         level: 'Under Graduate',
-        proposedIntake: 360,
+        existingIntake: 360,
+        proposedIntake: 420,
         nbaAccredited: true,
         nbaScore: 680
       });
@@ -154,7 +155,8 @@ describe('NIYAMSETU Full Deliverables Regression Suite (Mandatory Prototype Retr
     it('verifies adjacent boundary values around X=360 fail-safe', () => {
       const decision359 = evaluateRouteWithEngine({
         category: 'increase_intake',
-        proposedIntake: 359,
+        existingIntake: 359,
+        proposedIntake: 420,
         nbaAccredited: true
       });
       expect(decision359.result).toBe('selected');
@@ -162,7 +164,8 @@ describe('NIYAMSETU Full Deliverables Regression Suite (Mandatory Prototype Retr
 
       const decision361 = evaluateRouteWithEngine({
         category: 'increase_intake',
-        proposedIntake: 361,
+        existingIntake: 361,
+        proposedIntake: 420,
         nbaAccredited: true
       });
       expect(decision361.result).toBe('selected');

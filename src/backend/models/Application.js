@@ -48,6 +48,8 @@ const ApplicationSchema = new mongoose.Schema(
     city: { type: String, required: true },
     applicationType: { type: String, required: true },
     academicYear: { type: String, required: true, default: '2027-28' },
+    policyVersionPinned: { type: String, default: 'AY-2026-27-V1' },
+    intakeFormulaApplied: { type: String },
     program: { type: String, required: true },
     proposedIntake: { type: Number, required: true },
     routeType: { type: String, required: true, default: 'Scrutiny Only' },
