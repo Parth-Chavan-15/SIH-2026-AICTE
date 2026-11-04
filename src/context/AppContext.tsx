@@ -146,22 +146,37 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const isRefreshingRef = useRef(false);
 
-  const refreshData = async () => {
+  const refreshData = async (activeRole?: UserRole) => {
     if (isRefreshingRef.current) return;
     isRefreshingRef.current = true;
+    const currentRole = activeRole || role;
     if (applications.length === 0) {
       setLoading(true);
     }
     try {
+      const isInst = currentRole === 'institution';
+      const isScrutiny = currentRole === 'scrutiny';
+      const isEvc = currentRole === 'evc';
+      const isOfficer = currentRole === 'officer' || currentRole === 'admin' || currentRole === 'superadmin';
+
+      const fetchApps = api.getApplications(currentRole).catch(() => []);
+      const fetchNotifs = api.getNotifications().catch(() => []);
+      const fetchEvcs = (isEvc || isOfficer) ? api.getEVCInspections().catch(() => []) : Promise.resolve([]);
+      const fetchComps = (isInst || isOfficer) ? api.getComplianceItems().catch(() => []) : Promise.resolve([]);
+      const fetchDocs = (isInst || isOfficer) ? api.getExpiringDocuments().catch(() => []) : Promise.resolve([]);
+      const fetchEscs = isOfficer ? api.getEscalations().catch(() => []) : Promise.resolve([]);
+      const fetchAudits = isOfficer ? api.getAuditLog().catch(() => []) : Promise.resolve([]);
+      const fetchRules = isOfficer ? api.getConfigRules().catch(() => []) : Promise.resolve([]);
+
       const [apps, evcs, comps, docs, notifs, escs, audits, rules] = await Promise.all([
-        api.getApplications(role).catch(() => []),
-        api.getEVCInspections().catch(() => []),
-        api.getComplianceItems().catch(() => []),
-        api.getExpiringDocuments().catch(() => []),
-        api.getNotifications().catch(() => []),
-        api.getEscalations().catch(() => []),
-        api.getAuditLog().catch(() => []),
-        api.getConfigRules().catch(() => []),
+        fetchApps,
+        fetchEvcs,
+        fetchComps,
+        fetchDocs,
+        fetchNotifs,
+        fetchEscs,
+        fetchAudits,
+        fetchRules,
       ]);
       setApplications(apps);
       setEvcInspections(evcs);
@@ -199,14 +214,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setSelectedAppId(null);
       setLoading(true);
 
-      setRoleState((prevRole) => {
-        if (prevRole === profile.role) {
-          // Force fresh fetch for new user even if role is the same (e.g., COEP -> PDIMTR)
-          setTimeout(() => refreshData(), 0);
-          return prevRole;
-        }
-        return profile.role;
-      });
+      setRoleState(profile.role);
+      refreshData(profile.role);
     };
     window.addEventListener('sih:sessionchanged', handleSessionChange);
     return () => window.removeEventListener('sih:sessionchanged', handleSessionChange);

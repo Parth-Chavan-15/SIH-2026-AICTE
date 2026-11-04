@@ -656,7 +656,7 @@ export function evaluateDynamicRoute(facts: Record<string, any>): DynamicRouteRe
   // --------------------------------------------------------------------------
   // 5. CHAPTER II TABLE 2.3 ROW 14: CHANGE OF SITE / LOCATION
   // --------------------------------------------------------------------------
-  if (cat === 'change_of_site' || cat === 'change_site' || cat === 'cat_ch2_14' || cat.includes('change_of_site') || cat.includes('location')) {
+  if (cat === 'change_of_site' || cat === 'change_site' || cat === 'cat_ch2_14' || cat.includes('change_of_site') || cat.includes('location') || cat.includes('shifting')) {
     matchedRules.push({
       ruleId: 'RULE-CH2-CAT14',
       title: 'Change of Site / Location (Mandatory Physical Site EVC)',

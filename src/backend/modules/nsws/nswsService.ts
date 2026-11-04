@@ -1,11 +1,11 @@
 /**
  * NIYAMSETU — National Single Window System (NSWS) Simulation Service
  * Smart India Hackathon 2026 | Problem Statement 26262: AICTE Regulation Bureau
- * 
+ *
  * Sourced from:
  * - AICTE Approval Process & NSWS Portal Registration Guide (2024–27)
  * - Member 2 Research on NSWS Onboarding, emBridge and crypto-tokens
- * 
+ *
  * GUARDRAIL:
  * SIMULATION ONLY. Never claim live NSWS or AICTE API transactions.
  * Fictional test accounts only. Never collect real PANs or token secrets.
@@ -86,8 +86,36 @@ export function onboardInvestor(data: {
   contactPerson: string;
   email: string;
   mobile: string;
+  investorId?: string;
+  pan?: string;
+  institutionId?: string;
 }): NSWSSimulatedProfile {
-  const investorId = `NSWS-INV-${Date.now().toString().slice(-6)}`;
+  let investorId = data.investorId;
+  if (!investorId) {
+    if (data.pan && /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/i.test(data.pan)) {
+      investorId = `NSWS-INV-${data.pan.toUpperCase()}`;
+    } else if (data.institutionId) {
+      investorId = `NSWS-INV-${data.institutionId.replace(/[^A-Za-z0-9]/g, '')}`;
+    } else {
+      const slug = data.entityName.replace(/[^A-Za-z0-9]/g, '').slice(0, 10).toUpperCase();
+      investorId = `NSWS-INV-${slug || 'DEMO'}`;
+    }
+  }
+
+  // Reuse existing profile if already onboarded to preserve idempotency
+  const existing = simulatedProfiles.get(investorId);
+  if (existing) {
+    existing.entityName = data.entityName || existing.entityName;
+    existing.contactPerson = data.contactPerson || existing.contactPerson;
+    existing.email = data.email || existing.email;
+    existing.mobile = data.mobile || existing.mobile;
+    if (data.pan) {
+      existing.pan = data.pan.toUpperCase();
+      existing.panVerified = true;
+    }
+    return existing;
+  }
+
   const profile: NSWSSimulatedProfile = {
     investorId,
     entityName: data.entityName,
@@ -95,8 +123,8 @@ export function onboardInvestor(data: {
     contactPerson: data.contactPerson,
     email: data.email,
     mobile: data.mobile,
-    pan: '',
-    panVerified: false,
+    pan: data.pan ? data.pan.toUpperCase() : '',
+    panVerified: Boolean(data.pan),
     dscVerified: false,
     onboardedAt: new Date().toISOString()
   };
@@ -177,8 +205,13 @@ export function buildApplicationFromNSWS(payload: NSWSSubmissionPayload): {
   }
 
   const nowIso = new Date().toISOString();
-  const appId = `APP-2026-NSWS-${Date.now().toString().slice(-5)}`;
-  const reference = `1-NSWS${Date.now().toString().slice(-8)}`;
+
+  // Deterministic Application ID & Reference generation (Idempotent NSWS intake)
+  const instRaw = (payload.institutionId || (payload as any).institutionCode || profile.investorId || 'INST').replace(/^INST-/, '');
+  const catRaw = (payload.category || (payload as any).facts?.category || 'INTAKE').replace(/[^A-Za-z0-9]/g, '-').slice(0, 10).toUpperCase();
+
+  const appId = (payload as any).id || (payload as any).applicationId || `APP-2026-NSWS-${instRaw.toUpperCase()}-${catRaw}`;
+  const reference = (payload as any).reference || (payload as any).applicationNumber || `1-NSWS-${instRaw.toUpperCase()}-${catRaw}`;
 
   const nestedFacts = (payload as any).facts || {};
   // Evaluate route dynamically using source-grounded route engine

@@ -67,6 +67,13 @@ export const SEEDED_INSTITUTIONS = [
     region: 'Western Region',
     email: 'principal@batu.ac.in',
   },
+  {
+    id: 'inst-vvit',
+    name: 'Vidya Vardhini Institute of Tech (Boundary X=360)',
+    code: '1-55449921',
+    region: 'Western Region',
+    email: 'principal@vvit.ac.in',
+  },
 ];
 
 export const REGULATORY_ROLES: RegulatoryRole[] = [
@@ -195,8 +202,7 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
     setError('');
     setBusyPersona(personaIdentifier);
     try {
-      await quickAccessLogin(personaIdentifier);
-      const verified = await restoreSession();
+      const verified = await quickAccessLogin(personaIdentifier);
       if (!verified) {
         throw new Error('Authentication could not be verified by server gateway');
       }

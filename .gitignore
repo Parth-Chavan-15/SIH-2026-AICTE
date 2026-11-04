@@ -11,3 +11,13 @@ coverage/
 *.docx
 docs/*.docx
 temp/
+
+# Scratch & temporary demonstration scripts
+/scratch/
+/audit-input/
+/audit-output/
+/routing-engine-input/
+/submission-deliverables/
+*.cjs
+*.py
+/*.png

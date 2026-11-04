@@ -86,6 +86,36 @@ export function createAdapterRouter(storage: CaseStorage): Router {
         });
       }
 
+      // Check if application already exists by ID or reference before inserting
+      try {
+        const ApplicationModel = (await import('../models/Application.js')).default;
+        const existingDoc: any = await ApplicationModel.findOne({
+          $or: [
+            { 'caseData.id': parsed.data.id },
+            { applicationNumber: parsed.data.reference },
+            { 'caseData.reference': parsed.data.reference }
+          ]
+        }).lean().exec();
+
+        if (existingDoc && existingDoc.caseData) {
+          return res.status(200).json({
+            success: true,
+            duplicateDetected: true,
+            data: {
+              imported: false,
+              alreadyIngested: true,
+              applicationId: existingDoc.caseData.id,
+              reference: existingDoc.caseData.reference,
+              sourceType,
+              syncedAt: nowIso
+            },
+            message: `Application ${existingDoc.caseData.id} already ingested. Displaying existing record.`
+          });
+        }
+      } catch (checkErr) {
+        // Non-blocking query check
+      }
+
       await storage.transaction(async (tx) => {
         const actor: Actor = {
           id: 'SYSTEM',

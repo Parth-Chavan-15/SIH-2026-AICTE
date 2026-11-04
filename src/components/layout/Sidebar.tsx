@@ -239,6 +239,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     (activeActor?.id === 'usr-inst-pdimtr' || (activeActor as any)?.email === 'principal@pdimtr.ac.in') ? 'PDIMTR • ID 1-109704178' :
                     (activeActor?.id === 'usr-inst-apex' || (activeActor as any)?.email === 'principal@apex.ac.in') ? 'Apex • ID 1-33104928' :
                     (activeActor?.id === 'usr-inst-batu' || (activeActor as any)?.email === 'principal@batu.ac.in') ? 'BATU Lonere • ID 1-19201481' :
+                    (activeActor?.id === 'usr-inst-vvit' || (activeActor as any)?.email === 'principal@vvit.ac.in') ? 'VVIT • ID 1-55449921' :
                     'COEP • ID 1-435789102'
                   ) : currentPortal.subtitle}
                 </span>

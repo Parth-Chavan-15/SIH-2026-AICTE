@@ -70,6 +70,13 @@ export const CANONICAL_INSTITUTIONS: Institution[] = [
     name: 'Dr. Babasaheb Ambedkar Technological University (BATU Lonere)',
     regionId: 'Western',
     status: 'active'
+  },
+  {
+    id: 'INST-VVIT',
+    permanentId: '1-55449921',
+    name: 'Vidya Vardhini Institute of Technology (Boundary X=360)',
+    regionId: 'Western',
+    status: 'active'
   }
 ];
 

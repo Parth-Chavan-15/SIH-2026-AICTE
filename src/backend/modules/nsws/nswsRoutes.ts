@@ -119,7 +119,97 @@ export function createNSWSRouter(storage: CaseStorage): Router {
     try {
       const { application, routeExplanation } = buildApplicationFromNSWS(req.body);
 
-      // Persist created application in CaseStorage
+      // P0: Idempotency Verification - Query existing applications before insertion
+      const mongoose = (await import('mongoose')).default;
+      const { deriveRouteType } = await import('../../persistence/mongoCore');
+      const { computeCanonicalAuditHash } = await import('../../security/auditVerification');
+      const { CoreAudit } = await import('../../persistence/records');
+
+      let existingDoc: any = null;
+      if (mongoose.connection?.readyState === 1) {
+        const ApplicationModel = (await import('../../models/Application.js')).default;
+        const queryCriteria: any[] = [
+          { 'caseData.id': application.id },
+          { applicationNumber: application.reference },
+          { 'caseData.reference': application.reference }
+        ];
+
+        if (application.facts?.nswsInvestorId) {
+          queryCriteria.push({ 'caseData.facts.nswsInvestorId': application.facts.nswsInvestorId });
+        }
+
+        if (application.institutionId && application.session && application.category) {
+          queryCriteria.push({
+            institutionCode: application.institutionId,
+            academicYear: application.session,
+            applicationType: application.category,
+            program: String(application.facts?.program || ''),
+            'caseData.facts.intakeChannel': 'NSWS_SIMULATION'
+          });
+        }
+
+        existingDoc = await ApplicationModel.findOne({ $or: queryCriteria }).lean().exec();
+      }
+
+      if (!existingDoc && storage) {
+        try {
+          const sysActor: Actor = {
+            id: 'SYSTEM_NSWS_SIMULATION',
+            roles: ['institution'],
+            permissions: ['case.create', 'case.read'],
+            scope: 'global',
+            institutionIds: ['*'],
+            regionIds: ['*']
+          };
+          const memCase = await storage.get(sysActor, application.id);
+          if (memCase) {
+            existingDoc = { caseData: memCase, applicationNumber: memCase.reference };
+          }
+        } catch (_e) {
+          // storage fallback check
+        }
+      }
+
+      if (existingDoc && existingDoc.caseData) {
+        const { evaluateDynamicRoute } = await import('../../policy/dynamicRouteEngine');
+        const dynamicExplanation = evaluateDynamicRoute({
+          ...existingDoc.caseData.facts,
+          category: existingDoc.caseData.category,
+          session: existingDoc.caseData.session
+        });
+
+        return res.status(200).json({
+          success: true,
+          duplicateDetected: true,
+          alreadySubmitted: true,
+          data: {
+            application: existingDoc.caseData,
+            routeExplanation: dynamicExplanation,
+            simulationNotice: 'EXISTING RECORD RETRIEVED (IDEMPOTENT REPLAY) — NO DUPLICATE CREATED'
+          },
+          message: `Application ${existingDoc.caseData.id || existingDoc.applicationNumber} has already been submitted to AICTE via NSWS. Showing existing record.`
+        });
+      }
+
+      // If not previously ingested, persist into CaseStorage / MongoDB
+      const projection = {
+        caseData: application,
+        applicationNumber: application.reference,
+        institutionName: (application.facts as any)?.institutionName || application.institutionId,
+        institutionCode: application.institutionId,
+        region: application.regionId,
+        state: (application.facts as any)?.state || 'Maharashtra',
+        city: (application.facts as any)?.city || 'Pune',
+        academicYear: application.session,
+        applicationType: application.category,
+        currentStage: application.state,
+        currentStageStartedAt: new Date(application.stageEnteredAt),
+        program: String(application.facts?.program || ''),
+        proposedIntake: application.facts?.proposedIntake || 0,
+        routeType: deriveRouteType(application),
+        submittedAt: new Date(application.createdAt)
+      };
+
       try {
         await storage.transaction(async (tx) => {
           const actor: Actor = {
@@ -138,11 +228,11 @@ export function createNSWSRouter(storage: CaseStorage): Router {
           }
 
           if ((tx as any).audit) {
-            await (tx as any).audit({
-              id: `AUDIT-NSWS-${Date.now()}`,
+            const auditEvent = {
+              id: `AUDIT-NSWS-${application.id}`,
               occurredAt: application.createdAt,
               actorId: 'NSWS_PORTAL_SIMULATION',
-              requestId: `REQ-NSWS-${Date.now()}`,
+              requestId: `REQ-NSWS-${application.id}`,
               applicationId: application.id,
               action: 'APPLICATION_INGESTED_VIA_NSWS',
               beforeState: undefined,
@@ -150,39 +240,66 @@ export function createNSWSRouter(storage: CaseStorage): Router {
               caseVersion: 1,
               reason: `Ingested via simulated NSWS onboarding pipeline. Dynamic Route: ${routeExplanation.policyRevisionId}`,
               evidenceVersionIds: []
-            });
+            };
+            await (tx as any).audit(auditEvent);
           }
         });
       } catch (txErr: any) {
+        console.warn('[DEBUG NSWS] storage.transaction error:', txErr.message);
         // Fallback for standalone MongoDB deployments where multi-document transactions are unsupported
         try {
-          const ApplicationModel = (await import('../../models/Application.js')).default;
-          const { deriveRouteType } = await import('../../persistence/mongoCore');
-          const projection = {
-            caseData: application,
-            applicationNumber: application.reference,
-            institutionName: (application.facts as any)?.institutionName || application.institutionId,
-            institutionCode: application.institutionId,
-            region: application.regionId,
-            state: (application.facts as any)?.state || 'Maharashtra',
-            city: (application.facts as any)?.city || 'Pune',
-            academicYear: application.session,
-            applicationType: application.category,
-            currentStage: application.state,
-            currentStageStartedAt: new Date(application.stageEnteredAt),
-            program: String(application.facts.program),
-            proposedIntake: application.facts.proposedIntake,
-            routeType: deriveRouteType(application),
-            submittedAt: new Date(application.createdAt)
-          };
           await ApplicationModel.create(projection);
+
+          // Also record genesis audit event with canonical HMAC-SHA256 signature
+          try {
+            const auditEvent = {
+              id: `AUDIT-NSWS-${application.id}`,
+              occurredAt: application.createdAt,
+              actorId: 'NSWS_PORTAL_SIMULATION',
+              requestId: `REQ-NSWS-${application.id}`,
+              applicationId: application.id,
+              action: 'APPLICATION_INGESTED_VIA_NSWS',
+              beforeState: undefined,
+              afterState: 'submitted',
+              caseVersion: 1,
+              reason: `Ingested via simulated NSWS onboarding pipeline. Dynamic Route: ${routeExplanation.policyRevisionId}`,
+              evidenceVersionIds: []
+            };
+            const hash = computeCanonicalAuditHash('GENESIS', auditEvent);
+            await CoreAudit.updateOne(
+              { id: auditEvent.id },
+              { $setOnInsert: { id: auditEvent.id, data: { ...auditEvent, tamperProofHash: hash } } },
+              { upsert: true }
+            );
+          } catch (auditErr: any) {
+            console.warn('Audit record insertion note:', auditErr.message);
+          }
         } catch (fbErr: any) {
-          console.warn('Fallback direct persistence also logged:', fbErr.message);
+          console.warn('[DEBUG NSWS] fbErr code:', fbErr.code, 'msg:', fbErr.message, 'keyPattern:', fbErr.keyPattern);
+          if (fbErr.code === 11000) {
+            // Concurrently inserted - retrieve and return existing gracefully
+            const recheck: any = await ApplicationModel.findOne({ $or: queryCriteria }).lean().exec();
+            if (recheck?.caseData) {
+              return res.status(200).json({
+                success: true,
+                duplicateDetected: true,
+                alreadySubmitted: true,
+                data: {
+                  application: recheck.caseData,
+                  routeExplanation: recheck.caseData.route || routeExplanation,
+                  simulationNotice: 'EXISTING RECORD RETRIEVED (CONCURRENT DEDUPLICATION) — NO DUPLICATE CREATED'
+                },
+                message: `Application ${recheck.caseData.id} already exists. Returning canonical record.`
+              });
+            }
+          }
+          console.warn('Fallback direct persistence note:', fbErr.message);
         }
       }
 
       return res.status(201).json({
         success: true,
+        duplicateDetected: false,
         data: {
           application,
           routeExplanation,

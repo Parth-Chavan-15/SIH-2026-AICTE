@@ -16,6 +16,7 @@ import {
   FileSpreadsheet,
   AlertOctagon,
   Building,
+  RefreshCw,
 } from 'lucide-react';
 
 interface ApplicationsListViewProps {
@@ -267,7 +268,13 @@ export const ApplicationsListView: React.FC<ApplicationsListViewProps> = ({
       {/* Applications Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
-          {paginatedApps.length === 0 ? (
+          {loading ? (
+            <div className="p-12 text-center">
+              <RefreshCw className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-3" />
+              <p className="text-sm font-semibold text-slate-700">Loading statutory applications docket…</p>
+              <p className="text-xs text-slate-400 mt-1">Retrieving tenant-isolated records from NIYAMSETU ledger</p>
+            </div>
+          ) : paginatedApps.length === 0 ? (
             isInstitution && scopedApps.length === 0 ? (
               <div className="p-12 text-center max-w-md mx-auto">
                 <Building className="w-12 h-12 text-blue-300 mx-auto mb-3" />

@@ -1,0 +1,89 @@
+[
+  {
+    "id": "DOC-01",
+    "filename": "AICTE Addendum-Corrigendum 2026–27.pdf",
+    "file_size": 2408457,
+    "page_count": 42,
+    "total_chars": 60954,
+    "empty_pages": [],
+    "status": "ACCESSIBLE_AND_INDEXED"
+  },
+  {
+    "id": "DOC-02",
+    "filename": "AICTE Approval Process Handbook 2024–25 to 2026–27.pdf",
+    "file_size": 4155819,
+    "page_count": 231,
+    "total_chars": 640948,
+    "empty_pages": [
+      1,
+      2,
+      68,
+      92,
+      231
+    ],
+    "status": "ACCESSIBLE_AND_INDEXED"
+  },
+  {
+    "id": "DOC-03",
+    "filename": "AICTE Act, 1987.pdf",
+    "file_size": 318389,
+    "page_count": 15,
+    "total_chars": 33243,
+    "empty_pages": [],
+    "status": "ACCESSIBLE_AND_INDEXED"
+  },
+  {
+    "id": "DOC-04",
+    "filename": "AICTE (Grant of Approvals for Technical Institutions) Guidelines, 2024–27 — Gazette of India.pdf",
+    "file_size": 1021109,
+    "page_count": 42,
+    "total_chars": 136899,
+    "empty_pages": [],
+    "status": "ACCESSIBLE_AND_INDEXED"
+  },
+  {
+    "id": "DOC-05",
+    "filename": "REVISED PUBLIC NOTICE FOR APPROVAL PROCESS 2026-27.pdf",
+    "file_size": 131831,
+    "page_count": 1,
+    "total_chars": 933,
+    "empty_pages": [],
+    "status": "ACCESSIBLE_AND_INDEXED"
+  },
+  {
+    "id": "DOC-06",
+    "filename": "Public notice for approval process 2026-27.pdf",
+    "file_size": 1907209,
+    "page_count": 2,
+    "total_chars": 3785,
+    "empty_pages": [],
+    "status": "ACCESSIBLE_AND_INDEXED"
+  },
+  {
+    "id": "DOC-07",
+    "filename": "Circular_Guidelines for EoA for BBABMSBCA Programs.pdf",
+    "file_size": 556059,
+    "page_count": 1,
+    "total_chars": 1708,
+    "empty_pages": [],
+    "status": "ACCESSIBLE_AND_INDEXED"
+  },
+  {
+    "id": "DOC-08",
+    "filename": "Orissa Lift Irrigation Corporation Ltd. v. Rabi Sankar Patro & Others — 3 November 2017.pdf",
+    "file_size": 345929,
+    "page_count": 116,
+    "total_chars": 167284,
+    "empty_pages": [],
+    "status": "ACCESSIBLE_AND_INDEXED"
+  },
+  {
+    "id": "DOC-09",
+    "filename": "Official Supreme Court order — 22 January 2018.pdf",
+    "file_size": 124601,
+    "page_count": 24,
+    "total_chars": 31002,
+    "empty_pages": [],
+    "status": "ACCESSIBLE_AND_INDEXED"
+  }
+]

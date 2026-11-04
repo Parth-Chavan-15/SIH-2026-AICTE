@@ -48,6 +48,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     : (activeActor?.id === 'usr-inst-pdimtr' || (activeActor as any)?.email === 'principal@pdimtr.ac.in') ? 'APP-2026-PDIMTR'
     : (activeActor?.id === 'usr-inst-apex' || (activeActor as any)?.email === 'principal@apex.ac.in') ? 'APP-2026-APEX'
     : (activeActor?.id === 'usr-inst-batu' || (activeActor as any)?.email === 'principal@batu.ac.in') ? 'APP-2026-BATU'
+    : (activeActor?.id === 'usr-inst-vvit' || (activeActor as any)?.email === 'principal@vvit.ac.in') ? 'APP-2026-NSWS-BOUNDARY-X360'
     : null;
 
   // If Role 1 (Applicant), strictly isolate notifications to their college; Higher authorities see all
@@ -255,6 +256,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               { id: 'pdimtr', label: '3. PDIMTR (Fast-Track EoA)', email: 'principal@pdimtr.ac.in', hint: 'Self-Disclosure & 30-Yr Lease' },
               { id: 'apex', label: '4. Apex (EVC + SAC/SHC)', email: 'principal@apex.ac.in', hint: 'Standing Appellate Review' },
               { id: 'batu', label: '5. BATU (Only EVC)', email: 'principal@batu.ac.in', hint: '§2.16.1 Restoration / Site Shift' },
+              { id: 'vvit', label: '6. VVIT (Boundary X=360)', email: 'principal@vvit.ac.in', hint: 'Division boundary X=360 hold' },
             ].map((col) => {
               const isColActive = (activeActor as any)?.email === col.email || activeActor?.id === `usr-inst-${col.id}`;
               return (

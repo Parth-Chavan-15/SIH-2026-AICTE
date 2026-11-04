@@ -1,3 +1,4 @@
+import { RouteDemonstrationExplorer } from '../policy/RouteDemonstrationExplorer';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../services/api';
@@ -25,7 +26,7 @@ import {
 
 export const ConfigRulesView: React.FC = () => {
   const { role, user, configRules, updateConfigRule } = useApp();
-  const [activeTab, setActiveTab] = useState<'RULES_LIST' | 'SIMULATOR' | 'CONFLICTS' | 'SLA_CONFIG'>('RULES_LIST');
+  const [activeTab, setActiveTab] = useState<'RULES_LIST' | 'SIMULATOR' | 'ROUTE_EXPLORER' | 'CONFLICTS' | 'SLA_CONFIG'>('RULES_LIST');
 
   // Rules Registry States
   const [rules, setRules] = useState<any[]>([]);
@@ -223,6 +224,18 @@ export const ConfigRulesView: React.FC = () => {
         >
           <Cpu className="w-4 h-4" />
           <span>Route Simulation &amp; Regression Sandbox</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('ROUTE_EXPLORER')}
+          className={`py-3 px-4 text-xs font-bold border-b-2 transition-all flex items-center gap-2 ${
+            activeTab === 'ROUTE_EXPLORER'
+              ? 'border-indigo-600 text-indigo-700 bg-indigo-50/50'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Layers className="w-4 h-4" />
+          <span>Statutory Route Explorer</span>
         </button>
 
         <button
@@ -461,6 +474,10 @@ export const ConfigRulesView: React.FC = () => {
       )}
 
       {/* TAB 3: CONFLICT REGISTER */}
+      {activeTab === 'ROUTE_EXPLORER' && (
+        <RouteDemonstrationExplorer />
+      )}
+
       {activeTab === 'CONFLICTS' && (
         <div className="space-y-4">
           <div className="p-4 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 flex items-start gap-3">

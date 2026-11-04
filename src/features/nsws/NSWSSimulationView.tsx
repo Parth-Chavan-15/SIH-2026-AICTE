@@ -1,3 +1,4 @@
+import { RouteDemonstrationExplorer } from '../policy/RouteDemonstrationExplorer';
 import React, { useState } from 'react';
 
 import { api } from '../../services/api';
@@ -496,6 +497,8 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
   const [routeDecision, setRouteDecision] = useState<any>(null);
 
   const [submittedApp, setSubmittedApp] = useState<any>(null);
+  const [isDuplicateSubmission, setIsDuplicateSubmission] = useState<boolean>(false);
+  const [showRouteExplorer, setShowRouteExplorer] = useState<boolean>(false);
 
 
 
@@ -722,27 +725,20 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
     try {
 
       const mappedInstId = 
-
         selectedPresetId === 'coep' ? 'INST-SOUTH' :
-
         selectedPresetId === 'giits' ? 'INST-NORTH' :
-
         selectedPresetId === 'pdimtr' ? 'INST-WEST' :
-
         selectedPresetId === 'apex' ? 'INST-APEX' :
-
         selectedPresetId === 'batu' || selectedPresetId === 'batu-shifting' ? 'INST-BATU' :
-
-        selectedPresetId === 'boundary-x360' ? 'INST-SOUTH' :
-
+        selectedPresetId === 'boundary-x360' ? 'INST-VVIT' :
         `INST-${selectedPresetId.toUpperCase()}-${region.substring(0, 3).toUpperCase()}`;
 
-
-
+      const presetSlug = selectedPresetId.toUpperCase().replace(/[^A-Z0-9]/g, '-');
       const payload = {
-
-        nswsReference: onboardResult?.nswsReference || `NSWS-2026-${Date.now()}`,
-
+        id: `APP-2026-NSWS-${presetSlug}`,
+        reference: `1-NSWS-${presetSlug}-2026`,
+        idempotencyKey: `NSWS-2026-${selectedPresetId}`,
+        nswsReference: onboardResult?.nswsReference || `NSWS-INV-${presetSlug}`,
         institutionName,
 
         institutionId: mappedInstId,
@@ -789,7 +785,10 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
 
       const data = (res as any)?.data ?? res;
 
-      setSubmittedApp(data?.application ?? data);
+      const appRecord = data?.application ?? data;
+      setSubmittedApp(appRecord);
+      const isDupe = Boolean((res as any)?.duplicateDetected || data?.duplicateDetected || (res as any)?.alreadySubmitted);
+      setIsDuplicateSubmission(isDupe);
 
       try {
 
@@ -1034,7 +1033,7 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
 
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
 
               {CANONICAL_PRESETS.map((p) => {
 
@@ -2131,19 +2130,21 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
             </button>
 
             <button
-
               onClick={handleSubmitApplication}
-
               disabled={loading}
-
-              className="px-5 py-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs flex items-center gap-2 shadow-xs transition-colors"
-
+              className="px-5 py-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs flex items-center gap-2 shadow-xs transition-colors disabled:opacity-50"
             >
-
-              <Send className="w-4 h-4" />
-
-              <span>Submit Application to AICTE (Autonomous Regional Hand-Off)</span>
-
+              {loading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Submitting to AICTE Portal…</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  <span>Submit Application to AICTE (Autonomous Regional Hand-Off)</span>
+                </>
+              )}
             </button>
 
           </div>
@@ -2168,6 +2169,20 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
               </p>
             </div>
           </div>
+
+          {isDuplicateSubmission && (
+            <div className="p-4 bg-amber-50 rounded-xl border border-amber-300 text-amber-900 text-xs flex items-start gap-3 shadow-xs">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <div className="font-bold text-sm text-amber-950">
+                  Application Already Ingested via NSWS (Idempotent Record Retrieved)
+                </div>
+                <p className="text-amber-800 leading-relaxed">
+                  This application has already been submitted to the AICTE Portal and safely persisted in the database. Exactly one persistent application record (<code>{submittedApp.id || submittedApp.reference}</code>) exists. No duplicate records or redundant intake audits were generated.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Complete Submission Confirmation Dossier */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-xs">
