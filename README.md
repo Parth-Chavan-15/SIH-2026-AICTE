@@ -28,13 +28,19 @@ Smart India Hackathon 2026 · AICTE Problem Statement **PS 26262** · Team **DEF
 
 ---
 
-## 🏛️ What is NIYAMSETU?
+## 🏛️ What is NIYAMSETU? — Problem Statement & Solution
 
 **NIYAMSETU (नियमसेतु — *The Bridge of Rules*) is an integrated digital platform built for the All India Council for Technical Education (AICTE)** to automate, streamline, and monitor approval workflows, institutional compliance, and statutory deadlines for technical education institutions across India.
 
-Every academic year, thousands of institutions apply to AICTE for approvals ranging from establishing new institutions and extending annual approvals (EoA) to expanding intake, introducing new programmes, and shifting campuses. Navigating multi-year rulebooks, annual addenda, and errata circulars requires consistent interpretation, strict calendar adherence, and reliable follow-through on post-approval obligations.
+Every academic year, thousands of institutions apply to AICTE for approvals under the Approval Process Handbook (APH), including setting up new institutions, extending annual approvals (EoA), expanding intake, and shifting campuses. Approvals often involve time-bound compliance undertakings, such as registered land lease deeds, building safety certificates, and financial security deposits.
 
-NIYAMSETU translates statutory regulations into predictable digital workflows. It evaluates application parameters against the applicable Approval Process Handbook (APH) and addenda, guides applications through their required scrutiny and physical inspection stages, protects previously approved documents during deficiency reviews, and actively monitors time-bound compliance undertakings through automated countdown timers and escalations. **Final approval authority remains strictly with authorized human officials.**
+Under **AICTE Problem Statement PS 26262**, the Council requires an integrated, secure, and configurable digital platform that:
+- **Automates application routing** across applicable stages (Scrutiny only, Scrutiny + EVC, Direct EVC, and Council review) based on configurable rules.
+- **Provides real-time dashboards** displaying application status, stage-wise pendency, processing timelines, and workload distribution across regions and committees.
+- **Streamlines EVC scheduling** and tracks completion timelines, geo-coordinates, and physical verification evidence.
+- **Monitors time-bound undertakings** and tracks the validity and renewal of prescribed documents.
+- **Dispatches automated notifications**, advance deadline reminders, and escalations for pending or overdue actions to institutions and authorized officials.
+- **Maintains complete digital audit trails** of application movement, observations, and decisions, while preserving secure access control and human decision authority.
 
 <details>
 <summary><strong>▶ Click here to view the animated approval-to-compliance workflow</strong></summary>
@@ -45,27 +51,9 @@ NIYAMSETU translates statutory regulations into predictable digital workflows. I
 
 </details>
 
----
-
-## 🧩 Problem Statement & Engineering Solution
-
-### The Official Problem Statement (AICTE PS 26262)
-
-AICTE processes applications from technical institutions through multiple stages prescribed under the Approval Process Handbook (APH), including desk scrutiny, re-scrutiny, Expert Visit Committees (EVC), and appellate proceedings (SAC/SHC). Approvals are frequently granted subject to time-bound undertakings and ongoing compliance requirements, such as the submission and renewal of land lease deeds, building safety certificates, and financial security deposits.
-
-Monitoring application movement, stage-wise pendency, EVC scheduling, institutional undertakings, and document validity across diverse regions and responsible officials demands substantial coordination and timely follow-up.
-
-Under **PS 26262**, AICTE requires an integrated, secure, and configurable digital platform that:
-- **Automates application routing** across applicable stages (Scrutiny only, Scrutiny + EVC, Direct EVC, and Council review) based on configurable rules.
-- **Provides real-time dashboards** displaying application status, stage-wise pendency, processing timelines, and workload distribution across regions and committees.
-- **Streamlines EVC scheduling** and tracks completion timelines, geo-coordinates, and physical verification evidence.
-- **Monitors time-bound undertakings** and tracks the validity and renewal of prescribed documents, such as registered lease deeds and safety certificates.
-- **Dispatches automated notifications**, advance deadline reminders, and escalations for pending or overdue actions to institutions and authorized officials.
-- **Maintains complete digital audit trails** of application movement, observations, and decisions, while preserving secure access control and human decision authority.
-
 ### The NIYAMSETU Engineering Solution
 
-NIYAMSETU addresses every facet of PS 26262 through four structured engineering pillars:
+NIYAMSETU addresses PS 26262 through four structured engineering pillars, translating statutory rules into automated, predictable digital workflows while keeping final approval authority strictly with authorized human officials:
 
 <details>
 <summary><strong>▶ Click here to view the Four Engineering Pillars architecture diagram</strong></summary>
@@ -98,40 +86,38 @@ flowchart TD
 
 </details>
 
-1. **External System Adapters:** Connects institutional intake through single-window application adapters, validates digital signatures, and standardizes data exchange across legacy and modern portals without requiring duplicative data entry.
-2. **Configurable Rule Registry:** Maps application parameters directly to the Approval Process Handbook (APH 2024–27 Chapter II Table 2.3 and Addenda), determining the exact statutory route and citing applicable regulatory clauses without ambiguity.
-3. **Document Review & Scope Lock:** Implements a structured five-state document lifecycle. When deficiencies are identified, previously approved documents are locked read-only during re-scrutiny, preventing repetitive objections on already verified submissions.
-4. **Statutory SLA & Alert Management:** Maintains independent countdown timers across scrutiny, deficiency cure, inspection, and decision stages, triggering advance reminder notices and escalating overdue dockets to Regional Officers.
-
----
-
-## ✨ Eight Core Innovations
-
-| Innovation | Description |
-|:--|:--|
-| 📋 **Version-Pinned Rule Registry** | Preserves the applicable AICTE Approval Process Handbook (APH) rule version at the time of submission, ensuring subsequent policy updates do not retroactively alter historical evaluations. |
-| 🛡️ **Scope-Locked Scrutiny Snapshots** | Protects previously approved documents during re-scrutiny rounds, restricting committee evaluations strictly to identified deficiencies and preventing repetitive objections. |
-| 🏅 **Conditional NBA Fast-Track Routing** | Automatically waives pre-approval physical inspections under AICTE errata circulars when an institution presents valid NBA accreditation for eligible programmes. |
-| 📄 **Five-State Document Verification** | Tracks submitted documents through five structured verification states while maintaining a complete, permanent version history for every uploaded record. |
-| 📅 **Four-Clock Statutory SLA Engine** | Independently monitors calendar turnaround times across Scrutiny, Rectification, Inspection, and Council decisions with advance reminder alerts and overdue escalations. |
-| 🔄 **Concurrency & Idempotency Safeguards** | Prevents duplicate submissions, conflicting simultaneous reviews, or race conditions when multiple committee members access the same application docket. |
-| 🔗 **Cryptographic Tamper-Evident Audit Trail** | Mathematically links every administrative action and stage change into a chronological audit chain, detecting any unauthorized record alterations. |
-| ✉️ **Reliable Outbox Notification Dispatch** | Decouples notification delivery through a transactional outbox queue, guaranteeing dependable dispatch of deadline alerts, deficiency notices, and official orders. |
+1. **External System Adapters:** Connects institutional intake through single-window application adapters, validates digital signatures, and standardizes data exchange across portals without duplicate entry.
+2. **Configurable Rule Registry:** Maps application parameters directly to APH regulations and addenda, automatically determining the exact statutory route and legal citations without ambiguity.
+3. **Document Review & Scope Lock:** Enforces a structured document lifecycle that permanently locks previously cleared documents read-only during re-scrutiny, preventing repetitive objections on already verified items.
+4. **Statutory SLA & Alert Management:** Tracks countdown timers across scrutiny, deficiency cure, inspection, and decision stages, triggering advance reminder alerts and escalating overdue dockets to Regional Officers.
 
 ---
 
 ## ⚙️ Core Platform Features
 
 | Feature | Description |
-|:--|:--|
-| 🧭 **Deterministic Regulatory Routing** | Automatically determines the exact statutory route (Scrutiny only, Scrutiny + EVC, Direct EVC, or direct Council review) based on application parameters, eliminating subjective manual routing. |
-| 🛡️ **Protected Deficiency Re-Scrutiny** | When shortcomings are identified in a Letter of Deficiency (LoD), institutions cure only the flagged items. Documents cleared in earlier scrutiny rounds remain locked and cannot be reopened. |
-| 📍 **Automated EVC Scheduling & Physical Verification** | Identifies applications mandating an on-site visit, coordinates committee scheduling, and records physical inspection findings with GPS geofencing and walkthrough evidence. |
-| ⏱️ **Four-Clock Statutory SLA Monitoring** | Actively tracks statutory deadlines across Scrutiny (10 days), Deficiency Rectification (10 days), EVC Inspection (15 days), and Council Decisions (15 days). |
-| 📑 **Post-Approval Compliance Tracking** | Automatically materializes order conditions into dedicated compliance clocks, tracking mandatory undertakings such as 10-Year Joint FDRs, Fire Safety NOCs, and registered land leases. |
-| 👥 **Six Dedicated Role Workspaces** | Role-based interfaces tailored for Institutions, Scrutiny Committees, EVC Panels, Regional Offices, Approval Bureau / Council, and Administrators. |
-| ⚖️ **Authorized Human Decisions** | Automated engines evaluate rules and compile summaries, while final approval, conditional grant, or rejection speaking orders are issued exclusively by authorized officials. |
-| 🔗 **Tamper-Evident Audit Trail** | Every stage movement, committee observation, and administrative decision is recorded in a cryptographically verifiable chronological audit log. |
+| :--- | :--- |
+| 🧭 **Deterministic Regulatory Routing** | Maps application parameters directly to the exact statutory route (Scrutiny only, Scrutiny + EVC, Direct EVC, or direct Council review), eliminating subjective manual routing. |
+| 🛡️ **Protected Deficiency Re-Scrutiny** | Restricts re-scrutiny strictly to items flagged in a Letter of Deficiency (LoD), keeping previously cleared documents locked against new objections. |
+| 📍 **Automated EVC Scheduling & Physical Verification** | Coordinates mandated on-site inspections and captures committee findings alongside GPS geofencing and walkthrough evidence. |
+| ⏱️ **Four-Clock Statutory SLA Monitoring** | Tracks statutory deadlines across Scrutiny (10d), Deficiency Rectification (10d), EVC Inspection (15d), and Council Decisions (15d). |
+| 📑 **Post-Approval Compliance Tracking** | Materializes order conditions into active compliance clocks for mandatory undertakings like 10-Year Joint FDRs, Fire Safety NOCs, and registered land leases. |
+| 👥 **Six Dedicated Role Workspaces** | Provides role-isolated interfaces tailored for Institutions, Scrutiny Committees, EVC Panels, Regional Offices, Approval Bureau / Council, and Administrators. |
+| ⚖️ **Authorized Human Decisions** | Compiles automated rule evaluations and case dockets while reserving final approval, conditional grant, and rejection speaking orders for authorized officials. |
+| 🔗 **Tamper-Evident Audit Trail** | Records every stage movement, committee observation, and administrative decision in a chronologically verifiable audit log. |
+
+## ✨ Eight Core Innovations
+
+| Innovation | Description |
+| :--- | :--- |
+| 📋 **Version-Pinned Rule Registry** | Pins the applicable AICTE Approval Process Handbook (APH) rule version at submission, ensuring subsequent policy updates never alter historical evaluations. |
+| 🛡️ **Scope-Locked Scrutiny Snapshots** | Enforces read-only state locks on cleared checklist items at the database layer, programmatically confining re-scrutiny to notified shortcomings. |
+| 🏅 **Conditional NBA Fast-Track Routing** | Automatically waives pre-approval physical inspections under AICTE errata circulars when eligible programmes hold valid NBA accreditation. |
+| 📄 **Five-State Document Verification** | Transitions records through five explicit states (`Pending`, `Verified`, `Deficient`, `Resubmitted`, `Sealed`) with an immutable version history. |
+| 📅 **Four-Clock Statutory SLA Engine** | Runs decoupled state-machine timers across all four statutory stages, automating advance warning alerts and overdue regional escalations. |
+| 🔄 **Concurrency & Idempotency Safeguards** | Prevents duplicate submissions, race conditions, and conflicting simultaneous reviews across distributed committee evaluations. |
+| 🔗 **Cryptographic Tamper-Evident Audit Trail** | Cryptographically chains every administrative action and stage transition into an append-only ledger that immediately exposes unauthorized record mutations. |
+| ✉️ **Reliable Outbox Notification Dispatch** | Guarantees fault-tolerant delivery of deadline alerts, LoD notices, and formal orders via an asynchronous transactional outbox queue. |
 
 ---
 
@@ -853,53 +839,29 @@ flowchart TD
 
 ## 👥 Six Role-Based Workspaces
 
-NIYAMSETU provides six dedicated workspaces designed for each stakeholder group, enforcing strict procedural boundaries and data security:
+NIYAMSETU provides six dedicated workspaces with strict procedural boundaries and data isolation:
 
 | Workspace | Primary Responsibilities & Functional Views |
-|:--|:--|
-| 🏫 **Institution / Applicant** | Submit applications across statutory categories, upload required evidence and affidavits, view real-time stage progress, cure notified deficiencies within the 10-day window, and fulfill post-approval compliance obligations. |
-| 🔍 **Desk Scrutiny Committee** | Review submitted document checklists against statutory requirements, record clause-by-clause evaluation findings, issue Letters of Deficiency, and conduct re-scrutiny on cured items with previously approved documents locked. |
-| 📍 **Expert Visit Committee (EVC)** | Access assigned on-site physical inspection dockets, verify campus infrastructure with GPS coordinates and walkthrough video evidence, complete laboratory checklists, and submit finalized committee reports. |
-| 🗂️ **Regional Office (RO)** | Monitor regional application pipelines, track stage-wise pendency and ageing metrics, allocate applications to scrutiny groups and EVC panels, oversee hearing schedules, and handle automated overdue escalations. |
-| ⚖️ **Approval Bureau / Council** | Review consolidated regional dossiers and committee recommendations, evaluate statutory compliance under the AICTE Act, and issue authorized digital speaking orders (Letter of Approval, Extension of Approval, or Rejection). |
-| ⚙️ **Policy Administration** | Maintain and update configurable AICTE regulatory rule parameters, test application scenarios in the interactive routing sandbox, monitor system health, and inspect the tamper-evident audit ledger. |
+| :--- | :--- |
+| 🏫 **Institution / Applicant** | Submit statutory applications, upload required evidence and affidavits, cure notified deficiencies within the 10-day window, track live stage progress, and fulfill post-approval compliance obligations. |
+| 🔍 **Desk Scrutiny Committee** | Verify document checklists against statutory norms, record clause-by-clause findings, issue Letters of Deficiency (LoD), and re-examine cured items with cleared documents locked. |
+| 📍 **Expert Visit Committee (EVC)** | Access assigned physical inspection dockets, verify campus infrastructure with GPS coordinates and walkthrough video evidence, complete lab checklists, and submit finalized reports. |
+| 🗂️ **Regional Office (RO)** | Monitor regional application pipelines and ageing metrics, allocate dockets to scrutiny groups and EVC panels, coordinate hearing schedules, and handle overdue escalations. |
+| ⚖️ **Approval Bureau / Council** | Review consolidated regional dossiers and committee recommendations under the AICTE Act to issue authorized digital speaking orders (Letter of Approval, Extension of Approval, or Rejection). |
+| ⚙️ **Policy Administration** | Configure AICTE regulatory rule parameters, test hypothetical application scenarios in the interactive routing sandbox, monitor system health, and inspect the audit ledger. |
 
 ---
 
 ## 🎬 Exploring NIYAMSETU — Platform Walkthrough
 
-Visitors can explore the platform across its six functional workspaces:
+Visitors can explore the live prototype across its six dedicated workspaces:
 
-1. **Institution / Applicant Workspace:**
-   - Explore application intake across diverse statutory categories (new institutions, annual extensions, intake increases, course closures).
-   - Review the application docket to observe how the platform identifies the statutory route and cites applicable APH clauses.
-   - Access the deficiency cure interface to view how institutions upload rectified documents in response to a Letter of Deficiency.
-   - Inspect post-approval compliance tracking, where active countdown timers monitor time-bound undertakings such as Joint FDR deposits, Fire Safety NOCs, and registered lease renewals.
-
-2. **Desk Scrutiny Workspace:**
-   - View assigned scrutiny queues organized by statutory category.
-   - Open digital checklists to evaluate land records, building safety certificates, academic curricula, and faculty ratios.
-   - Experience the re-scrutiny safeguard: observe that documents approved in earlier scrutiny passes are locked read-only, allowing reviewers to evaluate only newly submitted rectification files.
-
-3. **Expert Visit Committee (EVC) Workspace:**
-   - Access on-site inspection dockets allocated to the committee.
-   - Review campus location data, verified GPS coordinates, and inspection walkthrough media uploads.
-   - Record committee observations across physical classrooms, laboratories, computing facilities, and amenities before submitting the finalized inspection report.
-
-4. **Regional Office Workspace:**
-   - Inspect the regional dashboard displaying total active applications, stage-wise pendency, and processing velocity.
-   - Manage committee allocations by assigning applications to scrutiny groups and scheduling expert inspection panels.
-   - Review the escalation queue to identify dockets approaching or exceeding statutory turnaround deadlines.
-
-5. **Approval Bureau / Council Workspace:**
-   - Review consolidated application dockets that aggregate findings from scrutiny committees, physical inspections, and regional recommendations.
-   - Examine legal citations and compliance histories.
-   - Authorize official digital speaking orders: Letter of Approval (LoA) for new colleges, Extension of Approval (EoA) for renewals, or formal Letter of Rejection (LoR).
-
-6. **Policy Administration Workspace:**
-   - Review configurable regulatory rule sets mapped to APH chapters and errata circulars.
-   - Test hypothetical application parameters in the interactive routing sandbox to observe how variations in accreditation, intake volume, or campus location alter the required regulatory pathway.
-   - Inspect the chronological audit ledger, where all stage transitions, user actions, and administrative decisions are permanently recorded.
+- **Institution / Applicant Workspace:** Walk through the application intake process, inspect statutory route determinations and legal citations, access the deficiency cure interface, and track post-approval compliance countdown timers.
+- **Desk Scrutiny Workspace:** Experience digital scrutiny checklists, record stage-wise verification findings, and observe how previously approved documents remain locked and protected during re-scrutiny.
+- **Expert Visit Committee (EVC) Workspace:** View assigned inspection dockets, review campus location and GPS coordinates, inspect laboratory checklists, and submit on-site verification evidence with walkthrough media.
+- **Regional Office Workspace:** Monitor the regional dashboard for active applications and stage-wise pendency, manage committee allocations for scrutiny and EVC panels, and review automated deadline escalations.
+- **Approval Bureau / Council Workspace:** Review consolidated application dockets with committee findings and legal references, and issue authorized speaking orders (Letter of Approval, Extension of Approval, or Letter of Rejection).
+- **Policy Administration Workspace:** Inspect configurable regulatory rule parameters, test hypothetical cases in the interactive routing sandbox, and review the tamper-evident chronological audit ledger.
 
 ---
 
