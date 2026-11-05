@@ -6,7 +6,7 @@
 **Target Organization:** All India Council for Technical Education (AICTE), Ministry of Education, Government of India  
 **Team:** Defensor  
 **Target Environment:** Local Development & Live Demonstration (`http://127.0.0.1:3000`)  
-**Database:** MongoDB Community Standalone (`niyamsetu_dev` on `127.0.0.1:27017`)  
+**Database:** Local Standalone MongoDB (`mongodb://127.0.0.1:27017/niyamsetu_dev`) / MongoDB Atlas in Production  
 **Git Branch:** `dev`  
 **Engine Specification Version:** 2026.2.0-FINAL  
 **Regulatory Baseline:** AICTE Approval Process Handbook (APH) 2024–27, Addendum AY 2026–27 (Items 1–35), Errata Notification (Page 42), and Public Notices (26.11.2025)
@@ -48,7 +48,7 @@ NIYAMSETU (नियमसेतु — *The Bridge of Rules*) is an enterprise-
 
 ### 1.1 The Operational Challenge
 Every academic year, AICTE processes tens of thousands of complex statutory applications from engineering colleges, management institutes, polytechnics, and universities across 8 regional jurisdictions. Traditional approval workflows face four critical challenges:
-1. **Regulatory Ambiguity & Manual Interpretation:** Approval Process Handbook (APH) rules, multi-year addenda, circulars, and errata create hundreds of branching possibilities, leading to inconsistent manual evaluation.
+1. **Regulatory Ambiguity & Manual Interpretation:** Approval Process Handbook (APH) rules, multi-year addenda, circulars, and errata create hundreds of branching possibilities, leading to inconsistent manual evaluation across regional desks.
 2. **Deficiency Ping-Pong:** Institutions frequently experience repeated rejections and shifting deficiency criteria across multiple scrutiny cycles without strict boundaries.
 3. **Inspection Logistics Bottlenecks:** Physical Expert Visit Committees (EVC) are scheduled ad-hoc without automated eligibility filtering or tamper-evident geo-verification.
 4. **Appellate Confusion:** Legitimate regulatory tracks often conflate standard approval stages with quasi-judicial appellate proceedings (Standing Hearing Committee / Standing Appellate Committee), resulting in delayed academic sessions.
@@ -91,7 +91,7 @@ flowchart TD
 - **USP B06 Scope Lock:** A cryptographic safeguard preventing scrutiny committees from re-rejecting or flagging items previously cleared in initial scrutiny during deficiency re-scrutiny rounds.
 
 ### Pillar 4: Four-Clock Regulatory SLA & Auto-Escalation Engine
-- **Independent Clock Tracking:** Tracks T1 (Desk Scrutiny, 10d), T2 (Deficiency Rectification, 7d), T3 (EVC Inspection, 15d), and T4 (Council Decision, 15d).
+- **Independent Clock Tracking:** Tracks T1 (Desk Scrutiny, 10d), T2 (Deficiency Rectification, 10d), T3 (EVC Inspection, 15d), and T4 (Council Decision, 15d).
 - **Automated Escalation Triggers:** When statutory SLA thresholds reach 80% (approaching) or 100% (breached), the engine automatically fires notifications and escalates dockets to Regional Officers and Member Secretaries.
 
 ---
@@ -132,7 +132,7 @@ flowchart LR
 ```
 
 ### 4.1 Deterministic Evaluation Logic
-1. **Boundary Safety:** The engine explicitly checks for known regulatory gaps (e.g., Table 2.3 Row 9 Errata Page 42 where $X = 360$ lacks explicit division formula). Rather than guessing or hallucinating rules, the engine cleanly halts into `review_required` ("Policy Review Required: Existing intake equals boundary limit 360").
+1. **Boundary Safety:** The engine explicitly checks for known regulatory gaps (e.g., Table 2.3 Row 9 Errata Page 42 where $X = 360$ lacks explicit division formula). Rather than guessing or hallucinating rules, the engine cleanly halts into `review_required` / `policy_review_required` ("Policy Review Required: Existing intake equals boundary limit 360").
 2. **Statutory Citation Binding:** Every result includes `reasons[]` and `sources[]` mapping back to exact APH clauses.
 3. **Stage Generation:** Returns an ordered array of statutory stages (`stages: WorkflowStage[]`) and an array of explicitly waived stages (`skippedStages: string[]`).
 
@@ -144,17 +144,17 @@ NIYAMSETU implements 11 distinct statutory route scenarios covering every valid 
 
 | Route Code | APH Chapter / Table | Statutory Description | Mandatory Workflow Stages | Waived / Dashed Stages | Applicable College Preset |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **CAT-CH1-NEW** | Chapter I Clauses 1.8–1.9 | Setting up New Technical Institution | Scrutiny → EVC → Regional Office → Council Approval | None (Both Scrutiny and EVC mandatory) | Apex Institute of Technology |
-| **CAT-CH2-01** | Chapter II Table 2.3 Row 1 | Extension of Approval (EoA) Self-Disclosure | Regional Office Verification → Council EoA Endorsement | Pre-approval Scrutiny and EVC waived | PDIMTR Nagpur |
-| **CAT-CH2-09A** | Table 2.3 Row 9 & Errata p. 42 | Increase in Intake (NBA Accredited $\ge 650$) | Desk Scrutiny → Regional Office → Council Approval | **Physical EVC Waived** under Errata p. 42 | COEP Technological University |
-| **CAT-CH2-09B** | Table 2.3 Row 9 & Errata p. 42 | Increase in Intake (Non-NBA Dual-Track) | Desk Scrutiny → Physical EVC → Regional Office → Council | None (Mandatory Dual-Track) | GIITS Visakhapatnam |
-| **CAT-CH2-09B-BND** | Table 2.3 Row 9 Boundary | Boundary Condition: Existing Intake $X = 360$ | Scrutiny → **Policy Review Hold** | Automated approval halted; referred to Council | Vidya Vardhini Inst (VVIT) |
-| **CAT-CH2-14** | Table 2.3 Row 14 Clause 2.17 | Change of Site / Location of Campus | Legal Land Scrutiny → Physical Site EVC → Council | None (Mandatory Land EVC) | BATU Lonere |
-| **CAT-CH2-15** | Table 2.3 Row 15 Clause 2.18 | Progressive or Complete Closure of Course | Desk Scrutiny → Regional Officer NOC | Physical EVC Waived | MITS Bhopal |
-| **CAT-BBA-BCA** | Errata p. 42 Item 2 | BBA / BCA / BMS Institutions | Direct Endorsement "As Is Where Is" | Pre-approval Scrutiny and EVC waived | BBA/BCA Institutes |
-| **CAT-CH3-TWIN** | Chapter III Clauses 3.1–3.4 | Foreign University Twinning / Collaboration | MoU Scrutiny (QS/THE $\le 500$) → Physical EVC | None (Rigorous verification) | International Collab Presets |
-| **CAT-CH4-UNIV** | Chapter IV & Public Notice | University Technical Programmes | Central University Scrutiny → Council Endorsement | Partial programme applications barred | Deemed/State Universities |
-| **CAT-CH5-ODL** | Chapter V Clause 5.3.8 | Open & Distance Learning (ODL) Approval | Pass-Out Batch Scrutiny → Virtual/Physical EVC | Blocked if no graduating batch | ODL Institutions |
+| **`CAT-CH1-NEW`** | Chapter I Clauses 1.8–1.9 | Setting up New Technical Institution | Scrutiny → EVC → Regional Office → Council Approval | None (Both Scrutiny and EVC mandatory) | Apex Institute of Technology |
+| **`CAT-CH2-01`** | Chapter II Table 2.3 Row 1 | Extension of Approval (EoA) Self-Disclosure | Regional Office Verification → Council EoA Endorsement | Pre-approval Scrutiny and EVC waived | PDIMTR Nagpur |
+| **`CAT-CH2-09A`** | Table 2.3 Row 9 & Errata p. 42 | Increase in Intake (NBA Accredited $\ge 650$) | Desk Scrutiny → Regional Office → Council Approval | **Physical EVC Waived** under Errata p. 42 | COEP Technological University |
+| **`CAT-CH2-09B`** | Table 2.3 Row 9 & Errata p. 42 | Increase in Intake (Non-NBA Dual-Track) | Desk Scrutiny → Physical EVC → Regional Office → Council | None (Mandatory Dual-Track) | GIITS Visakhapatnam |
+| **`CAT-CH2-09B-BND`**| Table 2.3 Row 9 Boundary | Boundary Condition: Existing Intake $X = 360$ | Scrutiny → **Policy Review Hold** | Automated approval halted; referred to Council | Vidya Vardhini Inst (VVIT) |
+| **`CAT-CH2-14`** | Table 2.3 Row 14 Clause 2.17 | Change of Site / Location of Campus | Legal Land Scrutiny → Physical Site EVC → Council | None (Mandatory Land EVC) | BATU Lonere |
+| **`CAT-CH2-15`** | Table 2.3 Row 15 Clause 2.18 | Progressive or Complete Closure of Course | Desk Scrutiny → Regional Officer NOC | Physical EVC Waived | MITS Bhopal |
+| **`CAT-BBA-BCA`** | Errata p. 42 Item 2 | BBA / BCA / BMS Institutions | Direct Endorsement "As Is Where Is" | Pre-approval Scrutiny and EVC waived | BBA/BCA Institutes |
+| **`CAT-CH3-TWIN`** | Chapter III Clauses 3.1–3.4 | Foreign University Twinning / Collaboration | MoU Scrutiny (QS/THE $\le 500$) → Physical EVC | None (Rigorous verification) | International Collab Presets |
+| **`CAT-CH4-UNIV`** | Chapter IV & Public Notice | University Technical Programmes | Central University Scrutiny → Council Endorsement | Partial programme applications barred | Deemed/State Universities |
+| **`CAT-CH5-ODL`** | Chapter V Clause 5.3.8 | Open & Distance Learning (ODL) Approval | Pass-Out Batch Scrutiny → Virtual/Physical EVC | Blocked if no graduating batch | ODL Institutions |
 
 ---
 
@@ -176,7 +176,7 @@ flowchart TD
 
     CHK_TYPE -->|"Intake Expansion"| CH2_INC["Table 2.3 Row 9: Intake Increase"]
     CH2_INC --> CHK_BND{"Existing Intake == 360?"}
-    CHK_BND -->|"Yes (Boundary Gap)"| BND_HOLD["CAT-CH2-09B-BOUNDARY\nPolicy Review Required (Hold)"]
+    CHK_BND -->|"Yes (Boundary Gap)"| BND_HOLD["CAT-CH2-09B-BND\nPolicy Review Required (Hold)"]
     CHK_BND -->|"No"| CHK_NBA{"NBA Accredited\nScore >= 650?"}
     
     CHK_NBA -->|"Yes (NBA Tier-1)"| R_9A["CAT-CH2-09A (NBA Fast-Track)\nDesk Scrutiny Only\n(Physical EVC Waived per Errata p. 42)"]
@@ -225,7 +225,7 @@ sequenceDiagram
     emBridge-->>NSWS: Return PKCS#7 Signed Token & Certificate Attributes
     
     Note over NSWS,Engine: Step 3: Single Window Application Intake & Routing
-    NSWS->>Bridge: POST /api/v1/nsws/intake (Application Payload)
+    NSWS->>Bridge: POST /api/v1/nsws/submit (Application Payload)
     Bridge->>Engine: evaluateDynamicRoute(facts)
     Engine-->>Bridge: Route Code (CAT-CH2-09A), Stages, Waived List
     
@@ -279,7 +279,7 @@ stateDiagram-v2
 ### 8.1 Quasi-Judicial Separation of SAC / SHC
 Crucially, NIYAMSETU delineates the **Standing Hearing Committee (SHC)** and **Standing Appellate Committee (SAC)** as *separate post-rejection appellate workflows*, rather than routine approval milestones:
 - A case *only* enters SAC/SHC if an authorized officer or committee issues a formal statutory rejection.
-- The institution receives an appeal token and must formally submit a grievance docket.
+- The institution receives an appeal token and must formally submit a grievance docket within the **strict 7-calendar-day statute of limitations** under APH §1.11 / §2.24.
 - The Appellate Board convenes independently with quasi-judicial authority to either uphold the rejection or remand the case back to Scrutiny/EVC with binding directions.
 
 ---
@@ -339,20 +339,20 @@ NIYAMSETU implements four independent regulatory countdown clocks enforcing stat
 ```mermaid
 flowchart TD
     SUB["Application Submitted"] --> C1["Clock T1: Desk Scrutiny\n(Max 10 Days)"]
-    C1 -->|"Deficiencies Flagged"| C2["Clock T2: Deficiency Cure\n(Max 7 Days)"]
+    C1 -->|"Deficiencies Flagged"| C2["Clock T2: Deficiency Cure\n(Max 10 Days)"]
     C2 -->|"Cures Submitted"| C1
     C1 -->|"Cleared (Dual-Track)"| C3["Clock T3: EVC Inspection\n(Max 15 Days)"]
     C1 -->|"Cleared (Fast-Track)"| C4["Clock T4: Council Decision\n(Max 15 Days)"]
     C3 -->|"Recommended"| C4
     
-    C1 -.->|"At 80% SLA Elapsed"| WARN1["Approaching SLA Notice\n(SMS/Email to Officer)"]
-    C1 -.->|"At 100% SLA Elapsed"| ESC1["Breach Auto-Escalation\n(Docket assigned to Regional Officer)"]
-    C3 -.->|"At 100% SLA Elapsed"| ESC2["EVC Breach Escalation\n(Docket assigned to Member Secretary)"]
+    C1 -.->|"At 80% SLA Elapsed"| WARN1["Approaching SLA Notice\n(Dispatched to Scrutiny Lead)"]
+    C1 -.->|"At 100% SLA Elapsed"| ESC1["Breach Auto-Escalation\n(Docket assigned to Regional Officer Queue)"]
+    C3 -.->|"At 100% SLA Elapsed"| ESC2["EVC Breach Escalation\n(Docket escalated to Member Secretary)"]
 ```
 
 ### 11.1 Clock Definitions & SLA Thresholds
 - **T1: Desk Scrutiny Clock (10 Calendar Days):** Activated upon intake. Triggers amber warning at Day 8; breaches at Day 10.
-- **T2: Deficiency Cure Clock (7 Calendar Days):** Activated when Scrutiny communicates deficiencies. Applicant must upload cured evidence before timer expiry.
+- **T2: Deficiency Cure Clock (10 Calendar Days):** Activated when Scrutiny communicates deficiencies. Applicant must upload cured evidence before timer expiry.
 - **T3: EVC Inspection Clock (15 Calendar Days):** Activated upon EVC scheduling. Covers committee constitution, site inspection, and video upload.
 - **T4: Council Final Decision Clock (15 Calendar Days):** Activated upon receipt of positive Scrutiny/EVC report. Covers final EC approval issuance.
 
@@ -364,12 +364,12 @@ NIYAMSETU provides purpose-built, role-tailored workspaces for all six stakehold
 
 | Role # | Official Persona Title | Primary Responsibilities & Features | Legally Blocked Actions | Default Seed Account |
 | :---: | :--- | :--- | :--- | :--- |
-| **Role 1** | **Institution Signatory Portal** | Initiates applications via NSWS, monitors real-time workflow stages, uploads deficiency cures, submits post-approval statutory undertakings. | Cannot self-approve applications; cannot edit unflagged documents during re-scrutiny. | `principal@coep.ac.in` (COEP)<br>`director@giits.edu.in` (GIITS) |
+| **Role 1** | **Institution Signatory Portal** | Initiates applications via NSWS, monitors real-time workflow stages, uploads deficiency cures, submits post-approval statutory undertakings. | Cannot self-approve applications; cannot edit unflagged documents during re-scrutiny. | `principal@coep.ac.in` (COEP)<br>`principal@giits.ac.in` (GIITS) |
 | **Role 2** | **Desk Scrutiny Committee Cell** | Examines statutory checklists, marks verified vs. deficient items, signs immutable scrutiny snapshots, verifies deficiency resubmissions. | Cannot reject or reopen previously verified items (USP B06 Scope Lock). | `scrutiny.reviewer@aicte.gov.in` |
 | **Role 3** | **EVC Inspection Committee Portal** | Conducts physical/virtual inspections, verifies geo-tagged GPS coordinates, inspects 30-min walkthrough video evidence, submits scores. | Cannot self-schedule unmandated inspections; cannot issue final approvals. | `evc.chair@aicte.gov.in` |
 | **Role 4** | **Regional Approval Officer** | Oversees regional jurisdiction, reviews unified dockets, resolves SLA escalations, issues statutory recommendations to Council. | Cannot alter committee scores or tamper with cryptographic audit logs. | `ro.western@aicte.gov.in` |
-| **Role 5** | **Policy Administrator Workspace** | Inspects version-pinned rule registry, configures statutory thresholds, tests routes in Interactive Custom Sandbox. | Cannot decide individual applications or override committee findings. | `policy.admin@aicte.gov.in` |
-| **Role 6** | **Superadmin / Appellate Authority** | System-wide observability, manages Standing Hearing / Appellate Committee (SAC/SHC) dockets, verifies audit integrity. | Zero regulatory shortcuts; all administrative overrides logged to HMAC ledger. | `superadmin@aicte.gov.in` |
+| **Role 5** | **Approval Bureau / Competent Authority** | National review queue, Executive Committee docket adjudication, signs official Extension of Approval (EoA) and Letter of Approval (LoA) orders. | Cannot modify committee factual findings; orders must state statutory reasons. | `bureau.approval@aicte.gov.in` |
+| **Role 6** | **Policy Administrator & Telemetry** | System-wide observability, maintains version-pinned rule registry, monitors autonomous system alerts (Rule Engine conflicts, WORM audit, Ecosystem adapters, Outbox health). | Zero regulatory shortcuts; all overrides recorded with cryptographic hashes. | `admin@aicte.gov.in` |
 
 ---
 
@@ -382,16 +382,12 @@ graph TD
     APP["App.tsx & SessionGate.tsx\n(Authentication & Multi-Tenant Context)"]
     APP --> NAV["Navbar.tsx & Sidebar.tsx\n(Role-Specific Navigation & Clock Advance)"]
     
-    NAV --> R1["Role 1: ApplicationsListView.tsx\nNSWSSimulationView.tsx\nInstitutionalComplianceView.tsx"]
-    NAV --> R2["Role 2: ScrutinyQueueView.tsx\nDocumentScrutinyModal.tsx"]
+    NAV --> R1["Role 1: ApplicationsListView.tsx\nNSWSSimulationView.tsx\nGeneratedDocumentsView.tsx"]
+    NAV --> R2["Role 2: ScrutinyEvaluationView.tsx\nDocumentScrutinyModal.tsx"]
     NAV --> R3["Role 3: EVCInspectionQueueView.tsx\nEVCReportModal.tsx"]
     NAV --> R4["Role 4: RegionalDashboardView.tsx\nEscalationsManagementView.tsx"]
-    NAV --> R5["Role 5: ConfigRulesView.tsx\nRouteDemonstrationExplorer.tsx"]
-    NAV --> R6["Role 6: SuperadminAppealsView.tsx\nSystemAuditLogView.tsx"]
-    
-    R1 --> MODAL_CURE["DeficiencyCorrectionModal.tsx"]
-    R1 --> MODAL_SUMM["CaseSummaryNoticesModal.tsx"]
-    R4 --> MODAL_APPR["CouncilDecisionModal.tsx"]
+    NAV --> R5["Role 5: CouncilSACAppealsView.tsx\nGeneratedDocumentsView.tsx"]
+    NAV --> R6["Role 6: ConfigRulesView.tsx\nNotificationsView.tsx (Telemetry Console)\nRouteDemonstrationExplorer.tsx"]
 ```
 
 ---
@@ -427,12 +423,12 @@ classDiagram
     VVIT_Mumbai : Table 2.3 Row 9 Boundary X=360
 ```
 
-1. **College of Engineering Pune (COEP Technological University):** Code `INST-SOUTH` / `1-43657568230`. Route: `CAT-CH2-09A` (Fast-Track Scrutiny Only, NBA Accredited Score 680).
-2. **Godavari Institute of Infrastructure & Tech Sciences (GIITS Visakhapatnam):** Code `INST-NORTH` / `2-SOC1770029225`. Route: `CAT-CH2-09B` (Dual-Track Scrutiny + Mandatory EVC).
-3. **Prerna / Univ BDT College of Engineering (PDIMTR Nagpur):** Code `INST-WEST` / `1-109704178`. Route: `CAT-CH2-01` (Standard EoA Self-Disclosure).
-4. **Apex Institute of Technology & Management (Jaipur):** Code `INST-APEX` / `1-331049280`. Route: `CAT-CH1-NEW` (Chapter I New Institution Establishment).
-5. **Dr. Babasaheb Ambedkar Technological University (BATU Lonere):** Code `INST-BATU` / `1-192014810`. Route: `CAT-CH2-14` (Change of Site / Location).
-6. **Vidya Vardhini Institute of Technology (VVIT Mumbai):** Code `INST-VVIT` / `1-55449921`. Route: `CAT-CH2-09B-BOUNDARY` (Boundary Condition $X = 360$).
+1. **College of Engineering Pune (COEP Technological University):** Code `INST-SOUTH` / `1-1437622971`. Route: `CAT-CH2-09A` (Fast-Track Scrutiny Only, NBA Accredited Score 680).
+2. **Gonna Institute of Information Technology & Sciences (GIITS Visakhapatnam):** Code `INST-NORTH` / `1-6055691`. Route: `CAT-CH2-09B` (Dual-Track Scrutiny + Mandatory EVC).
+3. **Prerna / Univ BDT College of Engineering (PDIMTR Nagpur):** Code `INST-WEST` / `1-447718433`. Route: `CAT-CH2-01` (Standard EoA Self-Disclosure).
+4. **Apex Institute of Technology & Management (Jaipur):** Code `INST-APEX` / `1-33104928`. Route: `CAT-CH1-NEW` (Chapter I New Institution Establishment).
+5. **Dr. Babasaheb Ambedkar Technological University (BATU Lonere):** Code `INST-BATU` / `1-19201481`. Route: `CAT-CH2-14` (Change of Site / Location).
+6. **Vidya Vardhini Institute of Technology (VVIT Mumbai / Palghar):** Code `INST-VVIT` / `1-55449921`. Route: `CAT-CH2-09B-BND` (Boundary Condition $X = 360$).
 
 ---
 
@@ -441,6 +437,7 @@ classDiagram
 Multi-tenant security is enforced natively at the database query layer:
 - **Tenant Scope Enforcement:** When an institutional actor queries applications, the API layer injects `{ institutionCode: { $in: actor.institutionIds } }` directly into MongoDB queries.
 - **Cross-Institution Denial:** If the Principal of COEP attempts to fetch a GIITS application via direct REST URL (`GET /api/v1/applications/APP-2026-GIITS`), the backend returns `404 Not Found` or `403 Forbidden`.
+- **Decision Documents Isolation:** `GET /api/v1/decision-docs` filters by `actor.institutionIds`. COEP receives only COEP orders (returning a clean empty state if no letters are dispatched); PDIMTR receives exclusively its own conditional EoA letter.
 - **UI State Purging:** When switching between institution personas in demo mode, `AppContext.tsx` immediately purges all application, alert, and document state from memory before mounting the new tenant's records, eliminating cross-tenant UI leakage.
 
 ---
@@ -467,16 +464,21 @@ flowchart LR
 
 ## 17. Database Schema & Persistence Architecture
 
-NIYAMSETU uses MongoDB Community Standalone (`niyamsetu_dev`), with eight core collections:
+NIYAMSETU utilizes 13 core collections in MongoDB (`niyamsetu_dev` locally, `niyamsetu` in production Atlas):
 
 1. **`applications`:** Canonical application records storing institutional metadata, category, proposed intake, facts, current stage, and route codes. Unique index on `caseData.id` and `applicationNumber`.
 2. **`institutions`:** Technical institution registry storing legal trust details, AICTE approval codes, regional office mappings, and credentials.
-3. **`audits`:** Cryptographic HMAC-SHA256 audit log events. Indexed on `data.applicationId` and `data.occurredAt`.
-4. **`outbox`:** Transactional outbox ensuring reliable event delivery even across asynchronous process restarts.
-5. **`receipts`:** Idempotency receipts guaranteeing that duplicate network submissions execute exactly once.
-6. **`policy_revisions`:** Version-pinned statutory policy definitions (APH 2024–27, Addenda, Errata p. 42).
-7. **`decisions`:** Formal regulatory orders, council resolutions, and appellate remand instructions.
-8. **`system_config`:** System-wide SLA thresholds, notification targets, and demo simulation parameters.
+3. **`policy_revisions`:** Version-pinned statutory policy definitions (APH 2024–27, Addenda, Errata p. 42).
+4. **`core_audit`:** Cryptographic HMAC-SHA256 audit log events.
+5. **`core_outbox`:** Transactional outbox ensuring reliable event delivery even across asynchronous process restarts.
+6. **`core_receipts`:** Idempotency receipts guaranteeing that duplicate network submissions execute exactly once.
+7. **`core_decisions`:** Formal regulatory orders, council resolutions, and appellate remand instructions.
+8. **`compliance_obligations`:** Post-approval conditions and recurring statutory renewals (FDR, Fire NOC, Lease, Faculty).
+9. **`compliance_documents`:** Uploaded evidence documents associated with post-approval compliance obligations.
+10. **`decision_documents`:** Official digitally sealed decision letters (EoA, LoA, LoR) with HMAC integrity verification.
+11. **`appeals_hearings`:** Quasi-judicial Standing Hearing Committee (SHC) and Standing Appellate Committee (SAC) hearing dockets.
+12. **`chapter_vii_complaints`:** Formal public, student, or faculty grievances under APH Chapter VII.
+13. **`evc_tasks`:** Mandated on-site Expert Visit Committee inspection tasks, panels, scoring, and video evidence.
 
 ---
 
@@ -555,7 +557,8 @@ POST   /api/v1/nsws/submit                 - Ingest application from NSWS into A
 POST   /api/v1/scrutiny/:id/sign-snapshot  - Seal scrutiny review and lock verified documents
 GET    /api/v1/evc/queue                   - Retrieve mandated EVC inspection queue
 POST   /api/v1/evc/submit-report           - Submit EVC committee scores and video evidence
-GET    /api/v1/alerts                      - Tenant-isolated compliance and SLA notifications
+GET    /api/v1/alerts                      - Role-scoped compliance and telemetry notifications
+GET    /api/v1/decision-docs               - Tenant-scoped official decision letters
 GET    /api/v1/escalations                 - Overdue regulatory escalation dockets
 GET    /api/v1/audit-logs                  - Retrieve HMAC-SHA256 audit ledger
 POST   /api/v1/audit-logs/verify           - Cryptographically verify ledger chain integrity
@@ -569,7 +572,7 @@ System operational constants are defined in `src/backend/config/`:
 - `DEFAULT_PORT = 3000`
 - `MONGO_URI = mongodb://127.0.0.1:27017/niyamsetu_dev`
 - `SLA_SCRUTINY_DAYS = 10`
-- `SLA_DEFICIENCY_CURE_DAYS = 7`
+- `SLA_DEFICIENCY_CURE_DAYS = 10`
 - `SLA_EVC_INSPECTION_DAYS = 15`
 - `SLA_COUNCIL_DECISION_DAYS = 15`
 - `NBA_TIER1_MINIMUM_SCORE = 650`

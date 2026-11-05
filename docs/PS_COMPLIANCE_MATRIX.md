@@ -4,7 +4,7 @@
 **Project:** NiyamSetu (नियमसेतु)  
 **Smart India Hackathon 2026** | **Problem Statement 26262 (AICTE Regulation Bureau)**  
 **Target Academic Year:** 2026–2027  
-**Official Release Baseline:** Commit `ef52e45` (Fast-forward verified on `origin/main` and `personal/main`)  
+**Official Release Baseline:** Commit `3f1ac48` (Fast-forward verified on `dev` and `main`)  
 **Status Standard:** `Verified` | `Partially implemented` | `Missing` | `Simulated` | `Blocked`  
 
 ---
@@ -26,7 +26,7 @@ This document establishes the master functional acceptance contract for NIYAMSET
 - **Relevant UI Pages & Components:** [`ApplicationsListView.tsx`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/features/applications/ApplicationsListView.tsx), [`ApplicationDetailModal.tsx`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/features/applications/ApplicationDetailModal.tsx), [`WorkflowView.tsx`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/features/workflow/WorkflowView.tsx), [`ScrutinyEvaluationView.tsx`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/features/scrutiny/ScrutinyEvaluationView.tsx), [`EVCView.tsx`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/features/evc/EVCView.tsx).
 - **Backend Modules & Services:** [`dynamicRouteEngine.ts`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/backend/policy/dynamicRouteEngine.ts), [`cases.ts`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/backend/core/cases.ts), [`router.ts`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/backend/core/router.ts).
 - **Expected State Transitions:** `submitted` $\rightarrow$ `scrutiny_pending` $\rightarrow$ `correction_required` $\rightarrow$ `rescrutiny_pending` $\rightarrow$ `evc_pending` $\rightarrow$ `decision_pending` $\rightarrow$ `approved` / `conditionally_approved` / `rejected`.
-- **Deadline, Notification & Escalation:** SLA tracking (10 days scrutiny, 15 days cure, 10 days EVC, 7 days SAC). In-app alerts generated upon stage arrival.
+- **Deadline, Notification & Escalation:** SLA tracking (10 days scrutiny, 10 days cure, 10–15 days EVC, 7 days SAC). In-app alerts generated upon stage arrival.
 - **Data Scope & Authorization:** Role-based scope filters (`scoped` for institutions by `institutionIds`, regional for RO, global for Bureau/Authority).
 - **Persistence & Audit:** State transitions recorded transactionally with optimistic version checks and immutable audit logging in `core_audit`.
 - **Demonstrating Tests:** `tests/regression_retrofit_all_deliverables.test.ts` (Deliverable 2, 5), `tests/policy/routing.test.ts`, `tests/core/http.test.ts`.
@@ -77,7 +77,7 @@ This document establishes the master functional acceptance contract for NIYAMSET
 - **Deadline, Notification & Escalation:** Integrated timer watches across applications, EVCs, and undertakings.
 - **Data Scope & Authorization:** RBAC middleware with permission assertions (`case.read`, `case.transition`, `scrutiny.sign`, `evc.schedule`, `decision.record`).
 - **Persistence & Audit:** Dual storage mode: High-Fidelity Transactional Memory Engine + Production MongoDB Store.
-- **Demonstrating Tests:** Complete Vitest test suite: 327 tests passed across 27 files.
+- **Demonstrating Tests:** Complete Vitest test suite: 485 tests passed across 40 files (100% pass rate).
 - **Test Evidence:** 100% test pass rate with 0 failures, 0 skipped.
 - **Remaining Gaps & Risks:** Simulated external government gateways (NSWS, emBridge).
 
@@ -145,7 +145,7 @@ This document establishes the master functional acceptance contract for NIYAMSET
 - **Relevant UI Pages & Components:** [`ScrutinyEvaluationView.tsx`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/features/scrutiny/ScrutinyEvaluationView.tsx), [`InstitutionDeficiencyCureView.tsx`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/features/institution/InstitutionDeficiencyCureView.tsx).
 - **Backend Modules & Services:** [`scrutinyService.ts`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/backend/modules/scrutiny/scrutinyService.ts), [`validateCorrections.ts`](file:///c:/Users/parth/Documents/SIH-26-AICTE/src/backend/modules/scrutiny/validateCorrections.ts).
 - **Expected State Transitions:** `scrutiny_pending` $\rightarrow$ `correction_required` (LoD issued) $\rightarrow$ `rescrutiny_pending` (corrections submitted) $\rightarrow$ Re-scrutiny evaluation.
-- **Deadline, Notification & Escalation:** 15-calendar-day cure window communicated via statutory notice.
+- **Deadline, Notification & Escalation:** 10-calendar-day cure window communicated via statutory notice (`SLA_DEFICIENCY_CURE_DAYS = 10` per APH norms).
 - **Data Scope & Authorization:** Reviewer must record deficiency reason. Under **APH §1.8(g)**, re-scrutiny is strictly limited to flagged deficiencies ($D1, D2$); cleared items ($C3, C4$) are read-only and tampering returns HTTP 409 Conflict (`RESCRUTINY_SCOPE_ONLY_SIGNED_DEFICIENCIES`).
 - **Persistence & Audit:** Formal Letter of Deficiency (LoD) generated with audit trail.
 - **Demonstrating Tests:** `tests/regression_retrofit_all_deliverables.test.ts` (Deliverable 5), `tests/verification_t01_t16.test.ts` (T05), `tests/verification_t17_t22.test.ts` (T18).
@@ -604,12 +604,12 @@ This document establishes the master functional acceptance contract for NIYAMSET
 - **Status:** `Verified`
 - **Relevant UI Pages & Components:** All primary screens across the 6 role workspaces.
 - **Backend Modules & Services:** Complete system suite.
-- **Expected State Transitions:** Proven across 5 canonical college cases (`APP-2026-COEP`, `APP-2026-GIITS`, `APP-2026-PDIMTR`, `APP-2026-APEX`, `APP-2026-BATU`).
+- **Expected State Transitions:** Proven across all 6 canonical institution cases (`APP-2026-COEP`, `APP-2026-GIITS`, `APP-2026-PDIMTR`, `APP-2026-APEX`, `APP-2026-BATU`, `APP-2026-VVIT`).
 - **Deadline, Notification & Escalation:** Interactive walk-throughs supported by Golden Paths A and B.
 - **Data Scope & Authorization:** Fully demonstrated in local runtime and live Render deployment.
 - **Persistence & Audit:** Tested with restart recovery and live database.
 - **Demonstrating Tests:** `tests/regression_retrofit_all_deliverables.test.ts` (38 tests), `tests/appeals_and_hearings_api.test.ts` (6 tests).
-- **Test Evidence:** 342/342 tests pass across 29 files (including 9/9 in `production_persistence_idempotency.test.ts`).
+- **Test Evidence:** 485/485 automated tests pass across 40 test files (including 9/9 in `production_persistence_idempotency.test.ts`, 15/15 in `commands.test.ts`, and 38/38 in `regression_retrofit_all_deliverables.test.ts`).
 - **Remaining Gaps & Risks:** Render free-tier cold starts (~35s-50s) cause transient delays on initial request; Render environment `MONGODB_URI` dashboard configuration status is verified via authenticated `/api/v1/ready` diagnostic probe.
 
 ---
@@ -645,7 +645,7 @@ This document establishes the master functional acceptance contract for NIYAMSET
 | **Total Requirements** | **36** | **34** | **0** | **2** | **0** | **0** |
 
 ### 📝 Methodological Classification Note:
-- **Verified (34 Requirements):** The application logic, statutory routing, decision sequences, SLA timers, scope gates, MongoDB Atlas durability, role-based UI views, and audit logging are fully implemented, functional, and backed by automated tests (342/342 passing).
+- **Verified (34 Requirements):** The application logic, statutory routing, decision sequences, SLA timers, scope gates, MongoDB Atlas durability, role-based UI views, and audit logging are fully implemented, functional, and backed by automated tests (485/485 passing across 40 test files).
 - **Simulated (2 Requirements — NSWS Ingestion & Hardware DSC emBridge Signing):** In compliance with hackathon scope and legal restrictions on accessing sovereign government single-sign-on production networks and official USB crypto dongles:
   1. The **NSWS Gateway** is implemented as an interactive, high-fidelity intake simulator with realistic JSON payloads and clear non-production disclosures.
   2. The **Digital Signature Mechanism** produces real PDF documents with cryptographic HMAC-SHA256 integrity verification and prominent prototype demonstration watermarks, rather than binding an official government-issued PAdES/PKCS#7 hardware certificate.

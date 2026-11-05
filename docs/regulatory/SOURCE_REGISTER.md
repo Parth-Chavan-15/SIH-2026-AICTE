@@ -2,7 +2,7 @@
 ## Authoritative Statutory Gazettes, Regulations, and Circulars Register
 
 **Document Version:** 2.0 (Authoritative Forensic Baseline)  
-**Inspection Commit:** `bc341e6`  
+**Inspection Commit:** `3f1ac48`  
 **Governing Authority:** All India Council for Technical Education (AICTE), Ministry of Education, Government of India  
 **System Target:** NIYAMSETU Regulatory Compliance & Workflow Companion Platform (AY 2026–27)
 
