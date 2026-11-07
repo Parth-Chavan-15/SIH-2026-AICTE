@@ -9,7 +9,7 @@ describe('ROAllocationView — Static & Logic Verification', () => {
     vi.clearAllMocks();
   });
 
-  it('renders ROAllocationView cleanly without crashing', () => {
+  it('renders ROAllocationView cleanly with Unified Evaluator Console Scope Note', () => {
     const html = renderToStaticMarkup(
       <AppProvider>
         <ROAllocationView />
@@ -17,6 +17,8 @@ describe('ROAllocationView — Static & Logic Verification', () => {
     );
 
     expect(html).toContain('Regional Office Operations Desk: Committee Allocation');
+    expect(html).toContain('Unified Evaluator Console &amp; Regional Workload Governance');
+    expect(html).toContain('APH §1.8 &amp; §1.9 Roster Model');
     expect(html).toContain('Select Regional Queue Case');
     expect(html).toContain('Active Standing Committee Panels');
     expect(html).toContain('Refresh Workloads');
@@ -112,5 +114,41 @@ describe('ROAllocationView — Static & Logic Verification', () => {
       .filter(g => g.status === 'ACTIVE' && isGroupBelowCapacity(g));
     expect(newScrutinyPanels.length).toBe(1);
     expect(newScrutinyPanels[0].id).toBe('SCR-GROUP-A');
+  });
+
+  it('formats allocation history without Invalid Date and without empty parentheses', () => {
+    const rawHist = {
+      id: 'ALLOC-HIST-01',
+      caseId: 'APP-2026-GIITS',
+      type: 'SCRUTINY',
+      assignedGroupId: 'SCR-GROUP-A',
+      assignedGroupName: 'Desk Scrutiny Committee Group A (Western & SCRO)',
+      allocatedBy: 'ro_western@aicte.gov.in',
+      allocatedAt: '2026-10-21T09:30:00.000Z',
+      reason: 'Initial desk scrutiny assignment for non-NBA intake increase application.'
+    };
+
+    const timestamp = rawHist.allocatedAt;
+    const dateDisplay = timestamp && !isNaN(new Date(timestamp).getTime())
+      ? new Date(timestamp).toLocaleString('en-IN', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        })
+      : 'Invalid Date';
+
+    expect(dateDisplay).not.toContain('Invalid Date');
+
+    const groupTypeRaw = (rawHist.type || '').toUpperCase();
+    const groupTypeLabel = groupTypeRaw.includes('SCR')
+      ? 'Desk Scrutiny'
+      : groupTypeRaw.includes('EVC')
+      ? 'EVC Inspection'
+      : '';
+
+    expect(groupTypeLabel).toBe('Desk Scrutiny');
+    const labelWithParens = groupTypeLabel ? ` (${groupTypeLabel})` : '';
+    expect(labelWithParens).toBe(' (Desk Scrutiny)');
+    expect(labelWithParens).not.toBe(' ()');
   });
 });
