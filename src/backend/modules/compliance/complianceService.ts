@@ -77,6 +77,8 @@ export const complianceDB = {
     category?: string;
     severity?: 'critical' | 'warning' | 'info' | 'success';
     isRead?: boolean;
+    relatedCaseId?: string;
+    targetRole?: string;
   }>(),
   simulatedClockTimestamp: Date.parse('2026-10-24T09:00:00.000Z'),
 };

@@ -196,10 +196,61 @@ export function createCoreRouter(options: { storage?: CaseStorage; identity?: ()
       'evc-committee': 'evc.chair@aicte.gov.in',
       'scrutiny-cell': 'scrutiny.reviewer@aicte.gov.in',
       'applicant': 'principal@coep.ac.in',
+
+      // Preset benchmark emails & aliases
+      'director@giits.edu.in': 'principal@giits.ac.in',
+      'director@pdimtr.ac.in': 'principal@pdimtr.ac.in',
+      'trustee@apextech.edu.in': 'principal@apex.ac.in',
+      'registrar@dbatu.ac.in': 'principal@batu.ac.in',
+      'inst-south': 'principal@coep.ac.in',
+      'inst-north': 'principal@giits.ac.in',
+      'inst-west': 'principal@pdimtr.ac.in',
+
+      // Custom institution aliases
+      'custom': 'principal@custom.ac.in',
+      'custom-college': 'principal@custom.ac.in',
+      'inst-custom': 'principal@custom.ac.in',
+      'usr-inst-custom': 'principal@custom.ac.in',
+      'director@aitr.edu.in': 'director@aitr.edu.in',
+      'principal@custom.ac.in': 'principal@custom.ac.in',
     };
 
     const targetKey = String(req.body?.personaId || req.body?.roleId || req.body?.email || '').trim().toLowerCase();
-    const mappedEmail = DEMO_PERSONA_MAP[targetKey];
+    let mappedEmail = DEMO_PERSONA_MAP[targetKey];
+
+    if (!mappedEmail) {
+      // Dynamic fallback for custom institutions or specific institution IDs
+      const dynamicAcc = (auth as any).findAccount?.(targetKey);
+      if (dynamicAcc) {
+        mappedEmail = dynamicAcc.email;
+      } else if (targetKey.startsWith('inst-') || targetKey.includes('custom')) {
+        (auth as any).ensureInstitutionScope?.(targetKey.toUpperCase());
+        mappedEmail = 'principal@custom.ac.in';
+      } else if (targetKey.includes('@')) {
+        const safeEmail = (targetKey.endsWith('.ac.in') || targetKey.endsWith('.edu.in') || targetKey.endsWith('.gov.in') || targetKey.endsWith('.invalid'))
+          ? targetKey
+          : (targetKey.split('@')[0] + '@custom.ac.in');
+        try {
+          (auth as any).registerAccount?.({
+            email: safeEmail,
+            passwordHash: '.zwcqBHyOQCPHZP.l67uXjgSUDOEAMMW9PcyP1EWFsm9PSNby1O',
+            active: true,
+            actor: {
+              id: 'usr-inst-' + targetKey.replace(/[^a-z0-9]/g, '-').slice(0, 15),
+              roles: ['institution'],
+              permissions: ['case.read', 'case.create', 'document.read', 'document.submit', 'scrutiny.correct', 'notification.read'],
+              scope: 'scoped',
+              institutionIds: ['INST-CUSTOM', 'INST-CUSTOM-WES', 'INST-CUSTOM-NEW', 'INST-ARYABHATTA', 'INST-CUSTOM-COLLEGE', 'INST-AITR'],
+              regionIds: ['WRO', 'Western', 'SCRO', 'South-Central', 'NRO', 'Northern', 'ERO', 'Eastern', 'SRO', 'Southern', 'CRO', 'Central', 'NWRO', 'North-West', 'SWRO', 'South-Western'],
+            }
+          });
+          mappedEmail = safeEmail;
+        } catch {
+          mappedEmail = 'principal@custom.ac.in';
+        }
+      }
+    }
+
     if (!mappedEmail) {
       throw new CoreError('VALIDATION_FAILED', 'Invalid demo persona identifier');
     }

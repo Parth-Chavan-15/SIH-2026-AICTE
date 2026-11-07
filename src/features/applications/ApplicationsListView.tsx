@@ -1,9 +1,11 @@
+import { LoadingState } from '../../components/common/LoadingState';
 import React, { useState, useMemo } from 'react';
 import { getSession } from '../../services/session';
 import { useApp } from '../../context/AppContext';
 import { Application, WorkflowStage, PriorityLevel, SLAStatusType } from '../../types';
 import { SLABadge, StageBadge, PriorityBadge } from '../../components/common/StatusBadge';
 import { formatDateIndian } from '../../utils/slaCalculator';
+import { getActiveInstitutionScope, isApplicationForScope } from '../../utils/institutionScope';
 import {
   Search,
   Filter,
@@ -23,12 +25,14 @@ interface ApplicationsListViewProps {
   onSelectApplication: (appId: string) => void;
   onOpenNewAppModal: () => void;
   onStartNSWSIntake?: () => void;
+  queueFilter?: 'scrutiny' | 'council' | 'regional' | 'all';
 }
 
 export const ApplicationsListView: React.FC<ApplicationsListViewProps> = ({
   onSelectApplication,
   onOpenNewAppModal,
   onStartNSWSIntake,
+  queueFilter,
 }) => {
   const { role, applications, loading } = useApp();
   const session = getSession();
@@ -37,31 +41,37 @@ export const ApplicationsListView: React.FC<ApplicationsListViewProps> = ({
 
   // Enforce tenant isolation for institution logins: show ONLY that college's application
   const scopedApps = useMemo(() => {
-    if (!isInstitution) return applications;
-    const actorId = actor?.id || '';
-    const email = (actor as any)?.email || '';
-    const actorInstIds = actor?.institutionIds || [];
-    return applications.filter((app) => {
-      const code = app.institutionCode || (app as any).institutionId || '';
-      if (actorInstIds.includes(code)) return true;
-      if (actorId === 'usr-inst-coep' || actorId === 'SYN-ACTOR-COEP' || email === 'principal@coep.ac.in') {
-        return app.id.includes('COEP') || code === 'INST-SOUTH' || code === 'INST-COEP' || code.includes('COEP');
-      }
-      if (actorId === 'usr-inst-giits' || email === 'principal@giits.ac.in') {
-        return app.id.includes('GIITS') || code === 'INST-NORTH' || code === 'INST-GIITS' || code.includes('GIITS');
-      }
-      if (actorId === 'usr-inst-pdimtr' || email === 'principal@pdimtr.ac.in') {
-        return app.id.includes('PDIMTR') || code === 'INST-WEST' || code === 'INST-PDIMTR' || code.includes('PDIMTR');
-      }
-      if (actorId === 'usr-inst-apex' || email === 'principal@apex.ac.in') {
-        return app.id.includes('APEX') || app.id.includes('Apex') || code === 'INST-APEX' || code.includes('APEX');
-      }
-      if (actorId === 'usr-inst-batu' || email === 'principal@batu.ac.in') {
-        return app.id.includes('BATU') || code === 'INST-BATU' || code.includes('BATU');
-      }
-      return false;
-    });
-  }, [applications, isInstitution, actor]);
+    let list = applications;
+    if (isInstitution) {
+      const scope = getActiveInstitutionScope(actor);
+      list = applications.filter((app) => isApplicationForScope(app, scope));
+    }
+
+    if (queueFilter === 'scrutiny') {
+      list = list.filter(
+        (a) =>
+          a.currentStage === 'Scrutiny in Progress' ||
+          a.currentStage === 'Application Submitted' ||
+          a.currentStage === 'Deficiency Communicated'
+      );
+    } else if (queueFilter === 'council') {
+      list = list.filter(
+        (a) =>
+          a.currentStage === 'Executive Committee Approval' ||
+          a.currentStage === 'EVC Inspection Completed' ||
+          a.currentStage === 'Approval Issued' ||
+          a.currentStage === 'Application Rejected'
+      );
+    } else if (queueFilter === 'regional') {
+      list = list.filter(
+        (a) =>
+          a.currentStage !== 'Approval Issued' &&
+          a.currentStage !== 'Application Rejected'
+      );
+    }
+
+    return list;
+  }, [applications, isInstitution, actor, queueFilter]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('All');
@@ -75,11 +85,14 @@ export const ApplicationsListView: React.FC<ApplicationsListViewProps> = ({
   // Filter logic
   const filteredApps = useMemo(() => {
     return scopedApps.filter((app) => {
+      if (!app) return false;
+      const q = (searchQuery || '').toLowerCase().trim();
       const matchesSearch =
-        app.applicationNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        app.institutionName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        app.institutionCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        app.city.toLowerCase().includes(searchQuery.toLowerCase());
+        !q ||
+        (app.applicationNumber?.toLowerCase().includes(q) ?? false) ||
+        (app.institutionName?.toLowerCase().includes(q) ?? false) ||
+        (app.institutionCode?.toLowerCase().includes(q) ?? false) ||
+        (app.city?.toLowerCase().includes(q) ?? false);
 
       const matchesRegion = selectedRegion === 'All' || app.region === selectedRegion;
       const matchesType = selectedType === 'All' || app.applicationType === selectedType;
@@ -269,11 +282,11 @@ export const ApplicationsListView: React.FC<ApplicationsListViewProps> = ({
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           {loading ? (
-            <div className="p-12 text-center">
-              <RefreshCw className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-3" />
-              <p className="text-sm font-semibold text-slate-700">Loading statutory applications docket…</p>
-              <p className="text-xs text-slate-400 mt-1">Retrieving tenant-isolated records from NIYAMSETU ledger</p>
-            </div>
+            <LoadingState
+              title="Loading statutory applications docket…"
+              subtitle="Retrieving tenant-isolated records from NIYAMSETU ledger"
+              spinnerColor="text-blue-600"
+            />
           ) : paginatedApps.length === 0 ? (
             isInstitution && scopedApps.length === 0 ? (
               <div className="p-12 text-center max-w-md mx-auto">

@@ -20,6 +20,19 @@ import {
 
 export function createWorkflowRouter(storage: CaseStorage): Router {
   const router = Router();
+
+  // In-memory store for live dynamic workflow notifications
+  const systemWorkflowNotifications: Array<{
+    id: string;
+    recipientId: string;
+    title: string;
+    message: string;
+    severity: string;
+    isRead: boolean;
+    createdAt: string;
+    applicationId: string;
+  }> = [];
+
   // GET /api/v1/dashboard/summary - Live Aggregation from CaseStorage for Companion Workspaces
   router.get('/dashboard/summary', async (req: Request, res: Response) => {
     const actor = ((req as any).actor as Actor) || {
@@ -74,6 +87,7 @@ export function createWorkflowRouter(storage: CaseStorage): Router {
       const timers = getTimers();
       const obligations = getObligations();
       const notifications = [
+        ...systemWorkflowNotifications,
         ...timers.slice(0, 10).map((t, idx) => ({
           id: `NOTIF-TMR-${idx + 1}`,
           recipientId: actor.id,
@@ -185,6 +199,17 @@ export function createWorkflowRouter(storage: CaseStorage): Router {
             });
           } catch {}
         }
+
+        systemWorkflowNotifications.unshift({
+          id: `NOTIF-WF-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          recipientId: actor.id,
+          title: `Workflow Action: ${app.institutionName || app.id}`,
+          message: reason || `Application state advanced from ${app.state} to ${nextState} (${targetStage || action}).`,
+          severity: nextState === 'rejected' ? 'high' : nextState === 'approved' ? 'low' : 'medium',
+          isRead: false,
+          createdAt: now,
+          applicationId: app.id
+        });
 
         return updatedApp;
       });

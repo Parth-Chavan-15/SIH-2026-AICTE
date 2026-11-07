@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { quickAccessLogin, logout, getSession } from '../../services/session';
 import { REGULATORY_ROLES } from '../../features/auth/SessionGate';
+import { getActiveInstitutionScope, isNotificationForRole } from '../../utils/institutionScope';
 import {
   Clock,
   LogOut,
@@ -27,7 +28,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenNotifications,
   onNavigateTab,
 }) => {
-  const { notifications, resetDemoData, triggerAdvanceClock, simulationTime, addToast } = useApp();
+  const { applications, notifications, resetDemoData, triggerAdvanceClock, simulationTime, addToast } = useApp();
   const session = getSession();
   const activeActor = session?.actor;
   const [showClockPopover, setShowClockPopover] = useState(false);
@@ -41,32 +42,134 @@ export const Navbar: React.FC<NavbarProps> = ({
     (activeActor?.id === 'usr-scrutiny-reviewer' || activeActor?.roles?.includes('reviewer')) ? 2 :
     6;
 
-  // Map college actor to their specific application ID for tenant-isolated notifications
-  const collegeAppId =
-    (activeActor?.id === 'usr-inst-coep' || (activeActor as any)?.email === 'principal@coep.ac.in') ? 'APP-2026-COEP'
-    : (activeActor?.id === 'usr-inst-giits' || (activeActor as any)?.email === 'principal@giits.ac.in') ? 'APP-2026-GIITS'
-    : (activeActor?.id === 'usr-inst-pdimtr' || (activeActor as any)?.email === 'principal@pdimtr.ac.in') ? 'APP-2026-PDIMTR'
-    : (activeActor?.id === 'usr-inst-apex' || (activeActor as any)?.email === 'principal@apex.ac.in') ? 'APP-2026-APEX'
-    : (activeActor?.id === 'usr-inst-batu' || (activeActor as any)?.email === 'principal@batu.ac.in') ? 'APP-2026-BATU'
-    : (activeActor?.id === 'usr-inst-vvit' || (activeActor as any)?.email === 'principal@vvit.ac.in') ? 'APP-2026-NSWS-BOUNDARY-X360'
-    : null;
-
-  // If Role 1 (Applicant), strictly isolate notifications to their college; Higher authorities see all
-  const unreadCount = notifications.filter((n) => {
-    if (roleNumber === 1 && collegeAppId) {
-      return !n.isRead && n.applicationId === collegeAppId;
-    }
-    return !n.isRead;
-  }).length;
+  // Derive dynamic context-aware notifications strictly scoped to active role and tenant
+  const instScope = getActiveInstitutionScope(activeActor);
+  const unreadCount = notifications.filter((n) => !n.isRead && isNotificationForRole(n, roleNumber, instScope)).length;
 
   const activeRoleConfig = REGULATORY_ROLES.find(r => r.roleNumber === roleNumber) || REGULATORY_ROLES[3];
   const [switchingRole, setSwitchingRole] = useState(false);
+
+  const [customVersion, setCustomVersion] = useState(0);
+
+  useEffect(() => {
+    const onCustomUpdate = () => setCustomVersion(v => v + 1);
+    window.addEventListener('sih:custom_institution_added', onCustomUpdate);
+    window.addEventListener('sih:custom_institution_reset', onCustomUpdate);
+    return () => {
+      window.removeEventListener('sih:custom_institution_added', onCustomUpdate);
+      window.removeEventListener('sih:custom_institution_reset', onCustomUpdate);
+    };
+  }, []);
+
+  const switcherColleges = useMemo(() => {
+    const canon = [
+      { id: 'coep', label: '1. COEP (Scrutiny Only)', email: 'principal@coep.ac.in', hint: 'NBA Tier-1 Fast-Track' },
+      { id: 'giits', label: '2. GIITS (Scrutiny + EVC)', email: 'principal@giits.ac.in', hint: 'Non-NBA Intake Surge 180→240' },
+      { id: 'pdimtr', label: '3. PDIMTR (Fast-Track EoA)', email: 'principal@pdimtr.ac.in', hint: 'Self-Disclosure & 30-Yr Lease' },
+      { id: 'apex', label: '4. Apex (EVC + SAC/SHC)', email: 'principal@apex.ac.in', hint: 'Standing Appellate Review' },
+      { id: 'batu', label: '5. BATU (Only EVC)', email: 'principal@batu.ac.in', hint: '§2.16.1 Restoration / Site Shift' },
+      { id: 'vvit', label: '6. VVIT (Boundary X=360)', email: 'principal@vvit.ac.in', hint: 'Division boundary X=360 hold' },
+    ];
+    const customList: typeof canon = [];
+    const seen = new Set<string>();
+
+    const canonCodes = new Set([
+      'INST-SOUTH', 'INST-COEP', 'INST-NORTH', 'INST-GIITS',
+      'INST-WEST', 'INST-PDIMTR', 'INST-APEX', 'INST-BATU', 'INST-VVIT',
+      'COEP', 'GIITS', 'PDIMTR', 'APEX', 'BATU', 'VVIT'
+    ]);
+
+    for (const c of canon) {
+      seen.add(c.id.toLowerCase());
+    }
+    for (const code of canonCodes) {
+      seen.add(code.toLowerCase());
+    }
+
+    // 1. Inspect legitimately persisted non-canonical applications from backend storage
+    for (const app of applications) {
+      const code = String((app as any).institutionCode || (app as any).institutionId || '').trim();
+      const rawName = String((app as any).institutionName || (app as any).facts?.institutionName || '').trim();
+      const codeLower = code.toLowerCase();
+      const nameLower = rawName.toLowerCase();
+
+      if (!code || canonCodes.has(code.toUpperCase()) || seen.has(codeLower)) {
+        continue;
+      }
+      if (!rawName || rawName === code || seen.has(nameLower)) {
+        continue;
+      }
+
+      seen.add(codeLower);
+      seen.add(nameLower);
+
+      const routeType = (app as any).routeType || 'Custom';
+      const ref = (app as any).applicationNumber || (app as any).id || code;
+
+      customList.push({
+        id: code,
+        label: `${7 + customList.length}. ${rawName.slice(0, 14)} (${routeType})`,
+        email: 'principal@custom.ac.in',
+        hint: `Custom Application: ${ref}`
+      });
+    }
+
+    // 2. Sanitize and purge any phantom "Custom Techn..." entries from browser storage
+    try {
+      const rawStored = localStorage.getItem('sih_custom_institutions');
+      if (rawStored) {
+        const parsed = JSON.parse(rawStored);
+        if (Array.isArray(parsed)) {
+          const cleaned = parsed.filter((c: any) => {
+            const name = String(c?.name || '').trim();
+            return name && !/^custom\s+techn/i.test(name) && name !== 'Custom College' && c?.id !== '1-CUSTOM';
+          });
+          if (cleaned.length !== parsed.length) {
+            if (cleaned.length > 0) {
+              localStorage.setItem('sih_custom_institutions', JSON.stringify(cleaned));
+            } else {
+              localStorage.removeItem('sih_custom_institutions');
+            }
+          }
+          for (const s of cleaned) {
+            const sId = String(s?.id || '').trim();
+            const sName = String(s?.name || '').trim();
+            const sIdLower = sId.toLowerCase();
+            const sNameLower = sName.toLowerCase();
+            if (sId && sName && !seen.has(sIdLower) && !seen.has(sNameLower) && !canonCodes.has(sId.toUpperCase())) {
+              seen.add(sIdLower);
+              seen.add(sNameLower);
+              customList.push({
+                id: sId,
+                label: `${7 + customList.length}. ${sName.slice(0, 14)} (${s.routeType || 'Custom'})`,
+                email: s.email || 'principal@custom.ac.in',
+                hint: `Custom Application: ${s.reference || sName}`
+              });
+            }
+          }
+        }
+      }
+      const activeRaw = localStorage.getItem('sih_active_custom_institution');
+      if (activeRaw) {
+        const active = JSON.parse(activeRaw);
+        const activeName = String(active?.name || '').trim();
+        if (!activeName || /^custom\s+techn/i.test(activeName) || activeName === 'Custom College' || active?.id === '1-CUSTOM') {
+          localStorage.removeItem('sih_active_custom_institution');
+          if (localStorage.getItem('sih_selected_college_id') === active?.id) {
+            localStorage.removeItem('sih_selected_college_id');
+          }
+        }
+      }
+    } catch {}
+
+    return [...canon, ...customList];
+  }, [applications, customVersion]);
 
   const ROLES_LIST = [
     { num: 1, label: 'Applicant', icon: Building2, email: 'principal@coep.ac.in', tab: 'inst-apps', activeClass: 'bg-blue-600 text-white shadow-xs' },
     { num: 2, label: 'Scrutiny Cell', icon: FileCheck, email: 'scrutiny.reviewer@aicte.gov.in', tab: 'scrutiny-eval', activeClass: 'bg-amber-600 text-white shadow-xs' },
     { num: 3, label: 'EVC Committee', icon: Award, email: 'evc.chair@aicte.gov.in', tab: 'evc-inspect', activeClass: 'bg-purple-600 text-white shadow-xs' },
-    { num: 4, label: 'Regional Desk', icon: Shield, email: 'ro.western@aicte.gov.in', tab: 'ro-pendency', activeClass: 'bg-emerald-600 text-white shadow-xs' },
+    { num: 4, label: 'Regional Desk', icon: Shield, email: 'ro.western@aicte.gov.in', tab: 'ro-allocation', activeClass: 'bg-emerald-600 text-white shadow-xs' },
     { num: 5, label: 'Approval Bureau', icon: Award, email: 'bureau.approval@aicte.gov.in', tab: 'ca-decision', activeClass: 'bg-rose-600 text-white shadow-xs' },
     { num: 6, label: 'Policy Admin', icon: Sliders, email: 'admin@aicte.gov.in', tab: 'admin-policy', activeClass: 'bg-slate-700 text-white shadow-xs' },
   ];
@@ -270,7 +373,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {/* Role 1 Applicant 5-College Switcher Sub-Ribbon */}
+            {/* Role 1 Applicant Dynamic College Switcher */}
       {roleNumber === 1 && (
         <div className="bg-[#05182B] border-t border-slate-800 px-4 sm:px-6 py-1.5 flex flex-wrap items-center justify-between gap-2 text-xs">
           <div className="flex items-center gap-1.5 text-teal-300 font-bold">
@@ -279,20 +382,20 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
           
           <div className="flex flex-wrap items-center gap-1.5">
-            {[
-              { id: 'coep', label: '1. COEP (Scrutiny Only)', email: 'principal@coep.ac.in', hint: 'NBA Tier-1 Fast-Track' },
-              { id: 'giits', label: '2. GIITS (Scrutiny + EVC)', email: 'principal@giits.ac.in', hint: 'Non-NBA Intake Surge 180→240' },
-              { id: 'pdimtr', label: '3. PDIMTR (Fast-Track EoA)', email: 'principal@pdimtr.ac.in', hint: 'Self-Disclosure & 30-Yr Lease' },
-              { id: 'apex', label: '4. Apex (EVC + SAC/SHC)', email: 'principal@apex.ac.in', hint: 'Standing Appellate Review' },
-              { id: 'batu', label: '5. BATU (Only EVC)', email: 'principal@batu.ac.in', hint: '§2.16.1 Restoration / Site Shift' },
-              { id: 'vvit', label: '6. VVIT (Boundary X=360)', email: 'principal@vvit.ac.in', hint: 'Division boundary X=360 hold' },
-            ].map((col) => {
-              const isColActive = (activeActor as any)?.email === col.email || activeActor?.id === `usr-inst-${col.id}`;
+            {switcherColleges.map((col, idx) => {
+              const selectedSavedId = typeof window !== 'undefined' ? localStorage.getItem('sih_selected_college_id') : null;
+              const isCustom = idx >= 6;
+              const isColActive = isCustom
+                ? (selectedSavedId === col.id || ((activeActor as any)?.email === 'principal@custom.ac.in' && (!selectedSavedId || selectedSavedId === col.id)) || activeActor?.institutionIds?.includes(col.id))
+                : ((activeActor as any)?.email === col.email || activeActor?.id === `usr-inst-${col.id}`);
               return (
                 <button
                   key={col.id}
                   disabled={switchingRole}
-                  onClick={() => handleSwitchRole(1, col.email, 'inst-apps')}
+                  onClick={() => {
+                    try { localStorage.setItem('sih_selected_college_id', col.id); } catch {}
+                    handleSwitchRole(1, col.email, 'inst-apps');
+                  }}
                   title={`${col.label} — ${col.hint}`}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all ${
                     isColActive

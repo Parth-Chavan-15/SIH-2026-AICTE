@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../services/api';
 import { getSession } from '../../services/session';
+import { getActiveInstitutionScope, isApplicationForScope } from '../../utils/institutionScope';
 import {
   FileText,
   Download,
@@ -28,16 +29,10 @@ export const GeneratedDocumentsView: React.FC = () => {
   );
   const canGenerate = Boolean(actor?.permissions?.includes('decision.record'));
 
-  // Target application identification for institution scoping (Strict canonical mapping)
-  const targetAppId = isInstitution
-    ? (actor?.id === 'usr-inst-coep' || (actor as any)?.email === 'principal@coep.ac.in') ? 'APP-2026-COEP'
-      : (actor?.id === 'usr-inst-giits' || (actor as any)?.email === 'principal@giits.ac.in') ? 'APP-2026-GIITS'
-      : (actor?.id === 'usr-inst-pdimtr' || (actor as any)?.email === 'principal@pdimtr.ac.in') ? 'APP-2026-PDIMTR'
-      : (actor?.id === 'usr-inst-apex' || (actor as any)?.email === 'principal@apex.ac.in') ? 'APP-2026-APEX'
-      : (actor?.id === 'usr-inst-batu' || (actor as any)?.email === 'principal@batu.ac.in') ? 'APP-2026-BATU'
-      : (actor?.id === 'usr-inst-vvit' || (actor as any)?.email === 'principal@vvit.ac.in') ? 'APP-2026-VVIT'
-      : (actor?.institutionIds?.[0] ? applications.find(a => a.institutionCode === actor.institutionIds[0] || a.id === actor.institutionIds[0])?.id : null) || (applications.length > 0 ? applications[0].id : null)
-    : null;
+  // Target application identification for institution scoping
+  const instScope = getActiveInstitutionScope(actor);
+  const targetApp = applications.find(a => isApplicationForScope(a, instScope)) || applications[0];
+  const targetAppId = isInstitution ? targetApp?.id : null;
 
   const [selectedCaseId, setSelectedCaseId] = useState<string>(targetAppId || '');
   const [documentType, setDocumentType] = useState<string>('EOA');

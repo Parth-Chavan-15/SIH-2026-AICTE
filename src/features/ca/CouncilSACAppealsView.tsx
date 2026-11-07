@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 
 export const CouncilSACAppealsView: React.FC = () => {
-  const { applications, user } = useApp();
+  const { applications, user, addToast } = useApp();
   const [data, setData] = useState<any>({ appeals: [], hearings: [], complaints: [] });
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -64,6 +64,7 @@ export const CouncilSACAppealsView: React.FC = () => {
       const res = await api.disposeAppeal(disposingAppeal.appealId || disposingAppeal.id, {
         decision: dispositionDecision,
         remarks: dispositionRemarks,
+        committeeMembers: ['Justice (Retd.) B. N. Srikrishna (SAC Chairman)', 'Prof. Anurag Kumar (Former Director IISc)', 'AICTE Bureau Representative'],
         conditions: dispositionDecision === 'RELIEF_GRANTED' ? ['TIME_BOUND_UNDERTAKING_60_DAYS', 'FIRE_SAFETY_RENEWAL'] : []
       });
       const resultData = (res as any)?.data ?? res;
@@ -384,11 +385,36 @@ export const CouncilSACAppealsView: React.FC = () => {
 
               <div className="flex justify-end pt-3 border-t border-slate-100 gap-2">
                 <button
-                  onClick={() => alert('Simulating PDF download of sealed Speaking Order.')}
+                  onClick={() => {
+                    const content = `AICTE STANDING APPELLATE COMMITTEE (SAC) SEALED ORDER\n` +
+                      `Order Reference: ${selectedOrder.orderNumber || 'SAC-ORDER-2026'}\n` +
+                      `Application: ${selectedOrder.applicationNumber || selectedOrder.caseId}\n` +
+                      `Institution: ${selectedOrder.institutionName}\n` +
+                      `Appellate Decision: ${selectedOrder.decision}\n` +
+                      `Speaking Order Findings: ${selectedOrder.speakingOrder}\n` +
+                      `Digital Seal: SHA-256 Digitally Signed by Member Secretary\n` +
+                      `Timestamp: ${new Date().toISOString()}`;
+
+                    const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', `SAC_Sealed_Order_${selectedOrder.orderNumber || '2026'}.txt`);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+
+                    addToast({
+                      type: 'success',
+                      title: 'Sealed Order Exported',
+                      message: `Speaking Order for ${selectedOrder.institutionName} downloaded successfully.`,
+                    });
+                  }}
                   className="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs flex items-center gap-1.5 shadow-xs"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  <span>Download Sealed PDF</span>
+                  <span>Download Sealed Order</span>
                 </button>
               </div>
             </div>

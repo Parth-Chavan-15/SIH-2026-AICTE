@@ -60,6 +60,8 @@ export interface DocumentItem {
   verificationDate?: string;
   status: 'Verified' | 'Pending Verification' | 'Rejected' | 'Needs Resubmission';
   rejectionReason?: string;
+  deficiencyRemark?: string;
+  type?: string;
   expiryDate?: string; // for lease, fire NOC etc.
 }
 
@@ -102,6 +104,7 @@ export interface Application {
   program: 'Engineering & Technology' | 'Management' | 'Pharmacy' | 'Architecture' | 'Applied Arts';
   proposedIntake: number;
   routeType: WorkflowRouteType;
+  route?: any;
   currentStage: WorkflowStage;
   currentStageStartedAt: string;
   submittedAt: string;
@@ -183,6 +186,7 @@ export interface ExpiringDocument {
   expiryDate: string;
   daysUntilExpiry: number;
   renewalStatus: 'Valid' | 'Expiring Soon' | 'Expired' | 'Renewal Submitted' | 'Renewal Verified';
+  renewalNoticeIssued?: boolean;
   renewalDocumentName?: string;
   renewalSubmittedAt?: string;
   renewalVerifiedBy?: string;
@@ -192,12 +196,34 @@ export interface NotificationItem {
   id: string;
   title: string;
   message: string;
-  category: 'Deadline' | 'Overdue' | 'EVC' | 'Compliance' | 'Document Expiry' | 'Escalation' | 'Workflow';
+  category:
+    | 'Deadline'
+    | 'Overdue'
+    | 'EVC'
+    | 'Compliance'
+    | 'Document Expiry'
+    | 'Escalation'
+    | 'Workflow'
+    | 'Scrutiny'
+    | 'Regional Intake'
+    | 'Concurrence'
+    | 'Council Docket'
+    | 'Judicial / SAC'
+    | 'Order Dispatch'
+    | 'Rule Engine Conflict'
+    | 'WORM Audit Ledger'
+    | 'Ecosystem Adapters'
+    | 'SLA Escalation'
+    | 'Worker Health'
+    | (string & {});
   severity: 'critical' | 'warning' | 'info' | 'success';
   timestamp: string;
   isRead: boolean;
   applicationId?: string;
   actionUrl?: string;
+  targetRole?: string;
+  institutionId?: string;
+  dedupeKey?: string;
 }
 
 export interface EscalationRecord {

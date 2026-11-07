@@ -182,12 +182,13 @@ export async function applyScopedCorrections(
     throw error;
   }
 
-  // Real-time domain state update: update snapshot item and remove from deficiency set
+  // Real-time domain state update: record rectification response on snapshot item
   for (const change of command.changes) {
     const targetItem = snapshot.items.find(i => i.itemId === change.itemId);
     if (targetItem) {
       targetItem.reason = `Rectification Submitted: ${change.response}`;
-      snapshot.deficiencyItemIds = snapshot.deficiencyItemIds.filter(id => id !== change.itemId);
+      (targetItem as any).rectificationSubmitted = true;
+      (targetItem as any).rectificationResponse = change.response;
     }
   }
 
@@ -460,6 +461,16 @@ export async function rescrutinize(
       .filter(o => o.result === 'deficient')
       .map(o => o.itemId);
 
+    // Update snapshot items with re-scrutiny outcomes
+    for (const outcome of command.outcomes) {
+      const item = snapshot.items.find(i => i.itemId === outcome.itemId);
+      if (item) {
+        item.result = outcome.result;
+        if (outcome.reason) item.reason = outcome.reason;
+      }
+    }
+    snapshot.deficiencyItemIds = remainingDeficiencies;
+
     const route = await corePort.getRouteExplanation(applicationId);
     let nextState = tx.application.state;
     if (remainingDeficiencies.length > 0) {
@@ -492,7 +503,8 @@ export async function rescrutinize(
     tx.emit(event);
     eventBus.emit(event);
 
-    cmdResult = { application: updatedCase, eventId: event.id };
+    const status = remainingDeficiencies.length === 0 ? 'CLEARED' : 'DEFICIENCIES_REMAINING';
+    cmdResult = { application: updatedCase, eventId: event.id, status } as any;
   });
 
   const result: ApiResult<CommandResult> = {

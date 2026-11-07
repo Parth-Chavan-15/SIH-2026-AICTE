@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../services/api';
 import { getSession } from '../../services/session';
+import { getActiveInstitutionScope, isApplicationForScope } from '../../utils/institutionScope';
 import {
   Scale,
   FileText,
@@ -25,16 +26,10 @@ export const ApplicantAppealsView: React.FC = () => {
   const session = getSession();
   const actor = session?.actor;
 
-  // Resolve institution target application
-  const targetAppId = (actor?.id === 'usr-inst-coep' || (actor as any)?.email === 'principal@coep.ac.in') ? 'APP-2026-COEP'
-    : (actor?.id === 'usr-inst-giits' || (actor as any)?.email === 'principal@giits.ac.in') ? 'APP-2026-GIITS'
-    : (actor?.id === 'usr-inst-pdimtr' || (actor as any)?.email === 'principal@pdimtr.ac.in') ? 'APP-2026-PDIMTR'
-    : (actor?.id === 'usr-inst-apex' || (actor as any)?.email === 'principal@apex.ac.in') ? 'APP-2026-APEX'
-    : (actor?.id === 'usr-inst-batu' || (actor as any)?.email === 'principal@batu.ac.in') ? 'APP-2026-BATU'
-    : (actor?.id === 'usr-inst-vvit' || (actor as any)?.email === 'principal@vvit.ac.in') ? 'APP-2026-VVIT'
-    : (actor?.institutionIds?.[0] ? applications.find(a => a.institutionCode === actor.institutionIds[0] || a.id === actor.institutionIds[0])?.id : null) || (applications.length > 0 ? applications[0].id : null);
-
-  const currentApp = applications.find(a => a.id === targetAppId) || applications[0];
+  // Resolve institution target application strictly isolated to active institution scope
+  const scope = getActiveInstitutionScope(actor);
+  const currentApp = applications.find(a => isApplicationForScope(a, scope)) || applications[0];
+  const targetAppId = currentApp?.id;
 
   const [activeTab, setActiveTab] = useState<'MY_APPEALS' | 'SUBMIT_APPEAL' | 'HEARING_NOTICES' | 'GRIEVANCE'>('MY_APPEALS');
   const [data, setData] = useState<any>({ appeals: [], hearings: [], complaints: [] });
@@ -64,6 +59,7 @@ export const ApplicantAppealsView: React.FC = () => {
       setData(payload || { appeals: [], hearings: [], complaints: [] });
     } catch (err: any) {
       console.error('Failed to load appeals data:', err);
+      setErrorMsg(err.message || 'Unable to connect to statutory appeals and hearings gateway. Please refresh or retry.');
     } finally {
       setLoading(false);
     }
@@ -123,15 +119,16 @@ export const ApplicantAppealsView: React.FC = () => {
   };
 
   // Filter appeals for current institution
+  const currentInstNameLower = (currentApp?.institutionName || '').toLowerCase().trim();
   const myAppeals = (data?.appeals || []).filter((a: any) =>
     a.caseId === currentApp?.id ||
-    a.institutionName?.toLowerCase().includes(currentApp?.institutionName?.toLowerCase())
+    (currentInstNameLower && (a.institutionName?.toLowerCase().includes(currentInstNameLower) ?? false))
   );
 
   // Filter hearings for current institution
   const myHearings = (data?.hearings || []).filter((h: any) =>
     h.caseId === currentApp?.id ||
-    h.institutionName?.toLowerCase().includes(currentApp?.institutionName?.toLowerCase())
+    (currentInstNameLower && (h.institutionName?.toLowerCase().includes(currentInstNameLower) ?? false))
   );
 
   return (

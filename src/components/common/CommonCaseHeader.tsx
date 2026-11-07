@@ -64,7 +64,7 @@ export const CommonCaseHeader: React.FC<CommonCaseHeaderProps> = ({
           <Tag className="w-4 h-4 text-slate-400" />
           <div>
             <span className="text-slate-400 block text-[10px] uppercase font-bold">Category</span>
-            <span className="font-medium text-slate-800">{category.replace(/_/g, ' ').toUpperCase()}</span>
+            <span className="font-medium text-slate-800">{(category || '').replace(/_/g, ' ').toUpperCase() || 'GENERAL'}</span>
           </div>
         </div>
 

@@ -256,8 +256,9 @@ export const AppealsAndHearingsView: React.FC = () => {
     ? (data.hearings || []).filter((h: any) => h.caseId === targetAppId)
     : (data.hearings || []);
 
+  const instFirstWord = (institutionApp?.institutionName || '').toLowerCase().split(' ')[0]?.trim();
   const displayedComplaints = isInstitution && targetAppId
-    ? (data.complaints || []).filter((c: any) => c.caseId === targetAppId || c.institutionName?.toLowerCase().includes((institutionApp?.institutionName || '').toLowerCase().split(' ')[0]))
+    ? (data.complaints || []).filter((c: any) => c.caseId === targetAppId || (instFirstWord && (c.institutionName?.toLowerCase().includes(instFirstWord) ?? false)))
     : (data.complaints || []);
 
   return (

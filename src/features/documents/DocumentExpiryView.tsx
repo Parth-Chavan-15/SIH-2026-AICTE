@@ -3,6 +3,12 @@ import { getSession } from '../../services/session';
 import { useApp } from '../../context/AppContext';
 import { ExpiringDocument } from '../../types';
 import {
+  getActiveInstitutionScope,
+  isExpiringDocForScope,
+  isApplicationForScope,
+  deriveExpiringDocumentsFromApp,
+} from '../../utils/institutionScope';
+import {
   FileWarning,
   Clock,
   AlertTriangle,
@@ -18,6 +24,7 @@ export const DocumentExpiryView: React.FC = () => {
   const {
     role,
     user,
+    applications,
     expiringDocs,
     submitDocumentRenewal,
     verifyDocumentRenewal,
@@ -34,36 +41,35 @@ export const DocumentExpiryView: React.FC = () => {
   const actor = session?.actor;
   const isInstitution = role === 'institution';
 
+  const scope = useMemo(() => getActiveInstitutionScope(actor), [actor]);
+
+  const activeApp = useMemo(() => {
+    return applications.find((a) => isApplicationForScope(a, scope));
+  }, [applications, scope]);
+
   const scopedDocs = useMemo(() => {
     if (!isInstitution) return expiringDocs;
-    return expiringDocs.filter((doc) => {
-      const actorId = actor?.id || '';
-      const email = (actor as any)?.email || '';
-      if (actorId === 'usr-inst-apex' || email === 'principal@apex.ac.in') {
-        return doc.institutionName.includes('APEX') || doc.institutionName.includes('Apex') || doc.institutionCode === 'INST-APEX';
-      }
-      if (actorId === 'usr-inst-batu' || email === 'principal@batu.ac.in') {
-        return doc.institutionName.includes('BATU') || doc.institutionCode === 'INST-BATU';
-      }
-      if (actorId === 'usr-inst-pdimtr' || email === 'principal@pdimtr.ac.in') {
-        return doc.institutionName.includes('PDIMTR') || doc.institutionName.includes('Prerna');
-      }
-      if (actorId === 'usr-inst-coep' || email === 'principal@coep.ac.in') {
-        return doc.institutionName.includes('COEP') || doc.institutionCode === 'INST-SOUTH' || doc.institutionCode === 'INST-COEP';
-      }
-      if (actorId === 'usr-inst-giits' || email === 'principal@giits.ac.in') {
-        return doc.institutionName.includes('GIITS') || doc.institutionName.includes('Gonna') || doc.institutionCode === 'INST-NORTH' || doc.institutionCode === 'INST-GIITS';
-      }
-      
-      return false;
-    });
-  }, [expiringDocs, isInstitution, actor]);
+
+    const existing = expiringDocs.filter((doc) => isExpiringDocForScope(doc, scope));
+    if (existing.length > 0) return existing;
+
+    if (activeApp) {
+      return deriveExpiringDocumentsFromApp(activeApp);
+    }
+
+    return [];
+  }, [expiringDocs, isInstitution, scope, activeApp]);
 
   const filteredDocs = scopedDocs.filter((doc) => {
+    if (!doc) return false;
+    const q = (searchQuery || '').toLowerCase().trim();
+    if (!q) {
+      return statusFilter === 'All' || doc.renewalStatus === statusFilter;
+    }
     const matchesSearch =
-      doc.institutionName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.documentType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.documentNumber.toLowerCase().includes(searchQuery.toLowerCase());
+      (doc.institutionName?.toLowerCase().includes(q) ?? false) ||
+      (doc.documentType?.toLowerCase().includes(q) ?? false) ||
+      (doc.documentNumber?.toLowerCase().includes(q) ?? false);
     const matchesStatus = statusFilter === 'All' || doc.renewalStatus === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -81,20 +87,20 @@ export const DocumentExpiryView: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-            Mandatory Document Expiry & Land Lease Tracker
+            Mandatory Document Expiry &amp; Land Lease Tracker
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
             Automated advance warning alert engine for Fire NOC, Structural Soundness, and 30-Year Land Leases
           </p>
         </div>
 
-        {/* Expiry summary cards */}
+        {/* Expiry summary cards - strictly based on active institution scope */}
         <div className="flex items-center gap-2">
           <span className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-            Expired: {expiringDocs.filter((d) => d.renewalStatus === 'Expired').length}
+            Expired: {scopedDocs.filter((d) => d.renewalStatus === 'Expired').length}
           </span>
           <span className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-            Expiring &le; 30d: {expiringDocs.filter((d) => d.daysUntilExpiry > 0 && d.daysUntilExpiry <= 30).length}
+            Expiring &le; 30d: {scopedDocs.filter((d) => d.daysUntilExpiry > 0 && d.daysUntilExpiry <= 30).length}
           </span>
         </div>
       </div>
@@ -128,111 +134,125 @@ export const DocumentExpiryView: React.FC = () => {
 
       {/* Documents Grid / Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
-                <th className="py-3 px-4">Institution Name</th>
-                <th className="py-3 px-4">Prescribed Document</th>
-                <th className="py-3 px-4">Issue & Expiry Dates</th>
-                <th className="py-3 px-4">Time Until Expiry</th>
-                <th className="py-3 px-4">Renewal Status</th>
-                <th className="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredDocs.map((doc) => (
-                <tr key={doc.id} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="py-3.5 px-4">
-                    <p className="font-bold text-slate-900">{doc.institutionName}</p>
-                    <span className="font-mono text-[10px] text-slate-400">
-                      Code: {doc.institutionCode} &bull; {doc.region} Region
-                    </span>
-                  </td>
-
-                  <td className="py-3.5 px-4">
-                    <p className="font-bold text-slate-800">{doc.documentType}</p>
-                    <span className="font-mono text-[10px] text-slate-500">
-                      Reg: {doc.documentNumber}
-                    </span>
-                  </td>
-
-                  <td className="py-3.5 px-4 text-slate-600">
-                    <div className="space-y-0.5">
-                      <p>Issued: <span className="font-medium text-slate-800">{doc.issuedDate}</span></p>
-                      <p>Expiry: <strong className="text-slate-900">{doc.expiryDate}</strong></p>
-                    </div>
-                  </td>
-
-                  <td className="py-3.5 px-4">
-                    {doc.daysUntilExpiry < 0 ? (
-                      <span className="font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
-                        Expired {Math.abs(doc.daysUntilExpiry)} days ago
+        {filteredDocs.length === 0 ? (
+          <div className="p-12 text-center flex flex-col items-center justify-center space-y-3">
+            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+              <Clock className="w-6 h-6 text-slate-500" />
+            </div>
+            <h4 className="text-sm font-bold text-slate-800">
+              No Document Expiry or Renewal Records Found
+            </h4>
+            <p className="text-xs text-slate-500 max-w-md leading-relaxed">
+              All statutory documents for this institution (such as Fire Safety NOC, Structural Soundness, and 30-Year Land Lease deeds) are either fully current or pending verification of initial intake documents.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                  <th className="py-3 px-4">Institution Name</th>
+                  <th className="py-3 px-4">Prescribed Document</th>
+                  <th className="py-3 px-4">Issue & Expiry Dates</th>
+                  <th className="py-3 px-4">Time Until Expiry</th>
+                  <th className="py-3 px-4">Renewal Status</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredDocs.map((doc) => (
+                  <tr key={doc.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3.5 px-4">
+                      <p className="font-bold text-slate-900">{doc.institutionName}</p>
+                      <span className="font-mono text-[10px] text-slate-400">
+                        Code: {doc.institutionCode} &bull; {doc.region} Region
                       </span>
-                    ) : (
+                    </td>
+
+                    <td className="py-3.5 px-4">
+                      <p className="font-bold text-slate-800">{doc.documentType}</p>
+                      <span className="font-mono text-[10px] text-slate-500">
+                        Reg: {doc.documentNumber}
+                      </span>
+                    </td>
+
+                    <td className="py-3.5 px-4 text-slate-600">
+                      <div className="space-y-0.5">
+                        <p>Issued: <span className="font-medium text-slate-800">{doc.issuedDate}</span></p>
+                        <p>Expiry: <strong className="text-slate-900">{doc.expiryDate}</strong></p>
+                      </div>
+                    </td>
+
+                    <td className="py-3.5 px-4">
+                      {doc.daysUntilExpiry < 0 ? (
+                        <span className="font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                          Expired {Math.abs(doc.daysUntilExpiry)} days ago
+                        </span>
+                      ) : (
+                        <span
+                          className={`font-bold px-2 py-0.5 rounded border ${
+                            doc.daysUntilExpiry <= 30
+                              ? 'text-amber-800 bg-amber-50 border-amber-200'
+                              : 'text-emerald-800 bg-emerald-50 border-emerald-200'
+                          }`}
+                        >
+                          {doc.daysUntilExpiry} days left
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="py-3.5 px-4">
                       <span
-                        className={`font-bold px-2 py-0.5 rounded border ${
-                          doc.daysUntilExpiry <= 30
-                            ? 'text-amber-800 bg-amber-50 border-amber-200'
-                            : 'text-emerald-800 bg-emerald-50 border-emerald-200'
+                        className={`inline-block px-2.5 py-0.5 rounded-md text-[11px] font-mono font-bold border ${
+                          doc.renewalStatus === 'Renewal Verified'
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                            : doc.renewalStatus === 'Expired'
+                            ? 'bg-rose-50 text-rose-800 border-rose-300'
+                            : doc.renewalStatus === 'Expiring Soon'
+                            ? 'bg-amber-50 text-amber-800 border-amber-300'
+                            : 'bg-blue-50 text-blue-800 border-blue-300'
                         }`}
                       >
-                        {doc.daysUntilExpiry} days left
+                        {doc.renewalStatus}
                       </span>
-                    )}
-                  </td>
+                      {doc.renewalDocumentName && (
+                        <span className="block text-[10px] text-slate-500 font-mono mt-1 truncate max-w-[150px]">
+                          {doc.renewalDocumentName}
+                        </span>
+                      )}
+                    </td>
 
-                  <td className="py-3.5 px-4">
-                    <span
-                      className={`inline-block px-2.5 py-0.5 rounded-md text-[11px] font-mono font-bold border ${
-                        doc.renewalStatus === 'Renewal Verified'
-                          ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                          : doc.renewalStatus === 'Expired'
-                          ? 'bg-rose-50 text-rose-800 border-rose-300'
-                          : doc.renewalStatus === 'Expiring Soon'
-                          ? 'bg-amber-50 text-amber-800 border-amber-300'
-                          : 'bg-blue-50 text-blue-800 border-blue-300'
-                      }`}
-                    >
-                      {doc.renewalStatus}
-                    </span>
-                    {doc.renewalDocumentName && (
-                      <span className="block text-[10px] text-slate-500 font-mono mt-1 truncate max-w-[150px]">
-                        {doc.renewalDocumentName}
-                      </span>
-                    )}
-                  </td>
-
-                  <td className="py-3.5 px-4 text-right space-x-2">
-                    {/* Institution upload renewal */}
-                    {doc.renewalStatus !== 'Renewal Verified' && (
-                      <button
-                        onClick={() => {
-                          setRenewalTarget(doc);
-                          setRenewalFileName(`Renewed_${doc.documentType.replace(/\s+/g, '_')}_2027.pdf`);
-                        }}
-                        className="px-2.5 py-1.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-xs border border-blue-200"
-                      >
-                        Upload Renewal
-                      </button>
-                    )}
-
-                    {/* Officer verify renewal */}
-                    {(role === 'regional_officer' || role === 'bureau_officer' || role === 'admin') &&
-                      doc.renewalStatus === 'Renewal Submitted' && (
+                    <td className="py-3.5 px-4 text-right space-x-2">
+                      {/* Institution upload renewal */}
+                      {doc.renewalStatus !== 'Renewal Verified' && (
                         <button
-                          onClick={() => verifyDocumentRenewal(doc.id)}
-                          className="px-2.5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-2xs"
+                          onClick={() => {
+                            setRenewalTarget(doc);
+                            setRenewalFileName(`Renewed_${doc.documentType.replace(/\s+/g, '_')}_2027.pdf`);
+                          }}
+                          className="px-2.5 py-1.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-xs border border-blue-200"
                         >
-                          Verify Renewal
+                          Upload Renewal
                         </button>
                       )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+
+                      {/* Officer verify renewal */}
+                      {(role === 'regional_officer' || role === 'bureau_officer' || role === 'admin') &&
+                        doc.renewalStatus === 'Renewal Submitted' && (
+                          <button
+                            onClick={() => verifyDocumentRenewal(doc.id)}
+                            className="px-2.5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-2xs"
+                          >
+                            Verify Renewal
+                          </button>
+                        )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Upload Renewal Modal */}

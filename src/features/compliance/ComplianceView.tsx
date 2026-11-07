@@ -3,6 +3,7 @@ import { getSession } from '../../services/session';
 import { useApp } from '../../context/AppContext';
 import { ComplianceUndertaking } from '../../types';
 import { formatDateIndian } from '../../utils/slaCalculator';
+import { getActiveInstitutionScope, isComplianceForScope } from '../../utils/institutionScope';
 import {
   ShieldCheck,
   AlertTriangle,
@@ -41,36 +42,24 @@ export const ComplianceView: React.FC = () => {
   const actor = session?.actor;
   const isInstitution = role === 'institution';
 
+  const scope = useMemo(() => getActiveInstitutionScope(actor), [actor]);
+
   const scopedItems = useMemo(() => {
     if (!isInstitution) return complianceItems;
-    return complianceItems.filter((item) => {
-      const actorId = actor?.id || '';
-      const email = (actor as any)?.email || '';
-      if (actorId === 'usr-inst-apex' || email === 'principal@apex.ac.in') {
-        return item.institutionName.includes('APEX') || item.institutionName.includes('Apex') || item.applicationId.includes('APEX');
-      }
-      if (actorId === 'usr-inst-batu' || email === 'principal@batu.ac.in') {
-        return item.institutionName.includes('BATU') || item.applicationId.includes('BATU');
-      }
-      if (actorId === 'usr-inst-pdimtr' || email === 'principal@pdimtr.ac.in') {
-        return item.institutionName.includes('PDIMTR') || item.institutionName.includes('Prerna') || item.applicationId.includes('PDIMTR');
-      }
-      if (actorId === 'usr-inst-coep' || email === 'principal@coep.ac.in') {
-        return item.institutionName.includes('COEP') || item.applicationId.includes('COEP');
-      }
-      if (actorId === 'usr-inst-giits' || email === 'principal@giits.ac.in') {
-        return item.institutionName.includes('GIITS') || item.institutionName.includes('Gonna') || item.applicationId.includes('GIITS');
-      }
-      
-      return true;
-    });
-  }, [complianceItems, isInstitution, actor]);
+    return complianceItems.filter((item) => isComplianceForScope(item, scope));
+  }, [complianceItems, isInstitution, scope]);
 
   const filteredItems = scopedItems.filter((item) => {
+    if (!item) return false;
+    const q = (searchQuery || '').toLowerCase().trim();
+    if (!q) {
+      return filterStatus === 'All' || item.status === filterStatus;
+    }
     const matchesSearch =
-      item.institutionName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.conditionTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.applicationNumber.toLowerCase().includes(searchQuery.toLowerCase());
+      (item.institutionName?.toLowerCase().includes(q) ?? false) ||
+      (item.conditionTitle?.toLowerCase().includes(q) ?? false) ||
+      (item.applicationNumber?.toLowerCase().includes(q) ?? false) ||
+      (item.description?.toLowerCase().includes(q) ?? false);
     const matchesStatus = filterStatus === 'All' || item.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
@@ -177,35 +166,43 @@ export const ComplianceView: React.FC = () => {
 
       {/* Compliance Undertakings Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
-                {!isInstitution && <th className="py-3 px-4">Institution & Case ID</th>}
-                <th className="py-3 px-4">Regulatory Condition</th>
-                <th className="py-3 px-4">Due Date & SLA</th>
-                <th className="py-3 px-4">Evidence Status</th>
-                <th className="py-3 px-4">Officer Remarks</th>
-                <th className="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredItems.length === 0 ? (
-                <tr>
-                  <td colSpan={isInstitution ? 5 : 6} className="py-12 text-center text-slate-500">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <ShieldCheck className="w-8 h-8 text-slate-300" />
-                      <p className="font-semibold text-slate-700">No Compliance Obligations Found</p>
-                      <p className="text-[11px] text-slate-400 max-w-sm">
-                        {isInstitution
-                          ? 'All post-approval undertakings and documentation requirements are fully satisfied or none are currently scheduled for your institution.'
-                          : 'No regional compliance records match your active search and status filter criteria.'}
-                      </p>
-                    </div>
-                  </td>
+        {filteredItems.length === 0 ? (
+          <div className="p-10 text-center flex flex-col items-center justify-center space-y-3">
+            <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+              <Clock className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold text-slate-800">
+                Official Post-Approval Obligations Pending Council EoA Dispatch
+              </h4>
+              <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                {isInstitution
+                  ? 'Statutory compliance undertakings and post-approval documentation conditions are scheduled upon formal issuance of an Extension of Approval (EoA) or Letter of Approval (LoA). Active applications under scrutiny or committee review will have their obligations generated upon final Council sanction.'
+                  : 'No regional compliance records match your active search and status filter criteria.'}
+              </p>
+            </div>
+            {isInstitution && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-600 font-mono text-[11px]">
+                <span>Active Scope:</span>
+                <strong className="text-slate-800">{scope.label || 'Active Institution'}</strong>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                  {!isInstitution && <th className="py-3 px-4">Institution & Case ID</th>}
+                  <th className="py-3 px-4">Regulatory Condition</th>
+                  <th className="py-3 px-4">Due Date & SLA</th>
+                  <th className="py-3 px-4">Evidence Status</th>
+                  <th className="py-3 px-4">Officer Remarks</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
-              ) : (
-                filteredItems.map((item) => (
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredItems.map((item) => (
                   <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
                     {!isInstitution && (
                       <td className="py-3.5 px-4">
@@ -217,93 +214,94 @@ export const ComplianceView: React.FC = () => {
                     )}
 
                     <td className="py-3.5 px-4 max-w-[280px]">
-                    <p className="font-bold text-slate-800">{item.conditionTitle}</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
-                      {item.description}
-                    </p>
-                  </td>
-
-                  <td className="py-3.5 px-4">
-                    <span className="font-bold text-slate-800">{item.dueDate}</span>
-                    <span
-                      className={`block text-[10px] font-semibold mt-1 ${
-                        item.isOverdue
-                          ? 'text-rose-600'
-                          : item.isApproaching
-                          ? 'text-amber-600'
-                          : 'text-emerald-600'
-                      }`}
-                    >
-                      {item.isOverdue
-                        ? `Overdue (${Math.abs(item.daysRemaining)}d)`
-                        : `${item.daysRemaining} days remaining`}
-                    </span>
-                  </td>
-
-                  <td className="py-3.5 px-4">
-                    <span
-                      className={`inline-block px-2.5 py-0.5 rounded-md text-[11px] font-mono font-bold border ${
-                        item.status === 'Verified'
-                          ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                          : item.status === 'Overdue'
-                          ? 'bg-rose-50 text-rose-800 border-rose-300'
-                          : item.status === 'Submitted'
-                          ? 'bg-blue-50 text-blue-800 border-blue-300'
-                          : 'bg-amber-50 text-amber-800 border-amber-300'
-                      }`}
-                    >
-                      {item.status}
-                    </span>
-                    {item.evidenceDocumentName && (
-                      <span className="block text-[11px] text-slate-600 font-mono mt-1 truncate max-w-[150px]">
-                        {item.evidenceDocumentName}
-                      </span>
-                    )}
-                  </td>
-
-                  <td className="py-3.5 px-4 text-slate-600 max-w-[200px]">
-                    {item.reviewerRemarks ? (
-                      <p className="text-[11px] italic bg-slate-50 p-1.5 rounded border border-slate-100">
-                        &ldquo;{item.reviewerRemarks}&rdquo;
+                      <p className="font-bold text-slate-800">{item.conditionTitle}</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                        {item.description}
                       </p>
-                    ) : (
-                      <span className="text-slate-400 text-[11px]">Pending verification</span>
-                    )}
-                  </td>
+                    </td>
 
-                  <td className="py-3.5 px-4 text-right space-x-2">
-                    {/* Upload evidence for institution */}
-                    {item.status !== 'Verified' && (
-                      <button
-                        onClick={() => {
-                          setUploadTarget(item);
-                          setEvidenceFileName(`${item.conditionTitle.replace(/\s+/g, '_')}_Proof.pdf`);
-                        }}
-                        className="px-2.5 py-1.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-xs border border-blue-200"
+                    <td className="py-3.5 px-4">
+                      <span className="font-bold text-slate-800">{item.dueDate}</span>
+                      <span
+                        className={`block text-[10px] font-semibold mt-1 ${
+                          item.isOverdue
+                            ? 'text-rose-600'
+                            : item.isApproaching
+                            ? 'text-amber-600'
+                            : 'text-emerald-600'
+                        }`}
                       >
-                        Upload Proof
-                      </button>
-                    )}
+                        {item.isOverdue
+                          ? `Overdue (${Math.abs(item.daysRemaining)}d)`
+                          : `${item.daysRemaining} days remaining`}
+                      </span>
+                    </td>
 
-                    {/* Officer verify button */}
-                    {(role === 'regional_officer' || role === 'bureau_officer' || role === 'admin') &&
-                      item.status !== 'Verified' && (
+                    <td className="py-3.5 px-4">
+                      <span
+                        className={`inline-block px-2.5 py-0.5 rounded-md text-[11px] font-mono font-bold border ${
+                          item.status === 'Verified'
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                            : item.status === 'Overdue'
+                            ? 'bg-rose-50 text-rose-800 border-rose-300'
+                            : item.status === 'Submitted'
+                            ? 'bg-blue-50 text-blue-800 border-blue-300'
+                            : 'bg-amber-50 text-amber-800 border-amber-300'
+                        }`}
+                      >
+                        {item.status}
+                      </span>
+                      {item.evidenceDocumentName && (
+                        <span className="block text-[11px] text-slate-600 font-mono mt-1 truncate max-w-[150px]">
+                          {item.evidenceDocumentName}
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="py-3.5 px-4 text-slate-600 max-w-[200px]">
+                      {item.reviewerRemarks ? (
+                        <p className="text-[11px] italic bg-slate-50 p-1.5 rounded border border-slate-100">
+                          &ldquo;{item.reviewerRemarks}&rdquo;
+                        </p>
+                      ) : (
+                        <span className="text-slate-400 text-[11px]">Pending verification</span>
+                      )}
+                    </td>
+
+                    <td className="py-3.5 px-4 text-right space-x-2">
+                      {/* Upload evidence for institution */}
+                      {item.status !== 'Verified' && (
                         <button
                           onClick={() => {
-                            setVerifyTarget(item);
-                            setVerifyRemarks('All stipulated norms and photographic proof verified.');
+                            setUploadTarget(item);
+                            setEvidenceFileName(`${(item.conditionTitle || 'Compliance_Proof').replace(/\s+/g, '_')}_Proof.pdf`);
                           }}
-                          className="px-2.5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-2xs"
+                          className="px-2.5 py-1.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-xs border border-blue-200"
                         >
-                          Review & Verify
+                          Upload Proof
                         </button>
                       )}
-                  </td>
-                </tr>
-              )))}
-            </tbody>
-          </table>
-        </div>
+
+                      {/* Officer verify button */}
+                      {(role === 'regional_officer' || role === 'bureau_officer' || role === 'admin') &&
+                        item.status !== 'Verified' && (
+                          <button
+                            onClick={() => {
+                              setVerifyTarget(item);
+                              setVerifyRemarks('All stipulated norms and photographic proof verified.');
+                            }}
+                            className="px-2.5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-2xs"
+                          >
+                            Review & Verify
+                          </button>
+                        )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Upload Evidence Modal */}

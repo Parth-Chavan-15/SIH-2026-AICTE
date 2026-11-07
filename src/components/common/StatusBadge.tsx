@@ -54,13 +54,28 @@ export const SLABadge: React.FC<SLAProps> = ({ status, overdueDays = 0, daysRema
   );
 };
 
-export const StageBadge: React.FC<{ stage: WorkflowStage }> = ({ stage }) => {
+export const StageBadge: React.FC<{ stage: WorkflowStage | string }> = ({ stage }) => {
+  let normalizedStage: string = stage;
+  const s = (stage || '').toLowerCase().trim();
+  if (s === 'submitted' || s === 'application submitted') normalizedStage = 'Application Submitted';
+  else if (s === 'scrutiny_pending' || s === 'scrutiny in progress') normalizedStage = 'Scrutiny in Progress';
+  else if (s === 'deficiency_communicated') normalizedStage = 'Deficiency Communicated';
+  else if (s === 'rescrutiny_pending') normalizedStage = 'Scrutiny in Progress';
+  else if (s === 'evc_pending' || s === 'evc scheduled') normalizedStage = 'EVC Scheduled';
+  else if (s === 'evc_completed' || s === 'evc inspection completed') normalizedStage = 'EVC Inspection Completed';
+  else if (s === 'decision_pending' || s === 'executive committee approval') normalizedStage = 'Executive Committee Approval';
+  else if (s === 'approved' || s === 'approval issued') normalizedStage = 'Approval Issued';
+  else if (s === 'rejected' || s === 'application rejected' || s === 'ineligible_rejected') normalizedStage = 'Application Rejected';
+  else if (s === 'policy_review_required' || s === 'sac / shc review') normalizedStage = 'SAC / SHC Review';
+  else if (s === 'draft') normalizedStage = 'Draft';
+  else normalizedStage = stage ? stage.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : 'Unknown';
+
   let bgGrad = 'linear-gradient(135deg, #f8fafc, #f1f5f9)';
   let textColor = '#334155';
   let borderColor = '#e2e8f0';
   let icon = <Clock className="w-3.5 h-3.5 text-slate-500" />;
 
-  switch (stage) {
+  switch (normalizedStage) {
     case 'Draft':
       bgGrad = 'linear-gradient(135deg, #f8fafc, #f1f5f9)';
       textColor = '#475569';
@@ -134,7 +149,7 @@ export const StageBadge: React.FC<{ stage: WorkflowStage }> = ({ stage }) => {
       }}
     >
       {icon}
-      {stage}
+      {normalizedStage}
     </span>
   );
 };

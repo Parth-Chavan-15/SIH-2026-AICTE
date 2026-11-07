@@ -114,7 +114,13 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
   const [rectificationComment, setRectificationComment] = useState('');
   const [rectificationError, setRectificationError] = useState<string | null>(null);
 
-  const application = applications.find((a) => a.id === applicationId);
+  const application = applications.find(
+    (a) =>
+      a.id === applicationId ||
+      a.applicationNumber === applicationId ||
+      a.institutionCode === applicationId ||
+      (applicationId && (a.id?.toLowerCase().includes(applicationId.toLowerCase()) ?? false))
+  );
   if (!application) return null;
 
   const evcRecord = evcInspections.find((e) => e.applicationId === application.id || e.id === application.evcId);
@@ -873,7 +879,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-[9px] font-bold text-slate-400">
-                      {stage.id.toUpperCase()}
+                      {(stage.id || '').toUpperCase()}
                     </span>
                     <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold ${stage.badgeColor}`}>
                       {isCompleted && <CheckCircle2 className="w-2.5 h-2.5 inline mr-0.5 -mt-0.5" />}

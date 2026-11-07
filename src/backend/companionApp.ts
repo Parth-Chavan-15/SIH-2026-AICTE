@@ -1,4 +1,7 @@
+import type { Actor } from '../shared/contracts';
+import { executeSafeDemoReset } from './services/safeDemoResetService';
 import express, { Express, Request, Response, NextFunction } from 'express';
+import { randomUUID } from 'node:crypto';
 import { createCoreRouter } from './core/router';
 import { createMemoryStorageAdapter } from './persistence/memoryAdapter';
 import { getCanonicalSeedState, CANONICAL_OBLIGATIONS } from './data/seedCanonicalCases';
@@ -122,7 +125,8 @@ export function createCompanionApp(options?: {
       req.path === '/ready' ||
       req.path === '/version' ||
       req.path === '/api/version' ||
-      req.path.startsWith('/nsws/')
+      req.path.startsWith('/nsws/') ||
+      req.path.startsWith('/adapter/')
     ) {
       return next();
     }
@@ -131,8 +135,6 @@ export function createCompanionApp(options?: {
       '/timers/',
       '/alerts',
       '/demo/reset',
-      '/adapter/',
-      '/nsws/',
       '/portal-import/',
       '/allocation',
       '/appeals-hearings',
@@ -140,7 +142,20 @@ export function createCompanionApp(options?: {
     ];
     if (publicPrefixes.some(p => req.path.startsWith(p)) || req.path === '/adapter/status') {
       if (req.headers.cookie || req.headers.authorization) {
-        return authMiddleware(req, res, () => next());
+        try {
+          const authResult = identityProvider().authenticate(req.headers.cookie);
+          req.actor = authResult.actor;
+          req.commandContext = {
+            actor: authResult.actor,
+            sessionId: authResult.sessionId,
+            requestId: randomUUID(),
+            receivedAt: new Date().toISOString()
+          };
+          res.locals.actorId = authResult.actor.id;
+          res.locals.requestId = req.commandContext.requestId;
+        } catch {
+          // Stale / unauthenticated cookie on public prefix: proceed unauthenticated
+        }
       }
       return next();
     }
@@ -181,23 +196,49 @@ export function createCompanionApp(options?: {
   // Official Vault Artifacts & Proforma
   app.use('/api/v1', createArtifactRouter(storage));
 
-  // Companion Demo Reset
-  app.post('/api/v1/demo/reset', (_req: Request, res: Response) => {
-    if (process.env.NODE_ENV === 'production' && process.env.ALLOW_DEMO_RESET !== 'true') {
+  // Protected Safe Demo Reset Endpoint
+  app.post('/api/v1/demo/reset', async (req: Request, res: Response) => {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const hasResetFlag = process.env.ALLOW_DEMO_RESET === 'true';
+    const resetKey = req.headers['x-demo-reset-key'];
+    const validKey = process.env.DEMO_RESET_KEY || 'sih-2026-demo-reset';
+    const actor = (req as any).actor as Actor | undefined;
+    const isAuthorizedRole = actor && (
+      (actor.roles as any[])?.includes('admin') ||
+      actor.roles?.includes('policy_admin') ||
+      (actor.roles as any[])?.includes('superadmin') ||
+      actor.roles?.includes('bureau_officer') ||
+      actor.roles?.includes('regional_officer')
+    );
+
+    const hasKeyAccess = Boolean(resetKey && resetKey === validKey);
+    if (!hasKeyAccess && !isAuthorizedRole) {
       return res.status(403).json({
         success: false,
         error: {
           code: 'FORBIDDEN',
-          message: 'Demo state reset is disabled in production environment to prevent accidental data loss'
+          message: 'Demo state reset is restricted. Supply a valid X-Demo-Reset-Key header or authenticate with an authorized administrative role.'
         }
       });
     }
-    storage.reset(getCanonicalSeedState());
-    seedComplianceDB(CANONICAL_OBLIGATIONS);
-    res.json({
-      success: true,
-      message: 'Companion demo state reset to canonical seed with 5 real-world college cases'
-    });
+
+    try {
+      const result = await executeSafeDemoReset(storage, actor);
+      return res.status(200).json({
+        success: true,
+        message: result.message,
+        data: result
+      });
+    } catch (err: any) {
+      console.error('[DEMO RESET ERROR]:', err);
+      return res.status(500).json({
+        success: false,
+        error: {
+          code: 'RESET_FAILED',
+          message: err.message || 'Failed to safely reset demo state'
+        }
+      });
+    }
   });
 
   // Core Router (includes /health, /ready, /auth/login, /applications, /decisions, etc.)

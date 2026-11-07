@@ -7,6 +7,7 @@ import {
   verifyDSCSignature
 } from '../adapters/ecosystemAdapters';
 import { verifyAuditRecordIntegrity } from '../security/auditVerification';
+import { simulatedProfiles } from '../modules/nsws/nswsService';
 
 export function createAdapterRouter(storage: CaseStorage): Router {
   const router = Router();
@@ -190,6 +191,20 @@ export function createAdapterRouter(storage: CaseStorage): Router {
         signatoryName: req.body.signatoryName,
         signatoryPan: req.body.signatoryPan
       });
+      // Synchronize simulated NSWS investor profile DSC state if investorId/nswsReference is provided
+      const investorId = req.body.investorId || req.body.nswsReference;
+      if (investorId && simulatedProfiles.has(investorId)) {
+        const profile = simulatedProfiles.get(investorId)!;
+        profile.dscVerified = true;
+        profile.dscDetails = {
+          certSerialNumber: result.certSerialNumber,
+          signatoryName: result.signatoryName,
+          tokenType: result.tokenType,
+          verifiedAt: result.verifiedAt
+        };
+        simulatedProfiles.set(investorId, profile);
+      }
+
       return res.status(200).json({
         success: true,
         data: result

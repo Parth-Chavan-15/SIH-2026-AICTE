@@ -257,6 +257,80 @@ export const CANONICAL_APPLICATIONS: Application[] = [
     stageEnteredAt: '2026-10-24T00:00:00.000Z',
     createdAt: '2026-10-19T00:00:00.000Z',
     updatedAt: '2026-10-24T00:00:00.000Z'
+  },
+  // College 6: VVIT - Boundary Constraint X=360 held at Executive Policy Review gate
+  {
+    id: 'APP-2026-VVIT',
+    reference: '1-55449921001',
+    institutionId: 'INST-VVIT',
+    regionId: 'Western',
+    category: 'intake_increase',
+    session: '2026-2027',
+    facts: {
+      institutionName: 'Vidya Vardhini Institute of Technology (Boundary X=360)',
+      permanentInstituteId: '1-55449921',
+      program: 'Engineering & Technology',
+      course: 'Electronics & Telecommunication',
+      currentIntake: 360,
+      proposedIntake: 420,
+      existingIntake: 360,
+      nbaAccredited: false,
+      boundaryHoldReason: 'Intake ceiling division limit reached (X = 360). Under APH 2024-27 Chapter II §2.6(c)(i), expansion beyond 360 mandates Executive Policy Review.'
+    },
+    policyRevisionId: undefined,
+    state: 'policy_review_required',
+    route: {
+      policyRevisionId: undefined,
+      session: '2026-2027',
+      category: 'intake_increase',
+      evaluatedFacts: { existingIntake: 360, proposedIntake: 420 },
+      result: 'review_required',
+      stages: [],
+      reasons: ['APH §2.6(c)(i): Division boundary X=360 exceeded. Executive Policy Review required.'],
+      sources: [SRC_APH_2024_27],
+      reviewReasons: ['APH §2.6(c)(i): Division boundary X=360 exceeded. Executive Policy Review required.']
+    },
+    version: 1,
+    stageEnteredAt: '2026-10-24T00:00:00.000Z',
+    createdAt: '2026-10-20T00:00:00.000Z',
+    updatedAt: '2026-10-24T00:00:00.000Z'
+  },
+  // Case 7: COEP Computer Engineering - Cleared Desk Scrutiny, Awaiting Council Statutory Decision (Role 5 Tab 1)
+  {
+    id: 'APP-2026-DECISION-DUE',
+    reference: '1-78901234501',
+    institutionId: 'INST-SOUTH',
+    regionId: 'Western',
+    category: 'intake_increase',
+    session: '2026-2027',
+    facts: {
+      institutionName: 'College of Engineering Pune (COEP Tech Univ) - Computer Engineering Division',
+      permanentInstituteId: '1-1437622971',
+      program: 'Engineering & Technology',
+      course: 'Computer Science and Engineering',
+      currentIntake: 180,
+      proposedIntake: 240,
+      existingIntake: 180,
+      nbaAccredited: true,
+      nbaValidTill: '2028-06-30',
+      scrutinyCompleted: true
+    },
+    policyRevisionId: 'POL_2026_INTAKE_NBA',
+    state: 'decision_pending',
+    route: {
+      policyRevisionId: 'POL_2026_INTAKE_NBA',
+      session: '2026-2027',
+      category: 'intake_increase',
+      evaluatedFacts: { nbaAccredited: true, proposedIntake: 240 },
+      result: 'selected',
+      stages: ['scrutiny_pending', 'decision_pending'],
+      reasons: ['Desk Scrutiny verified & cleared without deficiencies. Physical EVC waived per Errata p. 42. Docket forwarded to Executive Committee for statutory decision.'],
+      sources: [SRC_APH_2026_ERRATA]
+    },
+    version: 2,
+    stageEnteredAt: '2026-10-25T00:00:00.000Z',
+    createdAt: '2026-10-21T00:00:00.000Z',
+    updatedAt: '2026-10-25T00:00:00.000Z'
   }
 ];
 
@@ -295,6 +369,37 @@ export const GIITS_SCRUTINY_SNAPSHOT: ScrutinySnapshot = {
   signedBy: 'SYN-ACTOR-RO',
   signedAt: '2026-10-23T14:30:00.000Z'
 };
+
+export const APEX_SCRUTINY_SNAPSHOT: ScrutinySnapshot = {
+  id: '2-SOC1776333767',
+  applicationId: 'APP-2026-APEX',
+  round: 2,
+  checklistVersion: 'v2026.1',
+  items: [
+    {
+      itemId: 'C3',
+      result: 'accepted',
+      reason: '30-year registered land lease deed verified and sealed',
+      evidenceVersionIds: ['DOC-APEX-C3']
+    },
+    {
+      itemId: 'C4',
+      result: 'accepted',
+      reason: 'Municipal fire and building occupancy approved',
+      evidenceVersionIds: ['DOC-APEX-C4']
+    },
+    {
+      itemId: 'D1',
+      result: 'deficient',
+      reason: 'Senior Professor deficit: Cured evidence uploaded by institution and awaiting committee re-evaluation',
+      evidenceVersionIds: ['DOC-APEX-D1-CURE']
+    }
+  ],
+  deficiencyItemIds: ['D1'],
+  signedBy: 'SYN-ACTOR-RO',
+  signedAt: '2026-10-24T16:00:00.000Z'
+};
+
 
 export const CANONICAL_OBLIGATIONS: Obligation[] = [
   // Obligation 1: 30-Year Land Lease expiring in 12 days (05-NOV-2026)
@@ -424,7 +529,7 @@ export function getCanonicalSeedState(): Partial<MemoryDbState> {
     cases: structuredClone(CANONICAL_APPLICATIONS),
     institutions: structuredClone(CANONICAL_INSTITUTIONS),
     policies: structuredClone(APPROVED_2026_POLICIES),
-    scrutinySnapshots: [structuredClone(GIITS_SCRUTINY_SNAPSHOT)],
+    scrutinySnapshots: [structuredClone(GIITS_SCRUTINY_SNAPSHOT), structuredClone(APEX_SCRUTINY_SNAPSHOT)],
     obligations: structuredClone(CANONICAL_OBLIGATIONS),
     decisions: structuredClone(CANONICAL_DECISIONS),
     evcTasks: structuredClone(CANONICAL_EVC_TASKS),

@@ -178,7 +178,8 @@ export function buildApplicationFromNSWS(payload: NSWSSubmissionPayload): {
   application: Application;
   routeExplanation: DynamicRouteResult;
 } {
-  const investorId = payload.investorId || (payload as any).nswsReference;
+  const panVal = (payload as any).pan;
+  const investorId = payload.investorId || (payload as any).nswsReference || (panVal ? Array.from(simulatedProfiles.values()).find(p => p.pan === panVal)?.investorId : undefined) || (panVal ? ('NSWS-INV-' + panVal) : undefined);
   let profile = investorId ? simulatedProfiles.get(investorId) : undefined;
   if (!profile && investorId) {
     profile = {
@@ -216,6 +217,8 @@ export function buildApplicationFromNSWS(payload: NSWSSubmissionPayload): {
   const nestedFacts = (payload as any).facts || {};
   // Evaluate route dynamically using source-grounded route engine
   const factsForRoute = {
+    ...nestedFacts,
+    ...payload,
     category: payload.category || nestedFacts.category,
     session: payload.session || nestedFacts.session || '2026-27',
     program: payload.program || nestedFacts.program,
@@ -226,7 +229,17 @@ export function buildApplicationFromNSWS(payload: NSWSSubmissionPayload): {
     nbaAccredited: (payload.nbaAccredited ?? nestedFacts.nbaAccredited) ?? false,
     nbaScore: (payload as any).nbaScore ?? nestedFacts.nbaScore,
     nbaValidTill: payload.nbaValidTill || nestedFacts.nbaValidTill,
-    siteVerificationRequired: payload.siteVerificationRequired ?? nestedFacts.siteVerificationRequired ?? false
+    accreditedCoursesCount: (payload as any).accreditedCoursesCount ?? nestedFacts.accreditedCoursesCount,
+    siteVerificationRequired: payload.siteVerificationRequired ?? nestedFacts.siteVerificationRequired ?? false,
+    isRegionalLanguageCourse: (payload as any).isRegionalLanguageCourse ?? nestedFacts.isRegionalLanguageCourse ?? false,
+    landAreaAcre: (payload as any).landAreaAcre ?? nestedFacts.landAreaAcre,
+    builtUpAreaSqM: (payload as any).builtUpAreaSqM ?? nestedFacts.builtUpAreaSqM ?? (payload as any).builtUpAreaSqm ?? nestedFacts.builtUpAreaSqm,
+    institutionType: (payload as any).institutionType || nestedFacts.institutionType || (payload.category === 'new_institution' ? 'new' : 'existing'),
+    coreBranchesCount: (payload as any).coreBranchesCount ?? nestedFacts.coreBranchesCount,
+    nonCsCoreBranchesCount: (payload as any).nonCsCoreBranchesCount ?? nestedFacts.nonCsCoreBranchesCount,
+    passOutBatchesCount: (payload as any).passOutBatchesCount ?? nestedFacts.passOutBatchesCount,
+    isPartialProgrammeApplication: (payload as any).isPartialProgrammeApplication ?? nestedFacts.isPartialProgrammeApplication ?? false,
+    terChargesPaidInr: (payload as any).terChargesPaidInr ?? nestedFacts.terChargesPaidInr
   };
 
   const routeResult = evaluateDynamicRoute(factsForRoute);
@@ -240,7 +253,7 @@ export function buildApplicationFromNSWS(payload: NSWSSubmissionPayload): {
     session: payload.session || '2026-27',
     facts: {
       ...nestedFacts,
-      institutionName: payload.institutionName,
+      institutionName: String(payload.institutionName || nestedFacts.institutionName || profile.entityName || (payload as any).institutionId || '').trim(),
       entityName: profile.entityName,
       entityType: profile.entityType,
       contactPerson: profile.contactPerson,
@@ -270,7 +283,7 @@ export function buildApplicationFromNSWS(payload: NSWSSubmissionPayload): {
       submittedAt: nowIso
     },
     policyRevisionId: routeResult.policyRevisionId,
-    state: 'submitted',
+    state: routeResult.result === 'review_required' ? 'policy_review_required' : 'submitted',
     version: 1,
     route: {
       policyRevisionId: routeResult.policyRevisionId,
@@ -278,10 +291,10 @@ export function buildApplicationFromNSWS(payload: NSWSSubmissionPayload): {
       category: (payload.category || 'increase_intake') as any,
       evaluatedFacts: routeResult.evaluatedFacts,
       result: routeResult.result,
-      stages: routeResult.stages,
+      stages: routeResult.result === 'review_required' ? [] : routeResult.stages,
       reasons: routeResult.reasons,
       sources: routeResult.sources,
-      reviewReasons: routeResult.unresolvedFlags
+      reviewReasons: routeResult.result === 'review_required' ? ((routeResult.unresolvedFlags && routeResult.unresolvedFlags.length > 0) ? routeResult.unresolvedFlags : (routeResult.reasons && routeResult.reasons.length > 0) ? routeResult.reasons : ['Statutory policy review required under AICTE norms']) : undefined
     },
     stageEnteredAt: nowIso,
     createdAt: nowIso,

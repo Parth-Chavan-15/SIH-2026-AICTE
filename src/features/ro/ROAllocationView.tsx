@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../services/api';
 import {
@@ -64,19 +64,119 @@ export const ROAllocationView: React.FC = () => {
     }
   }, [selectedCaseId]);
 
+  const isScrutinyGroup = (g: any): boolean => {
+    const t = ((g?.type || g?.groupType || '') as string).toUpperCase();
+    return t.includes('SCRUTINY') || String(g?.id || '').startsWith('SCR');
+  };
+
+  const isEvcGroup = (g: any): boolean => {
+    const t = ((g?.type || g?.groupType || '') as string).toUpperCase();
+    return t.includes('EVC') || String(g?.id || '').startsWith('EVC');
+  };
+
+  const getGroupActiveCount = (g: any): number => {
+    if (typeof g?.activeCaseCount === 'number') return g.activeCaseCount;
+    if (typeof g?.activeCases === 'number') return g.activeCases;
+    return 0;
+  };
+
+  const getGroupCapacity = (g: any): number => {
+    if (typeof g?.capacity === 'number' && g.capacity > 0) return g.capacity;
+    return 10;
+  };
+
+  const isGroupBelowCapacity = (g: any): boolean => {
+    return getGroupActiveCount(g) < getGroupCapacity(g);
+  };
+
+  // Evaluation of current case assignment
+  const currentAssignedGroupId = useMemo(() => {
+    if (assignType === 'DESK_SCRUTINY') {
+      const raw = caseAssignments?.currentDeskScrutiny || caseAssignments?.assignment?.scrutinyGroupId || caseAssignments?.assignment?.deskScrutinyGroup;
+      if (raw && !['Unassigned / Pending', 'Not Applicable / Not Assigned', 'None', 'Pending'].includes(raw)) {
+        return raw;
+      }
+      return null;
+    } else {
+      const raw = caseAssignments?.currentEVC || caseAssignments?.assignment?.evcGroupId || caseAssignments?.assignment?.evcGroup;
+      if (raw && !['Not Applicable / Not Assigned', 'Unassigned / Pending', 'None', 'Pending'].includes(raw)) {
+        return raw;
+      }
+      return null;
+    }
+  }, [assignType, caseAssignments]);
+
+  const currentAssignedGroup = useMemo(() => {
+    if (!currentAssignedGroupId) return null;
+    return groups.find((g) => g.id === currentAssignedGroupId) || null;
+  }, [currentAssignedGroupId, groups]);
+
+  const isAlreadyAssigned = Boolean(currentAssignedGroupId);
+
+  // All matching standing panels for this type
+  const matchingPanels = useMemo(() => {
+    return groups.filter((g) => (assignType === 'DESK_SCRUTINY' ? isScrutinyGroup(g) : isEvcGroup(g)));
+  }, [groups, assignType]);
+
+  // Available free panels (active, below capacity, and not the currently assigned panel)
+  const availablePanels = useMemo(() => {
+    return matchingPanels.filter((g) => {
+      const isActive = g.status !== 'INACTIVE';
+      const isBelowCap = isGroupBelowCapacity(g);
+      if (!isActive || !isBelowCap) return false;
+      if (isAlreadyAssigned && g.id === currentAssignedGroupId) return false;
+      return true;
+    });
+  }, [matchingPanels, isAlreadyAssigned, currentAssignedGroupId]);
+
+  // Keep targetGroupId synced with availablePanels
+  useEffect(() => {
+    if (showAssignModal) {
+      if (availablePanels.length > 0) {
+        if (!targetGroupId || !availablePanels.some((p) => p.id === targetGroupId)) {
+          setTargetGroupId(availablePanels[0].id);
+        }
+      } else {
+        setTargetGroupId('');
+      }
+    }
+  }, [showAssignModal, availablePanels, targetGroupId]);
+
   const handleOpenAssign = (type: 'DESK_SCRUTINY' | 'EVC') => {
     setAssignType(type);
-    const candidateGroups = groups.filter((g) => g.groupType === type);
-    if (candidateGroups.length > 0) {
-      setTargetGroupId(candidateGroups[0].id);
-    }
     setErrorMsg(null);
+    setAssignmentReason('Standard Regional Committee load balancing');
+
+    const curAssignedId = type === 'DESK_SCRUTINY'
+      ? (caseAssignments?.currentDeskScrutiny || caseAssignments?.assignment?.scrutinyGroupId || caseAssignments?.assignment?.deskScrutinyGroup)
+      : (caseAssignments?.currentEVC || caseAssignments?.assignment?.evcGroupId || caseAssignments?.assignment?.evcGroup);
+
+    const isAssigned = Boolean(curAssignedId && !['Unassigned / Pending', 'Not Applicable / Not Assigned', 'None', 'Pending'].includes(curAssignedId));
+
+    const matching = groups.filter((g) => (type === 'DESK_SCRUTINY' ? isScrutinyGroup(g) : isEvcGroup(g)));
+    const free = matching.filter((g) => {
+      if (g.status === 'INACTIVE') return false;
+      if (!isGroupBelowCapacity(g)) return false;
+      if (isAssigned && g.id === curAssignedId) return false;
+      return true;
+    });
+
+    if (free.length > 0) {
+      setTargetGroupId(free[0].id);
+    } else {
+      setTargetGroupId('');
+    }
+
     setShowAssignModal(true);
   };
 
   const handleExecuteAssign = async () => {
+    if (!targetGroupId) {
+      setErrorMsg('No available standing committee panel selected.');
+      return;
+    }
     if (!assignmentReason || assignmentReason.trim().length < 5) {
-      setErrorMsg('A valid official assignment justification is mandatory.');
+      setErrorMsg('A valid official assignment justification (minimum 5 characters) is mandatory.');
       return;
     }
     setLoading(true);
@@ -89,7 +189,12 @@ export const ROAllocationView: React.FC = () => {
         officerId: user?.id || 'usr-ro-western',
         reason: assignmentReason
       });
-      setSuccessMsg(`Successfully assigned ${assignType} group ${targetGroupId} to ${activeApp.id}`);
+      const panelName = availablePanels.find((p) => p.id === targetGroupId)?.name || targetGroupId;
+      setSuccessMsg(
+        `Successfully ${isAlreadyAssigned ? 'reassigned' : 'assigned'} ${
+          assignType === 'DESK_SCRUTINY' ? 'Desk Scrutiny' : 'EVC Inspection'
+        } to ${panelName} for ${activeApp.id}`
+      );
       setShowAssignModal(false);
       await loadGroups();
       await loadCaseAssignments(activeApp.id);
@@ -100,8 +205,8 @@ export const ROAllocationView: React.FC = () => {
     }
   };
 
-  const scrutinyGroups = groups.filter((g) => g.groupType === 'DESK_SCRUTINY');
-  const evcGroups = groups.filter((g) => g.groupType === 'EVC');
+  const scrutinyGroups = groups.filter(isScrutinyGroup);
+  const evcGroups = groups.filter(isEvcGroup);
 
   return (
     <div className="space-y-6">
@@ -154,8 +259,10 @@ export const ROAllocationView: React.FC = () => {
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {groups.map((grp) => {
-            const loadPercent = Math.min(100, Math.round((grp.activeCases / grp.capacity) * 100));
-            const isScrutiny = grp.groupType === 'DESK_SCRUTINY';
+            const activeCount = getGroupActiveCount(grp);
+            const capacity = getGroupCapacity(grp);
+            const loadPercent = Math.min(100, Math.round((activeCount / capacity) * 100));
+            const isScrutiny = isScrutinyGroup(grp);
             return (
               <div
                 key={grp.id}
@@ -182,7 +289,7 @@ export const ROAllocationView: React.FC = () => {
                     <div className="flex justify-between text-xs mb-1">
                       <span className="text-slate-500">Workload:</span>
                       <span className="font-mono font-bold text-slate-800">
-                        {grp.activeCases} / {grp.capacity} cases
+                        {activeCount} / {capacity} cases
                       </span>
                     </div>
                     <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
@@ -354,36 +461,116 @@ export const ROAllocationView: React.FC = () => {
       {/* Assignment Modal */}
       {showAssignModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-            <h3 className="font-bold text-slate-900 text-base">
-              Assign {assignType === 'DESK_SCRUTINY' ? 'Desk Scrutiny' : 'EVC Inspection'} Committee
-            </h3>
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                {assignType === 'DESK_SCRUTINY' ? (
+                  <Users className="w-5 h-5 text-blue-600" />
+                ) : (
+                  <Shield className="w-5 h-5 text-indigo-600" />
+                )}
+                <span>
+                  {isAlreadyAssigned ? 'Reassign' : 'Assign'}{' '}
+                  {assignType === 'DESK_SCRUTINY' ? 'Desk Scrutiny Committee' : 'EVC Inspection Committee'}
+                </span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowAssignModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
 
-            <div className="space-y-3 text-xs">
+            {errorMsg && (
+              <div className="p-3 rounded-lg bg-rose-50 border border-rose-300 text-rose-800 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
+
+            <div className="space-y-3.5 text-xs">
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">Target Application</label>
                 <input
                   type="text"
                   disabled
                   value={`${activeApp.id} (${activeApp.institutionName})`}
-                  className="w-full px-3 py-2 border rounded-lg bg-slate-100 text-slate-600 font-mono"
+                  className="w-full px-3 py-2 border rounded-lg bg-slate-100 text-slate-700 font-mono font-medium"
                 />
               </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Select Standing Panel Group</label>
-                <select
-                  value={targetGroupId}
-                  onChange={(e) => setTargetGroupId(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg bg-white"
-                >
-                  {(assignType === 'DESK_SCRUTINY' ? scrutinyGroups : evcGroups).map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.name} ({g.id}) &bull; Active: {g.activeCases}/{g.capacity}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* Dynamic Status: Case Already Assigned */}
+              {isAlreadyAssigned && (
+                <div className="p-3 rounded-lg bg-blue-50/80 border border-blue-200 text-xs space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-blue-900">
+                    <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span>Currently Assigned Standing Panel:</span>
+                  </div>
+                  <div className="text-slate-800 pl-5">
+                    <strong>{currentAssignedGroup?.name || currentAssignedGroupId}</strong>
+                    <span className="ml-1.5 font-mono text-[11px] font-bold text-blue-700">
+                      [{currentAssignedGroupId}]
+                    </span>
+                  </div>
+                  {currentAssignedGroup && (
+                    <div className="text-[11px] text-slate-500 pl-5">
+                      Region: {currentAssignedGroup.region} &bull; Workload: <strong>{getGroupActiveCount(currentAssignedGroup)} / {getGroupCapacity(currentAssignedGroup)} cases</strong>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Panel Selection OR No Panel Free message */}
+              {availablePanels.length > 0 ? (
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    {isAlreadyAssigned
+                      ? 'Select Alternative Free Standing Panel Group'
+                      : 'Select Standing Panel Group'}
+                  </label>
+                  <select
+                    value={targetGroupId}
+                    onChange={(e) => setTargetGroupId(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-slate-900 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  >
+                    {availablePanels.map((g) => {
+                      const active = getGroupActiveCount(g);
+                      const cap = getGroupCapacity(g);
+                      const freeSlots = cap - active;
+                      return (
+                        <option key={g.id} value={g.id}>
+                          {g.name} ({g.id}) • Active: {active}/{cap} cases ({freeSlots} {freeSlots === 1 ? 'slot' : 'slots'} free)
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Showing available panels below statutory workload capacity ({availablePanels.length} available)
+                  </p>
+                </div>
+              ) : (
+                <div className="p-3.5 rounded-lg bg-amber-50 border border-amber-300 text-xs text-amber-900 space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-800">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>
+                      {isAlreadyAssigned
+                        ? 'No Alternative Free Panel Available for Reassignment'
+                        : 'All Matching Standing Panels at Full Capacity'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-amber-800 leading-relaxed">
+                    {isAlreadyAssigned
+                      ? `This application is already assigned to ${currentAssignedGroup?.name || currentAssignedGroupId}. All other standing ${
+                          assignType === 'DESK_SCRUTINY' ? 'Desk Scrutiny' : 'EVC'
+                        } panels are currently at full capacity or unavailable.`
+                      : `All ${
+                          assignType === 'DESK_SCRUTINY' ? 'Desk Scrutiny' : 'EVC'
+                        } standing committee panels are currently at maximum workload capacity. Rebalance committee workloads or await docket clearance before assigning this case.`}
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
@@ -393,7 +580,10 @@ export const ROAllocationView: React.FC = () => {
                   rows={3}
                   value={assignmentReason}
                   onChange={(e) => setAssignmentReason(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg"
+                  disabled={availablePanels.length === 0}
+                  className={`w-full px-3 py-2 border rounded-lg text-xs ${
+                    availablePanels.length === 0 ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white'
+                  }`}
                   placeholder="State the official basis or load-balancing reason for this panel assignment..."
                 />
               </div>
@@ -401,18 +591,30 @@ export const ROAllocationView: React.FC = () => {
 
             <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
               <button
+                type="button"
                 onClick={() => setShowAssignModal(false)}
-                className="px-3 py-1.5 rounded-lg border text-slate-600 text-xs font-semibold"
+                className="px-3.5 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold transition-colors"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleExecuteAssign}
-                disabled={loading}
-                className="px-4 py-1.5 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold flex items-center gap-1.5"
+                disabled={loading || availablePanels.length === 0 || !targetGroupId}
+                className={`px-4 py-1.5 rounded-lg text-white text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                  loading || availablePanels.length === 0 || !targetGroupId
+                    ? 'bg-slate-300 cursor-not-allowed text-slate-500'
+                    : 'bg-blue-700 hover:bg-blue-800'
+                }`}
               >
                 <UserCheck className="w-3.5 h-3.5" />
-                <span>Confirm Assignment</span>
+                <span>
+                  {loading
+                    ? 'Saving...'
+                    : isAlreadyAssigned
+                    ? 'Confirm Reassignment'
+                    : 'Confirm Assignment'}
+                </span>
               </button>
             </div>
           </div>

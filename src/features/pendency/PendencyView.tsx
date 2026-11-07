@@ -1,3 +1,4 @@
+import { LoadingState } from '../../components/common/LoadingState';
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Application, SLAStatusType } from '../../types';
@@ -20,7 +21,7 @@ interface PendencyViewProps {
 }
 
 export const PendencyView: React.FC<PendencyViewProps> = ({ onSelectApplication }) => {
-  const { applications } = useApp();
+  const { applications, loading } = useApp();
 
   const [selectedRegion, setSelectedRegion] = useState('All');
   const [selectedStatus, setSelectedStatus] = useState<'All' | SLAStatusType>('All');

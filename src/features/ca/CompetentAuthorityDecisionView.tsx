@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { LoadingState } from '../../components/common/LoadingState';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Application } from '../../types';
 import { formatDateIndian } from '../../utils/slaCalculator';
@@ -31,32 +32,51 @@ export const CompetentAuthorityDecisionView: React.FC<CompetentAuthorityDecision
   onSelectApplication,
   onNavigateTab
 }) => {
-  const { applications, transitionStage, addToast, auditLog } = useApp();
+  const { applications, transitionStage, addToast, auditLog, loading } = useApp();
 
-  // Candidate cases for Council Statutory Decision (all 5 canonical colleges accessible)
-  const candidateCases = applications.filter(
-    (a) =>
-      a.currentStage === 'Scrutiny Cleared' ||
-      a.currentStage === 'EVC Inspection Completed' ||
-      a.currentStage === 'Executive Committee Approval' ||
-      a.currentStage === 'Deficiency Communicated' ||
-      a.currentStage === 'Scrutiny in Progress' ||
-      a.currentStage === 'Approval Issued'
-  );
-  const decisionCases = candidateCases.length > 0 ? candidateCases : applications;
+  // Strict Queue Filtering: Only show cases that actually belong to the Council Decision Gate
+  const decisionCases = useMemo(() => {
+    return applications.filter(
+      (a) =>
+        a.currentStage === 'Executive Committee Approval' ||
+        a.currentStage === 'EVC Inspection Completed' ||
+        (a as any).state === 'decision_pending' ||
+        (a.currentStage === 'Scrutiny Cleared' && (!a.route?.stages?.includes('evc_pending') && !(a.routeType || '').toLowerCase().includes('evc')))
+    );
+  }, [applications]);
 
-  const [selectedCaseId, setSelectedCaseId] = useState<string>(
-    decisionCases.find((c) => c.applicationNumber === '1-43657568230')?.id ||
-    decisionCases[0]?.id ||
-    applications[0]?.id
-  );
+  const [selectedCaseId, setSelectedCaseId] = useState<string>('');
 
-  const activeCase = applications.find((a) => a.id === selectedCaseId) || applications[0];
+  useEffect(() => {
+    if (decisionCases.length > 0) {
+      if (!decisionCases.some((c) => c.id === selectedCaseId)) {
+        setSelectedCaseId(decisionCases[0].id);
+      }
+    } else {
+      setSelectedCaseId('');
+    }
+  }, [decisionCases, selectedCaseId]);
+
+  const activeCase = decisionCases.find((a) => a.id === selectedCaseId) || decisionCases[0];
 
   const [decisionMode, setDecisionMode] = useState<'approve' | 'conditional' | 'reject'>('approve');
-  const [decisionReason, setDecisionReason] = useState(
-    'Resolved: Approved under APH 2026–27 §1.10. Desk Scrutiny verified without deficiencies. EVC exempt per APH Errata G02 p. 42 (NBA Tier-1 valid till 2028). 15-day university/DTE deemed concurrence expired without objection.'
-  );
+  const [decisionReason, setDecisionReason] = useState<string>('');
+
+  useEffect(() => {
+    if (!activeCase) return;
+    const isEVCExempt =
+      activeCase.routeType === 'Scrutiny Only' ||
+      activeCase.routeType === 'Fast-Track EoA' ||
+      !activeCase.route?.stages?.includes('evc_pending');
+    setDecisionReason(
+      `Resolved: Approved under APH 2026–27 §1.10. Application for ${activeCase.institutionName} (${activeCase.program}, ${activeCase.proposedIntake} seats) verified compliant. ${
+        isEVCExempt
+          ? 'EVC inspection waived per APH Table 2.3 / Errata G02.'
+          : 'EVC inspection completed and approved.'
+      } 15-day university/DTE deemed concurrence expired without objection.`
+    );
+  }, [activeCase?.id, activeCase?.institutionName, activeCase?.program, activeCase?.proposedIntake, activeCase?.routeType]);
+
   const [conditions, setConditions] = useState<{ id: string; label: string; checked: boolean; statutoryRef: string }[]>([
     {
       id: 'cond-lease',
@@ -105,7 +125,7 @@ export const CompetentAuthorityDecisionView: React.FC<CompetentAuthorityDecision
         `Council Statutory Order: ${decisionMode === 'approve' ? 'Unconditional EoA' : decisionMode === 'conditional' ? 'Conditional EoA' : 'Rejected'}. ${decisionReason}`
       );
 
-      const orderRef = `AICTE/${activeCase.region.toUpperCase().slice(0, 4)}/${activeCase.applicationNumber}/EOA-2026-27`;
+      const orderRef = `AICTE/${(activeCase.region || 'HQ').toUpperCase().slice(0, 4)}/${activeCase.applicationNumber || activeCase.id}/EOA-2026-27`;
       setIssuedOrder({
         orderNumber: orderRef,
         caseNumber: activeCase.applicationNumber,
@@ -210,146 +230,158 @@ export const CompetentAuthorityDecisionView: React.FC<CompetentAuthorityDecision
       )}
 
       {/* Main Split Layout: Left Select Case / Right Decision Gate */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* Left Column: Eligible Case Selector */}
-        <div className="lg:col-span-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-500">
-              Cases Awaiting Statutory Decision ({decisionCases.length})
-            </h3>
-            <span className="text-[11px] text-blue-700 font-semibold">Select Target Case</span>
+      {decisionCases.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-3 shadow-2xs">
+          <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+            <Award className="w-6 h-6" />
           </div>
-
-          <div className="space-y-2.5">
-            {decisionCases.map((app) => {
-              const isSelected = app.id === selectedCaseId;
-              const isCOEP = app.id === 'APP-2026-COEP';
-              const isGIITS = app.id === 'APP-2026-GIITS';
-
-              return (
-                <div
-                  key={app.id}
-                  onClick={() => setSelectedCaseId(app.id)}
-                  className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                    isSelected
-                      ? 'bg-blue-50/80 border-blue-500 shadow-sm ring-1 ring-blue-500/30'
-                      : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50 shadow-2xs'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-mono text-xs font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">
-                      {app.applicationNumber}
-                    </span>
-                    <span
-                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
-                        app.currentStage === 'Approval Issued'
-                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                          : isCOEP
-                          ? 'bg-purple-100 text-purple-800 border-purple-300'
-                          : 'bg-amber-100 text-amber-800 border-amber-300'
-                      }`}
-                    >
-                      {app.currentStage}
-                    </span>
-                  </div>
-
-                  <h4 className="font-bold text-xs text-slate-900 leading-tight">
-                    {app.institutionName}
-                  </h4>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    {app.program} &bull; {app.proposedIntake} Intake &bull; {app.region} Region
-                  </p>
-
-                  <div className="mt-2.5 flex items-center justify-between text-[11px] pt-2 border-t border-slate-100">
-                    <span className="text-slate-600 font-medium">
-                      {isCOEP ? '⚡ NBA Fast-Track (EVC Bypassed)' : isGIITS ? '🔍 Scrutiny + EVC Path' : '📜 Standard Self-Disclosure'}
-                    </span>
-                    <ChevronRight className={`w-4 h-4 transition-transform ${isSelected ? 'text-blue-600 translate-x-0.5' : 'text-slate-400'}`} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <h3 className="font-bold text-slate-800 text-sm">No applications currently awaiting statutory decision</h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            Applications that have completed Desk Scrutiny and EVC inspection (where applicable) will queue here for Competent Authority / Executive Committee determination under APH §1.10.
+          </p>
         </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left Column: Eligible Case Selector */}
+          <div className="lg:col-span-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-xs uppercase tracking-wider text-slate-500">
+                Cases Awaiting Statutory Decision ({decisionCases.length})
+              </h3>
+              <span className="text-[11px] text-blue-700 font-semibold">Select Target Case</span>
+            </div>
 
-        {/* Right Column: Statutory Adjudication Chamber */}
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-5">
-          {activeCase ? (
-            <>
-              {/* Dossier Clearance Provenance Ribbon */}
-              <div className="border-b border-slate-200 pb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-mono text-xs font-bold bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200">
-                    Dossier Review: {activeCase.applicationNumber}
-                  </span>
-                  <button
-                    onClick={() => onSelectApplication(activeCase.id)}
-                    className="text-xs text-blue-600 font-bold hover:underline flex items-center gap-1"
+            <div className="space-y-2.5">
+              {decisionCases.map((app) => {
+                const isSelected = app.id === selectedCaseId;
+                const isEVCExempt =
+                  app.routeType === 'Scrutiny Only' ||
+                  app.routeType === 'Fast-Track EoA' ||
+                  !app.route?.stages?.includes('evc_pending');
+
+                return (
+                  <div
+                    key={app.id}
+                    onClick={() => setSelectedCaseId(app.id)}
+                    className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-blue-50/80 border-blue-500 shadow-sm ring-1 ring-blue-500/30'
+                        : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50 shadow-2xs'
+                    }`}
                   >
-                    <span>Inspect Full Dossier</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </button>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="font-mono text-xs font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">
+                        {app.applicationNumber}
+                      </span>
+                      <span
+                        className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                          app.currentStage === 'Approval Issued'
+                            ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                            : isEVCExempt
+                            ? 'bg-purple-100 text-purple-800 border-purple-300'
+                            : 'bg-amber-100 text-amber-800 border-amber-300'
+                        }`}
+                      >
+                        {app.currentStage}
+                      </span>
+                    </div>
+
+                    <h4 className="font-bold text-xs text-slate-900 leading-tight">
+                      {app.institutionName}
+                    </h4>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      {app.program} &bull; {app.proposedIntake} Intake &bull; {app.region} Region
+                    </p>
+
+                    <div className="mt-2.5 flex items-center justify-between text-[11px] pt-2 border-t border-slate-100">
+                      <span className="text-slate-600 font-medium">
+                        {isEVCExempt ? '⚡ Fast-Track (EVC Bypassed)' : '🔍 Scrutiny + EVC Path'}
+                      </span>
+                      <ChevronRight className={`w-4 h-4 transition-transform ${isSelected ? 'text-blue-600 translate-x-0.5' : 'text-slate-400'}`} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Right Column: Statutory Adjudication Chamber */}
+          <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-5">
+            {activeCase ? (
+              <>
+                {/* Dossier Clearance Provenance Ribbon */}
+                <div className="border-b border-slate-200 pb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-mono text-xs font-bold bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200">
+                      Dossier Review: {activeCase.applicationNumber}
+                    </span>
+                    <button
+                      onClick={() => onSelectApplication(activeCase.id)}
+                      className="text-xs text-blue-600 font-bold hover:underline flex items-center gap-1"
+                    >
+                      <span>Inspect Full Dossier</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <h3 className="font-extrabold text-base text-slate-900">
+                    {activeCase.institutionName}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Proposed Course: <strong>{activeCase.program}</strong> &bull; Intake: <strong>{activeCase.proposedIntake} Seats</strong> &bull; Route: <strong>{activeCase.routeType}</strong>
+                  </p>
                 </div>
-                <h3 className="font-extrabold text-base text-slate-900">
-                  {activeCase.institutionName}
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Proposed Course: <strong>{activeCase.program}</strong> &bull; Intake: <strong>{activeCase.proposedIntake} Seats</strong> &bull; Route: <strong>{activeCase.routeType}</strong>
-                </p>
-              </div>
 
-              {/* Statutory Clearance Provenance Checklist (APH Domains A to E) */}
-              <div className="space-y-2">
-                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
-                  Statutory Clearance Provenance (Prerequisites Met)
-                </span>
+                {/* Statutory Clearance Provenance Checklist (APH Domains A to E) */}
+                <div className="space-y-2">
+                  <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                    Statutory Clearance Provenance (Prerequisites Met)
+                  </span>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
-                  <div className="bg-emerald-50/80 border border-emerald-200 rounded-xl p-3 space-y-1">
-                    <div className="flex items-center justify-between text-emerald-900 font-bold">
-                      <span className="flex items-center gap-1.5">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                        Desk Scrutiny
-                      </span>
-                      <span className="text-[10px] font-mono bg-emerald-200/60 px-1 rounded">Roster 2-SOC</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+                    <div className="bg-emerald-50/80 border border-emerald-200 rounded-xl p-3 space-y-1">
+                      <div className="flex items-center justify-between text-emerald-900 font-bold">
+                        <span className="flex items-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          Desk Scrutiny
+                        </span>
+                        <span className="text-[10px] font-mono bg-emerald-200/60 px-1 rounded">Roster 2-SOC</span>
+                      </div>
+                      <p className="text-[11px] text-emerald-800 leading-snug">
+                        Snapshot v1 digitally signed. All statutory checklist items verified compliant.
+                      </p>
                     </div>
-                    <p className="text-[11px] text-emerald-800 leading-snug">
-                      Snapshot v1 digitally signed. Land C3, Occupancy C4 sealed immutable.
-                    </p>
-                  </div>
 
-                  <div className="bg-emerald-50/80 border border-emerald-200 rounded-xl p-3 space-y-1">
-                    <div className="flex items-center justify-between text-emerald-900 font-bold">
-                      <span className="flex items-center gap-1.5">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                        EVC Committee
-                      </span>
-                      <span className="text-[10px] font-mono bg-emerald-200/60 px-1 rounded">
-                        {activeCase.id === 'APP-2026-COEP' ? 'NBA Exempt' : 'Recommended'}
-                      </span>
+                    <div className="bg-emerald-50/80 border border-emerald-200 rounded-xl p-3 space-y-1">
+                      <div className="flex items-center justify-between text-emerald-900 font-bold">
+                        <span className="flex items-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          EVC Committee
+                        </span>
+                        <span className="text-[10px] font-mono bg-emerald-200/60 px-1 rounded">
+                          {activeCase.routeType === 'Scrutiny Only' || activeCase.routeType === 'Fast-Track EoA' || !activeCase.route?.stages?.includes('evc_pending') ? 'EVC Exempt' : 'Recommended'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-emerald-800 leading-snug">
+                        {activeCase.routeType === 'Scrutiny Only' || activeCase.routeType === 'Fast-Track EoA' || !activeCase.route?.stages?.includes('evc_pending')
+                          ? 'Bypassed per APH Table 2.3 / Errata G02 norms.'
+                          : 'Panel inspection completed. Statutory infrastructure and faculty norms fulfilled.'}
+                      </p>
                     </div>
-                    <p className="text-[11px] text-emerald-800 leading-snug">
-                      {activeCase.id === 'APP-2026-COEP'
-                        ? 'Bypassed per APH Errata G02 p. 42 (NBA Tier-1 valid till 2028).'
-                        : 'Panel inspection completed. Scores: 90% Infra, 88% Faculty, 92% Labs.'}
-                    </p>
-                  </div>
 
-                  <div className="bg-emerald-50/80 border border-emerald-200 rounded-xl p-3 space-y-1">
-                    <div className="flex items-center justify-between text-emerald-900 font-bold">
-                      <span className="flex items-center gap-1.5">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                        Inter-Agency Concurrence
-                      </span>
-                      <span className="text-[10px] font-mono bg-emerald-200/60 px-1 rounded">15-Day SLA</span>
+                    <div className="bg-emerald-50/80 border border-emerald-200 rounded-xl p-3 space-y-1">
+                      <div className="flex items-center justify-between text-emerald-900 font-bold">
+                        <span className="flex items-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          Inter-Agency Concurrence
+                        </span>
+                        <span className="text-[10px] font-mono bg-emerald-200/60 px-1 rounded">15-Day SLA</span>
+                      </div>
+                      <p className="text-[11px] text-emerald-800 leading-snug">
+                        State DTE & University deemed concurrence elapsed without objection.
+                      </p>
                     </div>
-                    <p className="text-[11px] text-emerald-800 leading-snug">
-                      State DTE & University deemed concurrence elapsed without objection.
-                    </p>
                   </div>
                 </div>
-              </div>
 
               {/* Statutory Decision Radio */}
               <div className="space-y-2">
@@ -452,7 +484,7 @@ export const CompetentAuthorityDecisionView: React.FC<CompetentAuthorityDecision
                       ? 'Approval Already Issued'
                       : isSubmitting
                       ? 'Executing Statutory Order...'
-                      : '⚡ Issue Official Approval Order (Execute Statutory Decision)'}
+                      : 'Issue Official Approval Order (Execute Statutory Decision)'}
                   </span>
                 </button>
               </div>
@@ -464,6 +496,7 @@ export const CompetentAuthorityDecisionView: React.FC<CompetentAuthorityDecision
           )}
         </div>
       </div>
+      )}
     </div>
   );
 };

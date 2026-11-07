@@ -194,6 +194,23 @@ export function evaluateDynamicRoute(facts: Record<string, any>): DynamicRouteRe
   // Normalized category matching
   const cat = categoryRaw.toLowerCase().replace(/[^a-z0-9_]/g, '_');
 
+  // Input Validation Guards for Infrastructure & Financial Parameters
+  if (facts.builtUpAreaSqM !== undefined && (Number(facts.builtUpAreaSqM) < 0 || isNaN(Number(facts.builtUpAreaSqM)))) {
+    unresolvedFlags.push('VALIDATION_FAILED: Built-up area cannot be negative under APH Annexure 4 norms.');
+    reasons.push('Invalid infrastructure parameter: Negative built-up area entered.');
+    eligibilityStatus = 'POLICY_REVIEW_REQUIRED';
+  }
+  if (facts.landAreaAcre !== undefined && (Number(facts.landAreaAcre) < 0 || isNaN(Number(facts.landAreaAcre)))) {
+    unresolvedFlags.push('VALIDATION_FAILED: Land area cannot be negative under APH Chapter I/II norms.');
+    reasons.push('Invalid infrastructure parameter: Negative land area entered.');
+    eligibilityStatus = 'POLICY_REVIEW_REQUIRED';
+  }
+  if (facts.terChargesPaidInr !== undefined && (Number(facts.terChargesPaidInr) < 0 || isNaN(Number(facts.terChargesPaidInr)))) {
+    unresolvedFlags.push('VALIDATION_FAILED: TER processing charges cannot be negative.');
+    reasons.push('Invalid financial parameter: Negative TER processing fee entered.');
+    eligibilityStatus = 'POLICY_REVIEW_REQUIRED';
+  }
+
   // Regulatory Ambiguity & Pre-evaluation Conflict Guards
   if (facts.isExperientialLearningProgram) {
     unresolvedFlags.push('CONFLICT: Experiential Learning Programme 50% relaxation conflict between Addendum Item 18 and Chapter II Clause 2.4. Requires administrative resolution.');
@@ -531,12 +548,20 @@ export function evaluateDynamicRoute(facts: Record<string, any>): DynamicRouteRe
         formulaApplied = `Boundary X=360 (Ambiguous): 360 + 60 + ${accreditedCoursesCount} accredited divisions (${allowedCeiling})`;
       }
 
+      const isCapped = effProposed > allowedCeiling;
+      const isExtremeCapacityViolation = effProposed > allowedCeiling && (effProposed > 1500 || effProposed >= allowedCeiling * 2);
+      if (hasProposedIntake && isExtremeCapacityViolation) {
+        eligibilityStatus = 'INELIGIBLE';
+        unresolvedFlags.push(`CAPACITY_EXCEEDED: Proposed intake (${effProposed}) exceeds statutory maximum allowable ceiling (${allowedCeiling}) under APH Clause 2.6(c)(i).`);
+        reasons.push(`Capacity Ceiling Exceeded: Requested intake of ${effProposed} exceeds statutory limit of ${allowedCeiling} seats (Formula: ${formulaApplied}). Application cannot proceed without reducing proposed intake to statutory ceiling.`);
+      }
+
       allowedIntakeCalc = {
         existingIntake,
         proposedIntake,
         allowedIntakeCeiling: allowedCeiling,
         formulaApplied,
-        isCapped: proposedIntake > allowedCeiling
+        isCapped
       };
 
       matchedRules.push({
@@ -565,6 +590,13 @@ export function evaluateDynamicRoute(facts: Record<string, any>): DynamicRouteRe
 
       stages = ['submitted', 'scrutiny_pending', 'decision_pending'];
 
+      const finalEligibilityStatus = eligibilityStatus === 'INELIGIBLE'
+        ? 'INELIGIBLE'
+        : (unresolvedFlags.length > 0 ? 'POLICY_REVIEW_REQUIRED' : 'ELIGIBLE');
+      const effectiveStages = finalEligibilityStatus === 'INELIGIBLE'
+        ? ['submitted', 'rejected_ineligible']
+        : (unresolvedFlags.length > 0 ? ['submitted', 'policy_review_required'] : stages);
+
       return {
         policyRevisionId: 'POL-2026-INTAKE-NBA',
         ruleVersion,
@@ -572,9 +604,9 @@ export function evaluateDynamicRoute(facts: Record<string, any>): DynamicRouteRe
         category: 'CAT-CH2-09A',
         categoryName: 'Increase in Intake / Additional Course(s) [NBA Accredited]',
         aphChapter: 'Chapter II & Errata p. 42',
-        result: unresolvedFlags.length > 0 ? 'review_required' : 'selected',
-        eligibilityStatus: unresolvedFlags.length > 0 ? 'POLICY_REVIEW_REQUIRED' : 'ELIGIBLE',
-        stages,
+        result: (unresolvedFlags.length > 0 || finalEligibilityStatus === 'INELIGIBLE') ? 'review_required' : 'selected',
+        eligibilityStatus: finalEligibilityStatus,
+        stages: effectiveStages,
         conditionalBranches: BASE_CONDITIONAL_BRANCHES,
         skippedStages,
         matchedRules,
@@ -602,12 +634,20 @@ export function evaluateDynamicRoute(facts: Record<string, any>): DynamicRouteRe
         formulaApplied = `Boundary X=360 (Ambiguous): 360 + 60 (${allowedCeiling})`;
       }
 
+      const isCapped = effProposed > allowedCeiling;
+      const isExtremeCapacityViolation = effProposed > allowedCeiling && (effProposed > 1500 || effProposed >= allowedCeiling * 2);
+      if (hasProposedIntake && isExtremeCapacityViolation) {
+        eligibilityStatus = 'INELIGIBLE';
+        unresolvedFlags.push(`CAPACITY_EXCEEDED: Proposed intake (${effProposed}) exceeds statutory maximum allowable ceiling (${allowedCeiling}) under APH Clause 2.6(c)(i).`);
+        reasons.push(`Capacity Ceiling Exceeded: Requested intake of ${effProposed} exceeds statutory limit of ${allowedCeiling} seats (Formula: ${formulaApplied}). Application cannot proceed without reducing proposed intake to statutory ceiling.`);
+      }
+
       allowedIntakeCalc = {
         existingIntake,
         proposedIntake,
         allowedIntakeCeiling: allowedCeiling,
         formulaApplied,
-        isCapped: proposedIntake > allowedCeiling
+        isCapped
       };
 
       matchedRules.push({
@@ -629,6 +669,13 @@ export function evaluateDynamicRoute(facts: Record<string, any>): DynamicRouteRe
 
       stages = ['submitted', 'scrutiny_pending', 'evc_pending', 'decision_pending'];
 
+      const finalEligibilityStatus = eligibilityStatus === 'INELIGIBLE'
+        ? 'INELIGIBLE'
+        : (unresolvedFlags.length > 0 ? 'POLICY_REVIEW_REQUIRED' : 'ELIGIBLE');
+      const effectiveStages = finalEligibilityStatus === 'INELIGIBLE'
+        ? ['submitted', 'rejected_ineligible']
+        : (unresolvedFlags.length > 0 ? ['submitted', 'policy_review_required'] : stages);
+
       return {
         policyRevisionId: 'POL-2026-INTAKE-NON-NBA',
         ruleVersion,
@@ -636,9 +683,9 @@ export function evaluateDynamicRoute(facts: Record<string, any>): DynamicRouteRe
         category: 'CAT-CH2-09B',
         categoryName: 'Increase in Intake / Additional Course(s) [Non-NBA]',
         aphChapter: 'Chapter II & Errata p. 42',
-        result: unresolvedFlags.length > 0 ? 'review_required' : 'selected',
-        eligibilityStatus: unresolvedFlags.length > 0 ? 'POLICY_REVIEW_REQUIRED' : 'ELIGIBLE',
-        stages,
+        result: (unresolvedFlags.length > 0 || finalEligibilityStatus === 'INELIGIBLE') ? 'review_required' : 'selected',
+        eligibilityStatus: finalEligibilityStatus,
+        stages: effectiveStages,
         conditionalBranches: BASE_CONDITIONAL_BRANCHES,
         skippedStages,
         matchedRules,
@@ -741,6 +788,11 @@ export function evaluateDynamicRoute(facts: Record<string, any>): DynamicRouteRe
       catTitle = 'Conversion into Deemed-to-be-University';
       clauseCite = 'Table 2.3 Row 20 & Chapter IV';
       futureDevelopmentDependencies.push('FDD-04: UGC (Institutions Deemed to be Universities) Regulations 2023');
+      if (facts.isPartialProgrammeApplication) {
+        eligibilityStatus = 'INELIGIBLE';
+        reasons.push('Ineligible per Public Notice 26.11.2025: Universities and Deemed-to-be-Universities must apply for ALL technical programmes. Partial approval is prohibited.');
+        unresolvedFlags.push('ELIGIBILITY_FAILED_PARTIAL_PROGRAMMES');
+      }
     }
 
     matchedRules.push({

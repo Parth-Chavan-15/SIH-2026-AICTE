@@ -63,13 +63,18 @@ export const ReportsView: React.FC = () => {
     filteredApps.reduce((acc, a) => acc + (a.totalElapsedDays || a.elapsedDaysAtStage || 5), 0) / (totalVolume || 1)
   );
 
-  const evcCompletedCount = evcInspections.filter((e) => e.status === 'Completed').length;
-  const evcTotalCount = evcInspections.length || 1;
-  const evcCompletionRate = Math.round((evcCompletedCount / evcTotalCount) * 100);
+  const relevantAppIds = useMemo(() => new Set(filteredApps.map(a => a.id)), [filteredApps]);
+  const scopedEvcs = useMemo(() => evcInspections.filter(e => relevantAppIds.has(e.applicationId)), [evcInspections, relevantAppIds]);
+  const scopedComps = useMemo(() => complianceItems.filter(c => relevantAppIds.has(c.applicationId)), [complianceItems, relevantAppIds]);
+  const scopedEscs = useMemo(() => escalations.filter(e => relevantAppIds.has(e.applicationId)), [escalations, relevantAppIds]);
 
-  const complianceVerifiedCount = complianceItems.filter((c) => c.status === 'Verified').length;
-  const complianceTotalCount = complianceItems.length || 1;
-  const complianceRate = Math.round((complianceVerifiedCount / complianceTotalCount) * 100);
+  const evcCompletedCount = scopedEvcs.filter((e) => e.status === 'Completed').length;
+  const evcTotalCount = scopedEvcs.length;
+  const evcCompletionRate = evcTotalCount > 0 ? Math.round((evcCompletedCount / evcTotalCount) * 100) : 0;
+
+  const complianceVerifiedCount = scopedComps.filter((c) => c.status === 'Verified').length;
+  const complianceTotalCount = scopedComps.length;
+  const complianceRate = complianceTotalCount > 0 ? Math.round((complianceVerifiedCount / complianceTotalCount) * 100) : 0;
 
   // 1. Chart Data: Lifecycle Stage Distribution
   const stageDistributionData = useMemo(() => {
@@ -336,7 +341,7 @@ export const ReportsView: React.FC = () => {
           </span>
           <p className="text-2xl font-black text-emerald-700 mt-1">{complianceRate}%</p>
           <span className="text-[10px] text-slate-500 mt-0.5 block">
-            {complianceVerifiedCount} undertakings verified
+            {complianceVerifiedCount} of {complianceTotalCount} undertakings verified
           </span>
         </div>
 
@@ -346,7 +351,7 @@ export const ReportsView: React.FC = () => {
           </span>
           <p className="text-2xl font-black text-rose-600 mt-1">{overdueCount}</p>
           <span className="text-[10px] text-rose-700 font-semibold mt-0.5 block">
-            {escalations.length} escalated notices
+            {scopedEscs.length} escalated notices
           </span>
         </div>
       </div>

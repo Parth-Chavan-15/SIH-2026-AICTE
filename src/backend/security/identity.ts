@@ -6,7 +6,7 @@ import type { Actor, SessionResponse } from '../../shared/contracts';
 
 const accountSchema = z.strictObject({
   email: z.string().email().refine(
-    v => v.endsWith('.invalid') || v.endsWith('.gov.in') || v.endsWith('.ac.in'),
+    v => v.endsWith('.invalid') || v.endsWith('.gov.in') || v.endsWith('.ac.in') || v.endsWith('.edu.in'),
     'Fictional or official demo domain required'
   ),
   passwordHash: z.string().regex(/^\$2[aby]\$(1[0-4])\$[./A-Za-z0-9]{53}$/),
@@ -171,10 +171,36 @@ export const BUILT_IN_DEMO_ACCOUNTS: DemoAccount[] = [
       regionIds: [],
     },
   },
+  {
+    email: 'principal@custom.ac.in',
+    passwordHash: DEMO_PW_HASH,
+    active: true,
+    actor: {
+      id: 'usr-inst-custom',
+      roles: ['institution'],
+      permissions: ['case.read', 'case.create', 'document.read', 'document.submit', 'scrutiny.correct', 'notification.read'],
+      scope: 'scoped',
+      institutionIds: ['INST-CUSTOM', 'INST-CUSTOM-WES', 'INST-CUSTOM-NEW', 'INST-ARYABHATTA', 'INST-CUSTOM-COLLEGE', 'INST-AITR'],
+      regionIds: ['WRO', 'Western', 'SCRO', 'South-Central', 'NRO', 'Northern', 'ERO', 'Eastern', 'SRO', 'Southern', 'CRO', 'Central', 'NWRO', 'North-West', 'SWRO', 'South-Western'],
+    },
+  },
+  {
+    email: 'director@aitr.edu.in',
+    passwordHash: DEMO_PW_HASH,
+    active: true,
+    actor: {
+      id: 'usr-inst-custom-aitr',
+      roles: ['institution'],
+      permissions: ['case.read', 'case.create', 'document.read', 'document.submit', 'scrutiny.correct', 'notification.read'],
+      scope: 'scoped',
+      institutionIds: ['INST-CUSTOM', 'INST-CUSTOM-WES', 'INST-CUSTOM-NEW', 'INST-ARYABHATTA', 'INST-CUSTOM-COLLEGE', 'INST-AITR'],
+      regionIds: ['WRO', 'Western', 'SCRO', 'South-Central', 'NRO', 'Northern', 'ERO', 'Eastern', 'SRO', 'Southern', 'CRO', 'Central', 'NWRO', 'North-West', 'SWRO', 'South-Western'],
+    },
+  },
 ];
 
 export function createIdentity(options: { accounts: DemoAccount[]; origin?: string; secure?: boolean; now?: () => number; ttlMs?: number }) {
-  const accounts = z.array(accountSchema).max(50).parse(options.accounts);
+  const accounts = z.array(accountSchema).max(100).parse(options.accounts);
   if (new Set(accounts.map(a => a.email.toLowerCase())).size !== accounts.length || new Set(accounts.map(a => a.actor.id)).size !== accounts.length) {
     throw new Error('Duplicate demo identity configuration');
   }
@@ -261,6 +287,33 @@ export function createIdentity(options: { accounts: DemoAccount[]; origin?: stri
       } catch {
         /* ignore */
       }
+    },
+    registerAccount(account: DemoAccount) {
+      const parsed = accountSchema.parse(account);
+      const existingIdx = accounts.findIndex(a => a.email.toLowerCase() === parsed.email.toLowerCase() || a.actor.id === parsed.actor.id);
+      if (existingIdx >= 0) {
+        accounts[existingIdx] = parsed;
+      } else {
+        accounts.push(parsed);
+      }
+      return parsed;
+    },
+    ensureInstitutionScope(institutionId: string, regionId?: string) {
+      if (!institutionId) return;
+      for (const acc of accounts) {
+        if (acc.actor.roles.includes('institution') && (acc.actor.id.includes('custom') || acc.actor.institutionIds.includes('INST-CUSTOM'))) {
+          if (!acc.actor.institutionIds.includes(institutionId)) {
+            acc.actor.institutionIds.push(institutionId);
+          }
+          if (regionId && !acc.actor.regionIds.includes(regionId)) {
+            acc.actor.regionIds.push(regionId);
+          }
+        }
+      }
+    },
+    findAccount(query: string) {
+      const q = query.toLowerCase().trim();
+      return accounts.find(a => a.email.toLowerCase() === q || a.actor.id.toLowerCase() === q || a.actor.institutionIds.map(i => i.toLowerCase()).includes(q));
     },
   };
 }

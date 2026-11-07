@@ -2,6 +2,7 @@ import React from 'react';
 import { useApp } from '../../context/AppContext';
 import { getSession } from '../../services/session';
 import { REGULATORY_ROLES } from '../../features/auth/SessionGate';
+import { getActiveInstitutionScope, isApplicationForScope, isComplianceForScope, isNotificationForRole } from '../../utils/institutionScope';
 import {
   FolderKanban,
   FileCheck,
@@ -142,19 +143,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Derive dynamic context-aware badges without hardcoded counts
   const getDynamicBadge = (itemId: string): { text: string | number; color?: string } | null => {
+    const instScope = getActiveInstitutionScope(activeActor);
+
     if (itemId === 'inst-apps') {
-      return applications.length > 0 ? { text: applications.length, color: 'bg-blue-600 text-white font-bold' } : null;
+      const count = applications.filter(a => {
+        if (roleNumber !== 1) return true;
+        return isApplicationForScope(a, instScope);
+      }).length;
+      return count > 0 ? { text: count, color: 'bg-blue-600 text-white font-bold' } : null;
     }
     if (itemId === 'inst-deficiencies') {
-      const defCount = applications.filter(a => a.currentStage === 'Deficiency Communicated' || a.documents?.some(d => d.status === 'Rejected')).length;
+      const defCount = applications.filter(a => {
+        if (roleNumber === 1 && !isApplicationForScope(a, instScope)) return false;
+        return a.currentStage === 'Deficiency Communicated' || a.documents?.some(d => d.status === 'Rejected');
+      }).length;
       return defCount > 0 ? { text: defCount, color: 'bg-amber-400 text-slate-900 font-bold' } : null;
     }
-    if (itemId === 'inst-renewals' || itemId === 'ro-obligations') {
+    if (itemId === 'inst-renewals') {
+      const pendingObl = complianceItems.filter(i => isComplianceForScope(i, instScope) && i.status !== 'Verified').length;
+      return pendingObl > 0 ? { text: pendingObl, color: 'bg-amber-400 text-slate-900 font-bold' } : null;
+    }
+    if (itemId === 'ro-obligations') {
       const pendingObl = complianceItems.filter(i => i.status !== 'Verified').length;
       return pendingObl > 0 ? { text: pendingObl, color: 'bg-amber-400 text-slate-900 font-bold' } : null;
     }
     if (itemId === 'notifications') {
-      const unread = notifications.filter(n => !n.isRead).length;
+      const unread = notifications.filter(n => !n.isRead && isNotificationForRole(n, roleNumber, instScope)).length;
       return unread > 0 ? { text: unread, color: 'bg-rose-600 text-white font-bold' } : null;
     }
     if (itemId === 'scrutiny-eval') {
@@ -166,11 +180,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
       return pendingRescrutiny > 0 ? { text: pendingRescrutiny, color: 'bg-amber-400 text-slate-900 font-bold' } : null;
     }
     if (itemId === 'evc-inspect') {
-      const pendingEVC = applications.filter(a => a.currentStage === 'EVC Scheduled' || a.currentStage === 'Scrutiny Cleared').length;
+      const pendingEVC = applications.filter(
+        a =>
+          a.currentStage === 'EVC Scheduled' ||
+          (a.currentStage === 'Scrutiny Cleared' && (a.route?.stages?.includes('evc_pending') || (a.routeType || '').toLowerCase().includes('evc')))
+      ).length;
       return pendingEVC > 0 ? { text: pendingEVC, color: 'bg-purple-600 text-white font-bold' } : null;
     }
     if (itemId === 'ca-decision') {
-      const pendingDec = applications.filter(a => a.currentStage === 'Executive Committee Approval' || a.currentStage === 'EVC Inspection Completed').length;
+      const pendingDec = applications.filter(
+        a =>
+          a.currentStage === 'Executive Committee Approval' ||
+          a.currentStage === 'EVC Inspection Completed' ||
+          (a as any).state === 'decision_pending' ||
+          (a.currentStage === 'Scrutiny Cleared' && (!a.route?.stages?.includes('evc_pending') && !(a.routeType || '').toLowerCase().includes('evc')))
+      ).length;
       return pendingDec > 0 ? { text: pendingDec, color: 'bg-rose-600 text-white font-bold' } : null;
     }
     if (itemId === 'admin-worm') {
@@ -240,7 +264,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     (activeActor?.id === 'usr-inst-apex' || (activeActor as any)?.email === 'principal@apex.ac.in') ? 'Apex • ID 1-33104928' :
                     (activeActor?.id === 'usr-inst-batu' || (activeActor as any)?.email === 'principal@batu.ac.in') ? 'BATU Lonere • ID 1-19201481' :
                     (activeActor?.id === 'usr-inst-vvit' || (activeActor as any)?.email === 'principal@vvit.ac.in') ? 'VVIT • ID 1-55449921' :
-                    'COEP • ID 1-435789102'
+                    (activeActor?.id === 'usr-inst-coep' || (activeActor as any)?.email === 'principal@coep.ac.in') ? 'COEP • ID 1-435789102' :
+                    (() => {
+                      try {
+                        const active = JSON.parse(localStorage.getItem('sih_active_custom_institution') || 'null');
+                        const aName = String(active?.name || '').trim();
+                        if (aName && !/^custom\s+techn/i.test(aName)) {
+                          return `${aName.slice(0, 16)} • ID ${active.reference || active.id || '1-CUSTOM'}`;
+                        }
+                      } catch {}
+                      return 'Custom Institution • ID 1-CUSTOM';
+                    })()
                   ) : currentPortal.subtitle}
                 </span>
               </div>
@@ -288,7 +322,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             return (
               <button
-                key={item.id}
                 onClick={() => {
                   onSelectTab(item.id);
                   if (isMobile) onToggle();
@@ -308,9 +341,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {isOpen && (
                   <div className="flex-1 flex items-center justify-between min-w-0 gap-1.5 overflow-hidden">
                     <span className="truncate text-left text-xs">{item.label}</span>
-                    <span className="text-[9px] font-mono text-slate-400/70 px-1 py-0.2 rounded bg-white/5 border border-white/10 shrink-0">
-                      {item.id}
-                    </span>
+
                   </div>
                 )}
                 {isOpen && dynamicBadge && (

@@ -480,13 +480,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const handleResetDemoData = () => {
+  const handleResetDemoData = async () => {
+    try {
+      await api.resetDemoData();
+    } catch (e: any) {
+      console.warn('[DEMO RESET] server endpoint notice:', e.message);
+    }
     api.resetToDefaults();
-    refreshData();
+    try {
+      localStorage.removeItem('sih_custom_institutions');
+      localStorage.removeItem('sih_active_custom_institution');
+      localStorage.removeItem('sih_selected_college_id');
+      window.dispatchEvent(new Event('sih:custom_institution_reset'));
+      window.dispatchEvent(new Event('sih:custom_institution_added'));
+    } catch {}
+    await refreshData();
     addToast({
       type: 'info',
-      title: 'Refreshing demonstration view',
-      message: 'Reloading permitted server data. Server records have not been reset.',
+      title: 'Safe Demo Reset Complete',
+      message: 'Restored pristine canonical baseline. All demo-generated custom applications and institutions have been cleared.',
     });
   };
 

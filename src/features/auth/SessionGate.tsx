@@ -84,7 +84,7 @@ export const REGULATORY_ROLES: RegulatoryRole[] = [
     shortLabel: 'Applicant Workspace',
     email: 'principal@coep.ac.in',
     whatTheyDo: 'Submits new applications, tracks real-time workflow status across regulatory stages, uploads deficiency corrections, and submits post-approval statutory undertakings.',
-    legallyBlocked: 'Cannot edit unflagged documents during re-scrutiny; cannot approve own submissions.',
+    legallyBlocked: 'Cannot modify previously cleared documents during re-scrutiny and cannot self-approve applications.',
     pdfCitation: 'Applicant Node',
     themeColor: 'from-blue-600 to-indigo-700',
     borderColor: 'border-blue-500 hover:border-blue-600',
@@ -98,7 +98,7 @@ export const REGULATORY_ROLES: RegulatoryRole[] = [
     shortLabel: 'Document Verification',
     email: 'scrutiny.reviewer@aicte.gov.in',
     whatTheyDo: 'Examines uploaded checklists, marks verified vs. deficient items, digitally signs immutable scrutiny snapshots, and reviews institution resubmissions.',
-    legallyBlocked: 'Cannot re-open or reject items that were already verified and cleared in initial scrutiny (Scope Lock USP B06).',
+    legallyBlocked: 'Cannot raise new objections on documents already cleared in earlier scrutiny rounds.',
     pdfCitation: 'Scrutiny Committee',
     themeColor: 'from-amber-600 to-orange-700',
     borderColor: 'border-amber-500 hover:border-amber-600',
@@ -112,7 +112,7 @@ export const REGULATORY_ROLES: RegulatoryRole[] = [
     shortLabel: 'Campus Physical Verification',
     email: 'evc.chair@aicte.gov.in',
     whatTheyDo: 'Conducts physical and virtual campus inspections, verifies geo-tagged GPS coordinates and 30-min walkthrough video evidence, and submits committee scores.',
-    legallyBlocked: 'Cannot self-schedule inspections without Council mandate; cannot grant final statutory approval.',
+    legallyBlocked: 'Cannot conduct unmandated inspections without Council directive and cannot issue approval orders.',
     pdfCitation: 'Inspection Panel',
     themeColor: 'from-purple-600 to-indigo-800',
     borderColor: 'border-purple-500 hover:border-purple-600',
@@ -126,7 +126,7 @@ export const REGULATORY_ROLES: RegulatoryRole[] = [
     shortLabel: 'Pendency & Compliance Desk',
     email: 'ro.western@aicte.gov.in',
     whatTheyDo: 'Monitors regional pendency, tracks approaching deadlines, oversees 15-day concurrence, and verifies post-approval undertakings and lease documents.',
-    legallyBlocked: 'Cannot issue final approval letters or override statutory Council decisions.',
+    legallyBlocked: 'Cannot issue final approval letters or override decisions reserved for the Council.',
     pdfCitation: 'Regional Desk (RO / RB)',
     themeColor: 'from-emerald-600 to-teal-800',
     borderColor: 'border-emerald-500 hover:border-emerald-600',
@@ -140,7 +140,7 @@ export const REGULATORY_ROLES: RegulatoryRole[] = [
     shortLabel: 'Council EC Approval Gate',
     email: 'bureau.approval@aicte.gov.in',
     whatTheyDo: 'Reviews complete scrutiny and inspection dossiers to issue final decisions (Extension of Approval, Conditional Approval, or Rejection) using digital signatures.',
-    legallyBlocked: 'Reserved statutory authority; ordinary administrators and AI cannot grant approval.',
+    legallyBlocked: 'Exclusive statutory approval authority; automated rules and system administrators cannot grant final approvals.',
     pdfCitation: 'Approval Authority',
     themeColor: 'from-rose-600 to-red-800',
     borderColor: 'border-rose-500 hover:border-rose-600',
@@ -154,7 +154,7 @@ export const REGULATORY_ROLES: RegulatoryRole[] = [
     shortLabel: 'Policy Registry & Audit Ledger',
     email: 'admin@aicte.gov.in',
     whatTheyDo: 'Configures approval rules, manages intake capacity thresholds (e.g. 360-seat review hold), and inspects the tamper-evident audit ledger.',
-    legallyBlocked: 'Cannot retroactively modify rules or alter the pinned handbook version of an in-flight case.',
+    legallyBlocked: 'Cannot retroactively alter approved rules or change the active handbook edition of an in-flight case.',
     pdfCitation: 'System & Policy Admin',
     themeColor: 'from-slate-700 to-slate-900',
     borderColor: 'border-slate-500 hover:border-slate-600',
@@ -307,9 +307,16 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
             isUnauthenticatedFlow={true}
             onBackToGateway={() => setViewMode('landing')}
             onOpenInstitutionModal={() => setShowInstModal(true)}
-            onContinueToInstitutionPortal={async (presetId, email) => {
-              setViewMode('landing');
-              await handleAccessNode(presetId || email);
+            onContinueToInstitutionPortal={async (presetId, email, institutionId) => {
+              if (presetId === 'custom' && institutionId) {
+                try { localStorage.setItem('sih_selected_college_id', institutionId); } catch {}
+              } else if (presetId) {
+                try { localStorage.setItem('sih_selected_college_id', presetId); } catch {}
+              }
+              const targetKey = presetId === 'custom'
+                ? (institutionId || email || 'custom')
+                : (presetId || email);
+              await handleAccessNode(targetKey);
             }}
           />
         </main>
@@ -412,7 +419,7 @@ export function SessionGate({ children }: { children: React.ReactNode }) {
                   </p>
 
                   <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 text-[11px] text-slate-500 leading-snug">
-                    <span className="font-bold text-slate-700">Statutory Bound: </span>
+                    <span className="font-bold text-slate-700">Role Boundary: </span>
                     <span>{r.legallyBlocked}</span>
                   </div>
                 </div>

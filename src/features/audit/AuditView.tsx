@@ -33,11 +33,13 @@ export const AuditView: React.FC<AuditViewProps> = ({ onSelectApplication }) => 
   const [isVerifying, setIsVerifying] = useState(false);
 
   const filteredLogs = auditLog.filter((log) => {
+    const q = searchQuery.toLowerCase();
     const matchesSearch =
-      log.actorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.applicationNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (log.reason && log.reason.toLowerCase().includes(searchQuery.toLowerCase()));
+      !searchQuery.trim() ||
+      (log.actorName?.toLowerCase().includes(q) ?? false) ||
+      (log.action?.toLowerCase().includes(q) ?? false) ||
+      (log.applicationNumber?.toLowerCase().includes(q) ?? false) ||
+      (log.reason && log.reason.toLowerCase().includes(q));
     const matchesAction = actionFilter === 'All' || log.action === actionFilter;
     return matchesSearch && matchesAction;
   });

@@ -33,7 +33,106 @@ import { RegionalHearingCoordinationView } from './features/ro/RegionalHearingCo
 import { CouncilSACAppealsView } from './features/ca/CouncilSACAppealsView';
 import { GeneratedDocumentsView } from './features/documents/GeneratedDocumentsView';
 
-import { Search, X } from 'lucide-react';
+import { Search, X, FolderKanban } from 'lucide-react';
+
+const KNOWN_TABS = new Set([
+  'inst-apps',
+  'inst-nsws',
+  'inst-deficiencies',
+  'inst-decision-docs',
+  'inst-appeals',
+  'appeals-hearings',
+  'inst-renewals',
+  'inst-dossier',
+  'scrutiny-eval',
+  'scrutiny-rescrutiny',
+  'scrutiny-portal-import',
+  'scrutiny-committee',
+  'scrutiny-queue',
+  'evc-inspect',
+  'evc-reports',
+  'evc-queue',
+  'ro-allocation',
+  'ro-pendency',
+  'ro-appeals-hearings',
+  'ro-schedule',
+  'ro-obligations',
+  'ro-verify',
+  'ro-concurrence',
+  'ca-decision',
+  'ca-decision-docs',
+  'ca-appeals',
+  'ca-dossiers',
+  'ca-gazette',
+  'ca-dispatch',
+  'admin-policy',
+  'admin-worm',
+  'admin-adapters',
+  'admin-analytics',
+  'notifications',
+]);
+
+class TabErrorBoundary extends React.Component<
+  { children: React.ReactNode; currentTab: string; onReset: () => void },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error(`Tab render error in tab [${this.props.currentTab}]:`, error, errorInfo);
+  }
+
+  componentDidUpdate(prevProps: any) {
+    if (prevProps.currentTab !== this.props.currentTab && this.state.hasError) {
+      this.setState({ hasError: false, error: null });
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-8 text-center bg-white rounded-2xl border border-rose-200 shadow-2xs max-w-xl mx-auto my-12 space-y-4">
+          <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+            <span className="text-xl font-bold">!</span>
+          </div>
+          <div>
+            <h3 className="font-bold text-slate-800 text-base">View Temporarily Unavailable</h3>
+            <p className="text-xs text-slate-500 mt-1">
+              An unexpected render issue occurred while loading this view tab ({this.props.currentTab}).
+            </p>
+            {this.state.error?.message && (
+              <p className="text-[11px] font-mono text-rose-700 bg-rose-50 p-2 rounded mt-2 text-left overflow-x-auto">
+                {this.state.error.message}
+              </p>
+            )}
+          </div>
+          <div className="flex items-center justify-center gap-3 pt-2">
+            <button
+              onClick={() => this.setState({ hasError: false, error: null })}
+              className="px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Retry Tab
+            </button>
+            <button
+              onClick={this.props.onReset}
+              className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 transition-colors"
+            >
+              Reset to Primary Workspace
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const MainLayout: React.FC = () => {
   const { selectedAppId, setSelectedAppId, applications } = useApp();
@@ -69,7 +168,7 @@ const MainLayout: React.FC = () => {
     roleNumber === 1 ? 'inst-apps' :
     roleNumber === 2 ? 'scrutiny-eval' :
     roleNumber === 3 ? 'evc-inspect' :
-    roleNumber === 4 ? 'ro-pendency' :
+    roleNumber === 4 ? 'ro-allocation' :
     roleNumber === 5 ? 'ca-decision' : 'admin-policy';
 
   const [currentTab, setCurrentTab] = useState<string>(defaultTab);
@@ -111,10 +210,15 @@ const MainLayout: React.FC = () => {
 
   const searchResults = searchQuery.trim()
     ? applications.filter(
-        (a) =>
-          a.applicationNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          a.institutionName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          a.currentStage.toLowerCase().includes(searchQuery.toLowerCase())
+        (a) => {
+          if (!a) return false;
+          const q = searchQuery.toLowerCase().trim();
+          return (
+            (a.applicationNumber?.toLowerCase().includes(q) ?? false) ||
+            (a.institutionName?.toLowerCase().includes(q) ?? false) ||
+            (a.currentStage?.toLowerCase().includes(q) ?? false)
+          );
+        }
       )
     : [];
 
@@ -142,103 +246,131 @@ const MainLayout: React.FC = () => {
         {/* Content Area */}
         <main className="flex-1 overflow-y-auto flex flex-col" style={{ background: '#f0f2f7' }}>
           <div className="p-4 sm:p-8 flex-1 max-w-7xl w-full mx-auto">
-            {/* Role 1: Institution (Applicant) Pages */}
-            {currentTab === 'inst-apps' && (
-              <ApplicationsListView
-                onSelectApplication={(id) => setSelectedAppId(id)}
-                onOpenNewAppModal={() => setShowNewAppModal(true)}
-                onStartNSWSIntake={() => setCurrentTab('inst-nsws')}
-              />
-            )}
-            {currentTab === 'inst-nsws' && (
-              <NSWSSimulationView onSelectApplication={(id) => setSelectedAppId(id)} />
-            )}
-            {currentTab === 'inst-deficiencies' && (
-              <InstitutionDeficiencyCureView onSelectApplication={(id) => setSelectedAppId(id)} />
-            )}
-            {currentTab === 'inst-decision-docs' && <GeneratedDocumentsView />}
-            {(currentTab === 'inst-appeals' || currentTab === 'appeals-hearings') && <ApplicantAppealsView />}
-            {currentTab === 'inst-renewals' && <ComplianceView />}
-            {currentTab === 'inst-dossier' && <DocumentExpiryView />}
+            <TabErrorBoundary currentTab={currentTab} onReset={() => setCurrentTab(defaultTab)}>
+              {/* Role 1: Institution (Applicant) Pages */}
+              {currentTab === 'inst-apps' && (
+                <ApplicationsListView
+                  onSelectApplication={(id) => setSelectedAppId(id)}
+                  onOpenNewAppModal={() => setShowNewAppModal(true)}
+                  onStartNSWSIntake={() => setCurrentTab('inst-nsws')}
+                />
+              )}
+              {currentTab === 'inst-nsws' && (
+                <NSWSSimulationView onSelectApplication={(id) => setSelectedAppId(id)} />
+              )}
+              {currentTab === 'inst-deficiencies' && (
+                <InstitutionDeficiencyCureView onSelectApplication={(id) => setSelectedAppId(id)} />
+              )}
+              {currentTab === 'inst-decision-docs' && <GeneratedDocumentsView />}
+              {(currentTab === 'inst-appeals' || currentTab === 'appeals-hearings') && <ApplicantAppealsView />}
+              {currentTab === 'inst-renewals' && <ComplianceView />}
+              {currentTab === 'inst-dossier' && <DocumentExpiryView />}
 
-            {/* Role 2: Scrutiny Reviewer Pages */}
-            {currentTab === 'scrutiny-queue' && (
-              <ApplicationsListView
-                onSelectApplication={(id) => setSelectedAppId(id)}
-                onOpenNewAppModal={() => setShowNewAppModal(true)}
-              />
-            )}
-            {currentTab === 'scrutiny-eval' && (
-              <ScrutinyEvaluationView
-                mode="initial"
-                onSelectApplication={(id) => setSelectedAppId(id)}
-              />
-            )}
-            {currentTab === 'scrutiny-rescrutiny' && (
-              <ScrutinyEvaluationView
-                mode="rescrutiny"
-                onSelectApplication={(id) => setSelectedAppId(id)}
-              />
-            )}
-            {currentTab === 'scrutiny-portal-import' && <PortalImportView />}
-            {currentTab === 'scrutiny-committee' && (
-              <ScrutinyRosterDeclarationView onNavigateToScrutiny={() => setCurrentTab('scrutiny-eval')} />
-            )}
+              {/* Role 2: Scrutiny Reviewer Pages */}
+              {currentTab === 'scrutiny-queue' && (
+                <ApplicationsListView
+                  onSelectApplication={(id) => setSelectedAppId(id)}
+                  onOpenNewAppModal={() => setShowNewAppModal(true)}
+                  queueFilter="scrutiny"
+                />
+              )}
+              {currentTab === 'scrutiny-eval' && (
+                <ScrutinyEvaluationView
+                  mode="initial"
+                  onSelectApplication={(id) => setSelectedAppId(id)}
+                />
+              )}
+              {currentTab === 'scrutiny-rescrutiny' && (
+                <ScrutinyEvaluationView
+                  mode="rescrutiny"
+                  onSelectApplication={(id) => setSelectedAppId(id)}
+                />
+              )}
+              {currentTab === 'scrutiny-portal-import' && <PortalImportView />}
+              {currentTab === 'scrutiny-committee' && (
+                <ScrutinyRosterDeclarationView onNavigateToScrutiny={() => setCurrentTab('scrutiny-eval')} />
+              )}
 
-            {/* Role 3: EVC Committee Portal */}
-            {currentTab === 'evc-queue' && (
-              <EVCView onSelectApplication={(id) => setSelectedAppId(id)} />
-            )}
-            {currentTab === 'evc-inspect' && (
-              <EVCView onSelectApplication={(id) => setSelectedAppId(id)} />
-            )}
-            {currentTab === 'evc-reports' && (
-              <EVCReportsView onSelectApplication={(id) => setSelectedAppId(id)} />
-            )}
+              {/* Role 3: EVC Committee Portal */}
+              {currentTab === 'evc-queue' && (
+                <EVCView onSelectApplication={(id) => setSelectedAppId(id)} />
+              )}
+              {currentTab === 'evc-inspect' && (
+                <EVCView onSelectApplication={(id) => setSelectedAppId(id)} />
+              )}
+              {currentTab === 'evc-reports' && (
+                <EVCReportsView onSelectApplication={(id) => setSelectedAppId(id)} />
+              )}
 
-            {/* Role 4: Regional / Bureau Officer Pages */}
-            {currentTab === 'ro-allocation' && <ROAllocationView />}
-            {currentTab === 'ro-pendency' && (
-              <PendencyView onSelectApplication={(id) => setSelectedAppId(id)} />
-            )}
-            {currentTab === 'ro-appeals-hearings' && <RegionalHearingCoordinationView />}
-            {currentTab === 'ro-schedule' && (
-              <EVCView onSelectApplication={(id) => setSelectedAppId(id)} />
-            )}
-            {currentTab === 'ro-obligations' && <ComplianceView />}
-            {currentTab === 'ro-verify' && <DocumentExpiryView />}
-            {currentTab === 'ro-concurrence' && <GovernmentEndpointsView />}
+              {/* Role 4: Regional / Bureau Officer Pages */}
+              {currentTab === 'ro-allocation' && <ROAllocationView />}
+              {currentTab === 'ro-pendency' && (
+                <PendencyView onSelectApplication={(id) => setSelectedAppId(id)} />
+              )}
+              {currentTab === 'ro-appeals-hearings' && <RegionalHearingCoordinationView />}
+              {currentTab === 'ro-schedule' && (
+                <EVCView onSelectApplication={(id) => setSelectedAppId(id)} />
+              )}
+              {currentTab === 'ro-obligations' && <ComplianceView />}
+              {currentTab === 'ro-verify' && <DocumentExpiryView />}
+              {currentTab === 'ro-concurrence' && <GovernmentEndpointsView />}
 
-            {/* Role 5: Competent Authority Pages */}
-            {currentTab === 'ca-dossiers' && (
-              <ApplicationsListView
-                onSelectApplication={(id) => setSelectedAppId(id)}
-                onOpenNewAppModal={() => setShowNewAppModal(true)}
-              />
-            )}
-            {currentTab === 'ca-decision' && (
-              <CompetentAuthorityDecisionView
-                onSelectApplication={(id) => setSelectedAppId(id)}
-                onNavigateTab={(tab) => setCurrentTab(tab)}
-              />
-            )}
-            {currentTab === 'ca-decision-docs' && <GeneratedDocumentsView />}
-            {currentTab === 'ca-appeals' && <CouncilSACAppealsView />}
-            {currentTab === 'ca-gazette' && <ReportsView />}
-            {currentTab === 'ca-dispatch' && <GovernmentEndpointsView />}
+              {/* Role 5: Competent Authority Pages */}
+              {currentTab === 'ca-dossiers' && (
+                <ApplicationsListView
+                  onSelectApplication={(id) => setSelectedAppId(id)}
+                  onOpenNewAppModal={() => setShowNewAppModal(true)}
+                  queueFilter="council"
+                />
+              )}
+              {currentTab === 'ca-decision' && (
+                <CompetentAuthorityDecisionView
+                  onSelectApplication={(id) => setSelectedAppId(id)}
+                  onNavigateTab={(tab) => setCurrentTab(tab)}
+                />
+              )}
+              {currentTab === 'ca-decision-docs' && <GeneratedDocumentsView />}
+              {currentTab === 'ca-appeals' && <CouncilSACAppealsView />}
+              {currentTab === 'ca-gazette' && <ReportsView />}
+              {currentTab === 'ca-dispatch' && <GovernmentEndpointsView />}
 
-            {/* Role 6: System Policy Administrator Pages */}
-            {currentTab === 'admin-policy' && <ConfigRulesView />}
-            {currentTab === 'admin-worm' && (
-              <AuditView onSelectApplication={(id) => setSelectedAppId(id)} />
-            )}
-            {currentTab === 'admin-adapters' && <GovernmentEndpointsView />}
-            {currentTab === 'admin-analytics' && <ReportsView />}
+              {/* Role 6: System Policy Administrator Pages */}
+              {currentTab === 'admin-policy' && <ConfigRulesView />}
+              {currentTab === 'admin-worm' && (
+                <AuditView onSelectApplication={(id) => setSelectedAppId(id)} />
+              )}
+              {currentTab === 'admin-adapters' && <GovernmentEndpointsView />}
+              {currentTab === 'admin-analytics' && <ReportsView />}
 
-            {/* Auxiliary Universal Views */}
-            {currentTab === 'notifications' && (
-              <NotificationsView onSelectApplication={(id) => setSelectedAppId(id)} />
-            )}
+              {/* Auxiliary Universal Views */}
+              {currentTab === 'notifications' && (
+                <NotificationsView
+                  onSelectApplication={(id) => setSelectedAppId(id)}
+                  roleNumber={roleNumber}
+                />
+              )}
+
+              {/* Fallback for unrecognized tab */}
+              {!KNOWN_TABS.has(currentTab) && (
+                <div className="p-12 text-center bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-4 max-w-lg mx-auto my-8">
+                  <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto">
+                    <FolderKanban className="w-6 h-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="font-bold text-slate-800 text-sm">Navigating to Statutory Workspace</h3>
+                    <p className="text-xs text-slate-500">
+                      The requested view ({currentTab}) is synchronizing with the active regulatory workspace.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setCurrentTab(defaultTab)}
+                    className="px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold text-xs hover:bg-blue-700 transition-colors"
+                  >
+                    Return to Primary Dashboard
+                  </button>
+                </div>
+              )}
+            </TabErrorBoundary>
           </div>
         </main>
       </div>

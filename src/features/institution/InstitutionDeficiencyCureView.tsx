@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { getSession, login } from '../../services/session';
+import { getSession } from '../../services/session';
 import { useApp } from '../../context/AppContext';
 import { setLiveCureRemark } from '../../services/api';
+import { getActiveInstitutionScope, isApplicationForScope } from '../../utils/institutionScope';
 import {
   FileWarning,
   CheckCircle2,
@@ -26,35 +27,25 @@ export const InstitutionDeficiencyCureView: React.FC<InstitutionDeficiencyCureVi
   const session = getSession();
   const actor = session?.actor;
 
-  // Filter application for this logged-in institution
-  const activeApp = applications.find((app) => {
-    const actorId = actor?.id || '';
-    const email = (actor as any)?.email || '';
-    if (actorId === 'usr-inst-coep' || actorId === 'SYN-ACTOR-COEP' || email === 'principal@coep.ac.in') {
-      return app.id.includes('COEP') || app.institutionCode === 'INST-SOUTH';
-    }
-    if (actorId === 'usr-inst-giits' || email === 'principal@giits.ac.in') {
-      return app.id.includes('GIITS') || app.institutionCode === 'INST-NORTH';
-    }
-    if (actorId === 'usr-inst-apex' || email === 'principal@apex.ac.in') {
-        return app.id.includes('APEX') || app.id.includes('Apex') || app.institutionCode === 'INST-APEX';
-      }
-      if (actorId === 'usr-inst-batu' || email === 'principal@batu.ac.in') {
-        return app.id.includes('BATU') || app.institutionCode === 'INST-BATU';
-      }
-      if (actorId === 'usr-inst-pdimtr' || email === 'principal@pdimtr.ac.in') {
-      return app.id.includes('PDIMTR') || app.institutionCode === 'INST-WEST';
-    }
-    return true;
-  }) || applications[0];
+  // Filter application strictly for this logged-in institution scope
+  const scope = getActiveInstitutionScope(actor);
+  const activeApp = applications.find((app) => isApplicationForScope(app, scope));
 
   const [cureInputs, setCureInputs] = useState<Record<string, string>>({});
   const [curingDocId, setCuringDocId] = useState<string | null>(null);
 
   if (!activeApp) {
     return (
-      <div className="p-8 text-center text-slate-500 bg-white rounded-2xl border border-slate-200">
-        No active institution application found.
+      <div className="p-12 text-center flex flex-col items-center justify-center space-y-3 bg-white rounded-2xl border border-slate-200 shadow-xs">
+        <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+          <Clock className="w-6 h-6" />
+        </div>
+        <h4 className="text-sm font-bold text-slate-800">
+          No Statutory Application Found for This Institution
+        </h4>
+        <p className="text-xs text-slate-500 max-w-md leading-relaxed">
+          Please initiate or complete an application intake via the National Single Window System (NSWS) simulation to monitor deficiency notices and submit rectifications.
+        </p>
       </div>
     );
   }
@@ -79,10 +70,11 @@ export const InstitutionDeficiencyCureView: React.FC<InstitutionDeficiencyCureVi
     setCuringDocId(docId);
     try {
       setLiveCureRemark(activeApp.id, docId, comment);
-      const lower = docName.toLowerCase();
-      if (lower.includes('faculty') || lower.includes('cadre') || docId.toLowerCase().includes('d1')) {
+      const lower = (docName || '').toLowerCase();
+      const lowerDocId = (docId || '').toLowerCase();
+      if (lower.includes('faculty') || lower.includes('cadre') || lowerDocId.includes('d1')) {
         setLiveCureRemark(activeApp.id, 'D1', comment);
-      } else if (lower.includes('fire') || lower.includes('safety') || docId.toLowerCase().includes('d2')) {
+      } else if (lower.includes('fire') || lower.includes('safety') || lowerDocId.includes('d2')) {
         setLiveCureRemark(activeApp.id, 'D2', comment);
       } else {
         setLiveCureRemark(activeApp.id, 'D1', comment);

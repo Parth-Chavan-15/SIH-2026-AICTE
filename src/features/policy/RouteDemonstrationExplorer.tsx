@@ -662,7 +662,7 @@ export const RouteDemonstrationExplorer: React.FC<{
           </span>
           {routeResult.sources.map((src, i) => (
             <span key={i} className="px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200">
-              {src.id} ({src.title})
+              {(src as any).id || (src as any).documentId || `SRC-${i + 1}`} ({src.title})
             </span>
           ))}
           <span className="text-slate-400">&bull;</span>

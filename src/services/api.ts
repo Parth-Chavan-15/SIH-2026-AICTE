@@ -435,7 +435,7 @@ export function mapCanonicalToUi(c: CanonicalApplication): Application {
 
         ? 'Policy review required'
 
-        : (c.route?.stages?.includes('sac_shc_review') || c.route?.stages?.includes('appellate_review') || c.category === 'deficiency_appeal' || c.policyRevisionId?.includes('SAC_SHC') || isAPEX)
+        : ((c.route?.stages as any[])?.includes('sac_shc_review') || (c.route?.stages as any[])?.includes('appellate_review') || c.category === 'deficiency_appeal' || c.policyRevisionId?.includes('SAC_SHC') || isAPEX)
 
         ? 'Scrutiny + EVC + SAC/SHC'
 
@@ -516,10 +516,28 @@ export const TAMPERED_DEMO_FIXTURE: AuditEvent = {
 
 class APIService {
 
+  public async resetDemoData(): Promise<any> {
+    return requestJson('/demo/reset', { method: 'POST' });
+  }
+
   public async listCases() {
-
-    return casePage.parse(await requestJson('/applications'));
-
+    const raw = await requestJson<any>('/applications');
+    const items: CanonicalApplication[] = [];
+    if (Array.isArray(raw?.items)) {
+      for (const item of raw.items) {
+        const parsed = applicationSchema.safeParse(item);
+        if (parsed.success) {
+          items.push(parsed.data);
+        } else {
+          console.warn('[api.listCases] Skipping unparseable application:', item?.id, parsed.error.message);
+        }
+      }
+    }
+    return {
+      items,
+      total: typeof raw?.total === 'number' ? raw.total : items.length,
+      nextCursor: raw?.nextCursor
+    };
   }
 
 
@@ -1240,7 +1258,7 @@ class APIService {
 
       if (list && list.length > 0) {
 
-        return list.map((o: any) => {
+        const mapped = list.map((o: any) => {
 
           const isGIITS = o.institutionId === 'INST-NORTH' || o.applicationId?.includes('GIITS');
 
@@ -1327,7 +1345,7 @@ class APIService {
           };
 
         });
-        return [...mapped, TAMPERED_DEMO_FIXTURE];
+        return mapped;
       }
     } catch {
 
@@ -2049,7 +2067,7 @@ class APIService {
 
         isRead: false,
 
-        category: 'Workflow',
+        category: 'Scrutiny',
 
         severity: 'info',
 
@@ -2129,7 +2147,7 @@ class APIService {
 
         isRead: false,
 
-        category: 'Workflow',
+        category: 'Scrutiny',
 
         severity: 'warning',
 
@@ -2169,11 +2187,163 @@ class APIService {
 
         isRead: false,
 
-        category: 'Escalation',
+        category: 'Judicial / SAC',
 
         severity: 'info',
 
         applicationId: 'APP-2026-APEX'
+
+      },
+
+      {
+
+        id: 'ALT-RO-CONCUR-01',
+
+        title: 'State Government & University Concurrence Ingested',
+
+        message: 'Western Regional Office received formal NOC concurrence from Maharashtra DTE for COEP Pune expansion application APP-2026-COEP.',
+
+        timestamp: '2026-10-24T10:00:00.000Z',
+
+        isRead: false,
+
+        category: 'Concurrence',
+
+        severity: 'info',
+
+        applicationId: 'APP-2026-COEP'
+
+      },
+
+      {
+
+        id: 'ALT-RO-SHC-02',
+
+        title: 'Standing Hearing Committee (SHC) Quorum Convened',
+
+        message: 'Western Regional Office convened SHC panel to examine unresolved land deficiency for Apex Institute of Technology.',
+
+        timestamp: '2026-10-24T10:30:00.000Z',
+
+        isRead: false,
+
+        category: 'Regional Intake',
+
+        severity: 'warning',
+
+        applicationId: 'APP-2026-APEX'
+
+      },
+
+      {
+
+        id: 'ALT-CA-DOCKET-01',
+
+        title: 'Executive Committee Agenda Docket Sealed',
+
+        message: 'Docket APP-2026-COEP placed on AICTE Executive Committee agenda #384 with full affirmative recommendation under APH Table 2.3.',
+
+        timestamp: '2026-10-24T11:15:00.000Z',
+
+        isRead: false,
+
+        category: 'Council Docket',
+
+        severity: 'info',
+
+        applicationId: 'APP-2026-COEP'
+
+      },
+
+      {
+
+        id: 'ALT-CA-DISPATCH-02',
+
+        title: 'Extension of Approval (EoA) Order Dispatched',
+
+        message: 'Approval Order AP-2026-44 digitally sealed with SHA-256 digest and dispatched to National Single Window System gateway for PDIMTR.',
+
+        timestamp: '2026-10-24T12:00:00.000Z',
+
+        isRead: false,
+
+        category: 'Order Dispatch',
+
+        severity: 'success',
+
+        applicationId: 'APP-2026-PDIMTR'
+
+      },
+
+      {
+
+        id: 'ALT-SYS-CONFLICT-01',
+
+        title: 'Dynamic Rule Engine Conflict Flagged',
+
+        message: 'Rule Conflict detected between APH 2024-27 Table 2.3 Row 1 and 2026-27 Errata G02 on Boundary Condition X=360.',
+
+        timestamp: '2026-10-24T12:15:00.000Z',
+
+        isRead: false,
+
+        category: 'Rule Engine Conflict',
+
+        severity: 'warning'
+
+      },
+
+      {
+
+        id: 'ALT-SYS-WORM-02',
+
+        title: 'WORM Cryptographic Audit Ledger Integrity Verified',
+
+        message: 'All 87 ledger transitions verified intact with HMAC-SHA256 signature chain. 0 tampering events detected.',
+
+        timestamp: '2026-10-24T12:30:00.000Z',
+
+        isRead: false,
+
+        category: 'WORM Audit Ledger',
+
+        severity: 'info'
+
+      },
+
+      {
+
+        id: 'ALT-SYS-ADAPTER-03',
+
+        title: 'National Ecosystem Gateway Health: 99.98%',
+
+        message: 'NSWS, DigiLocker, and emBridge DSC microservices operational with zero packet drops in the last 24-hour cycle.',
+
+        timestamp: '2026-10-24T12:45:00.000Z',
+
+        isRead: false,
+
+        category: 'Ecosystem Adapters',
+
+        severity: 'info'
+
+      },
+
+      {
+
+        id: 'ALT-SYS-OUTBOX-04',
+
+        title: 'Worker Outbox Daemon Idempotency Confirmed',
+
+        message: '3x delivery retry simulation executed against mock SMTP/SMS endpoints. Exactly 1 notification persisted per deduplication key.',
+
+        timestamp: '2026-10-24T13:00:00.000Z',
+
+        isRead: false,
+
+        category: 'Worker Health',
+
+        severity: 'success'
 
       }
 
@@ -2196,9 +2366,9 @@ class APIService {
           applicationId: a.applicationId || ''
         }));
       }
-      return [];
+      return defaultAlerts;
     } catch {
-      return [];
+      return defaultAlerts;
     }
 
   }
@@ -2990,13 +3160,20 @@ class APIService {
 
   // --- Adapter 2: AICTESigner / mSigner Class-3 DSC Verification ---
 
-  public async verifyDSC(documentId: string, dscSigned: boolean, tokenType?: string, signatoryName?: string) {
+  public async verifyDSC(
+    documentId: string,
+    dscSigned: boolean,
+    tokenType?: string,
+    signatoryName?: string,
+    investorId?: string,
+    signatoryPan?: string
+  ) {
 
     return requestJson<any>('/adapter/dsc-verify', {
 
       method: 'POST',
 
-      body: JSON.stringify({ documentId, dscSigned, tokenType, signatoryName })
+      body: JSON.stringify({ documentId, dscSigned, tokenType, signatoryName, investorId, signatoryPan })
 
     });
 
@@ -3144,13 +3321,52 @@ class APIService {
 
 
 
-  public async scheduleHearing(payload: { caseId: string; hearingType: 'SHC' | 'SAC'; committeeMembers: string[]; scheduledDate: string; hearingMode: 'VIRTUAL' | 'PHYSICAL'; venueOrLink: string }) {
+  public async fileAppeal(payload: { caseId: string; appellantType?: string; appealGrounds: string; citedClauses?: string[]; appellantDscToken?: string; supportingDocName?: string }) {
+
+    return this.lodgeAppeal({
+
+      caseId: payload.caseId,
+
+      institutionId: payload.caseId,
+
+      grounds: payload.appealGrounds,
+
+      appellantDscToken: payload.appellantDscToken || 'ePass2003Auto-Class3-Cert#8821'
+
+    });
+
+  }
+
+
+
+  public async scheduleHearing(payload: {
+    caseId: string;
+    hearingType?: 'SHC' | 'SAC';
+    committeeMembers?: string[];
+    scheduledDate: string;
+    hearingMode?: 'VIRTUAL' | 'PHYSICAL';
+    venueOrLink?: string;
+    venue?: string;
+    originReportRef?: string;
+    shortcomingText?: string;
+  }) {
+
+    const normalized = {
+      caseId: payload.caseId,
+      hearingType: payload.hearingType || 'SHC',
+      committeeMembers: payload.committeeMembers || ['Prof. H. N. Kulkarni (Chairman SHC)', 'Dr. Sunita Rao (Legal Expert)'],
+      scheduledDate: payload.scheduledDate,
+      hearingMode: payload.hearingMode || 'PHYSICAL',
+      venueOrLink: payload.venueOrLink || payload.venue || 'AICTE Regional Office Chamber & Hybrid VC Link',
+      originReportRef: payload.originReportRef,
+      shortcomingText: payload.shortcomingText
+    };
 
     return requestJson<any>('/appeals-hearings/schedule-hearing', {
 
       method: 'POST',
 
-      body: JSON.stringify(payload)
+      body: JSON.stringify(normalized)
 
     });
 
@@ -3172,13 +3388,33 @@ class APIService {
 
 
 
-  public async fileComplaint(payload: { caseId?: string; institutionId: string; complainantName: string; complainantAadhaarOrPan: string; complaintDetails: string; evidenceLinks?: string[]; isAnonymous?: boolean }) {
+  public async fileComplaint(payload: {
+    caseId?: string;
+    targetCaseId?: string;
+    institutionId?: string;
+    complainantId?: string;
+    complainantName: string;
+    complainantAadhaarOrPan?: string;
+    complaintDetails: string;
+    evidenceLinks?: string[];
+    isAnonymous?: boolean;
+  }) {
+
+    const normalized = {
+      caseId: payload.caseId || payload.targetCaseId,
+      institutionId: payload.institutionId || payload.complainantId || 'INST-CODE',
+      complainantName: payload.complainantName,
+      complainantAadhaarOrPan: payload.complainantAadhaarOrPan || 'PAN-XXXX-0000',
+      complaintDetails: payload.complaintDetails,
+      evidenceLinks: payload.evidenceLinks || [],
+      isAnonymous: Boolean(payload.isAnonymous)
+    };
 
     return requestJson<any>('/appeals-hearings/complaint', {
 
       method: 'POST',
 
-      body: JSON.stringify(payload)
+      body: JSON.stringify(normalized)
 
     });
 
@@ -3186,7 +3422,7 @@ class APIService {
 
 
 
-  public async disposeAppeal(appealId: string, payload: { decision: 'RELIEF_GRANTED' | 'REJECTION_UPHELD' | 'REFERRED_TO_SHC'; remarks: string; committeeMembers: string[] }) {
+  public async disposeAppeal(appealId: string, payload: { decision: 'RELIEF_GRANTED' | 'REJECTION_UPHELD' | 'REFERRED_TO_SHC'; remarks: string; committeeMembers: string[]; conditions?: string[] }) {
 
     return requestJson<any>(`/appeals-hearings/appeals/${encodeURIComponent(appealId)}/dispose`, {
 

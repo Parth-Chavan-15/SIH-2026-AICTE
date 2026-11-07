@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 
 export const RegionalHearingCoordinationView: React.FC = () => {
-  const { applications, user } = useApp();
+  const { applications, user, addToast } = useApp();
   const [data, setData] = useState<any>({ appeals: [], hearings: [], complaints: [] });
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -38,6 +38,11 @@ export const RegionalHearingCoordinationView: React.FC = () => {
   const [shortcomingText, setShortcomingText] = useState<string>(
     'Verification of Land Title Deed Registered Lease and Fire Safety NOC under APH §1.8'
   );
+
+  // Minutes Recording Modal
+  const [recordingHearing, setRecordingHearing] = useState<any>(null);
+  const [minutesText, setMinutesText] = useState<string>('');
+  const [minutesDisposition, setMinutesDisposition] = useState<'Cleared' | 'Remanded for Re-Scrutiny' | 'Recommended for Rejection'>('Cleared');
 
   // 15-Day University / State NOC Tracker State (PPT Pillar 1)
   const nocTrackerCases = [
@@ -237,7 +242,11 @@ export const RegionalHearingCoordinationView: React.FC = () => {
                     </td>
                     <td className="py-3 px-4 text-right">
                       <button
-                        onClick={() => alert(`Opening SHC Proceedings Dossier for ${h.hearingId || h.id}`)}
+                        onClick={() => {
+                          setRecordingHearing(h);
+                          setMinutesText(h.minutes || '');
+                          setMinutesDisposition(h.disposition || 'Cleared');
+                        }}
                         className="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs border border-slate-300"
                       >
                         Record Minutes
@@ -412,6 +421,91 @@ export const RegionalHearingCoordinationView: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Record Minutes Modal */}
+      {recordingHearing && (
+        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in">
+            <div className="bg-[#0A2540] text-white p-5 flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-sm">Record SHC Proceedings &amp; Findings</h3>
+                <p className="text-[11px] text-blue-200 mt-0.5">Hearing Ref: {recordingHearing.hearingId || recordingHearing.id}</p>
+              </div>
+              <button onClick={() => setRecordingHearing(null)}>
+                <X className="w-5 h-5 text-slate-300" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4 text-xs">
+              <div>
+                <p className="font-bold text-slate-900 text-sm">{recordingHearing.institutionName}</p>
+                <p className="text-slate-500 text-xs mt-0.5 font-mono">Case: {recordingHearing.caseId}</p>
+              </div>
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Recommended Disposition</label>
+                <select
+                  value={minutesDisposition}
+                  onChange={(e) => setMinutesDisposition(e.target.value as any)}
+                  className="w-full p-2.5 rounded-lg border border-slate-300 bg-white font-bold text-slate-800"
+                >
+                  <option value="Cleared">Deficiencies Cured &bull; Cleared for Council Sanction</option>
+                  <option value="Remanded for Re-Scrutiny">Remand to Desk Scrutiny Committee Cell</option>
+                  <option value="Recommended for Rejection">Deficiencies Maintained &bull; Recommended for Rejection</option>
+                </select>
+              </div>
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Formal Committee Minutes &amp; Speaking Observations</label>
+                <textarea
+                  rows={4}
+                  value={minutesText}
+                  onChange={(e) => setMinutesText(e.target.value)}
+                  placeholder="Record committee quorum findings, physical document inspection observations, and unanimous committee determination under APH §1.8..."
+                  className="w-full p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div className="p-3 bg-emerald-50 rounded-lg text-emerald-900 text-[11px] border border-emerald-200 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Proceedings will be sealed with Western Regional Officer (WRO) Class-3 DSC signature in WORM audit ledger.</span>
+              </div>
+            </div>
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setRecordingHearing(null)}
+                className="px-3.5 py-2 rounded-lg border border-slate-300 bg-white text-xs font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!minutesText.trim()) {
+                    addToast({ type: 'warning', title: 'Minutes Required', message: 'Enter formal committee observations before sealing proceedings.' });
+                    return;
+                  }
+                  setData((prev: any) => ({
+                    ...prev,
+                    hearings: (prev.hearings || []).map((h: any) =>
+                      (h.id === recordingHearing.id || h.hearingId === recordingHearing.hearingId)
+                        ? { ...h, status: 'Completed', disposition: minutesDisposition, minutes: minutesText }
+                        : h
+                    )
+                  }));
+                  addToast({
+                    type: 'success',
+                    title: 'SHC Proceedings Sealed',
+                    message: `Official minutes for ${recordingHearing.institutionName} recorded as "${minutesDisposition}".`,
+                  });
+                  setRecordingHearing(null);
+                  setMinutesText('');
+                }}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-xs"
+              >
+                Sign &amp; Seal Minutes
+              </button>
+            </div>
           </div>
         </div>
       )}

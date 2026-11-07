@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { LoadingState } from '../../components/common/LoadingState';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../services/api';
 import { EVCInspection } from '../../types';
@@ -27,7 +28,7 @@ interface EVCViewProps {
 }
 
 export const EVCView: React.FC<EVCViewProps> = ({ onSelectApplication }) => {
-  const { role, user, evcInspections, scheduleEVC, submitEVCReport, applications, addToast } = useApp();
+  const { role, user, evcInspections, loading, scheduleEVC, submitEVCReport, applications, addToast } = useApp();
   const { tasks: m2Tasks, isSynthetic: isEvcSynthetic } = useEVC();
 
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
@@ -55,8 +56,12 @@ export const EVCView: React.FC<EVCViewProps> = ({ onSelectApplication }) => {
         const otherMembers = roster.slice(1).map((m: any) => m.name + ' (' + (m.specialization || m.designation) + ', ' + m.organization + ')').join(', ');
         setMembersInput(otherMembers);
       }
-    } catch (e) {
-      // keep
+    } catch (e: any) {
+      addToast({
+        type: 'warning',
+        title: 'Roster Synchronization Notice',
+        message: 'Default verified committee panel retained. External roster gateway unreachable.',
+      });
     } finally {
       setFetchingRoster(false);
     }
@@ -70,62 +75,58 @@ export const EVCView: React.FC<EVCViewProps> = ({ onSelectApplication }) => {
   const [facultyScore, setFacultyScore] = useState(88);
   const [labsScore, setLabsScore] = useState(92);
 
-  // Combine and deduplicate EVC inspections ensuring canonical cases (GIITS, BATU) are always available
-  const allInspections: EVCInspection[] = [...evcInspections];
+  // Dynamically derive active inspections based on applications in EVC stage
+  const allInspections: EVCInspection[] = useMemo(() => {
+    const list: EVCInspection[] = [...evcInspections];
 
-  const giitsApp = applications.find((a) => a.id === 'APP-2026-GIITS');
-  if (!allInspections.some((e) => e.applicationId === 'APP-2026-GIITS')) {
-    allInspections.push({
-      id: 'EVC-GIITS-2026',
-      applicationId: 'APP-2026-GIITS',
-      applicationNumber: '2-SOC1770029225',
-      institutionName: giitsApp?.institutionName || 'Gonna Institute of Information Technology and Sciences (GIITS), Visakhapatnam',
-      region: 'South-Central',
-      scheduledDate: '2026-10-28',
-      scheduledTime: '10:00 AM IST',
-      committeeChairman: 'Prof. Sivasubramanian Velmurugan (NIT Calicut)',
-      committeeMembers: ['Assoc. Prof. Hareesh K (KK Govt Engg College)', 'Architect Md. Danish (NIT Patna / COA Reg)'],
-      status: giitsApp?.currentStage === 'EVC Inspection Completed' || giitsApp?.currentStage === 'Executive Committee Approval' ? 'Completed' : 'Scheduled',
-      isDelayed: false,
-      reportSubmitted: giitsApp?.currentStage === 'EVC Inspection Completed' || giitsApp?.currentStage === 'Executive Committee Approval',
-      recommendation: 'Recommended with Conditions',
-      infrastructureScore: 90,
-      facultyScore: 88,
-      laboratoriesScore: 92,
-      visitLocation: 'Visakhapatnam Campus (Gonnavanipalem, Parawada Mandal)',
-      assignedOfficer: 'Dr. R. K. Soni (Regional Officer)'
-    });
-  }
+    for (const app of applications) {
+      const isEVCStage =
+        app.currentStage === 'EVC Scheduled' ||
+        app.currentStage === 'EVC Inspection Completed';
+      const needsEVC =
+        app.route?.stages?.includes('evc_pending') ||
+        (app.routeType || '').toLowerCase().includes('evc');
 
-  const batuApp = applications.find((a) => a.id === 'APP-2026-BATU');
-  if (!allInspections.some((e) => e.applicationId === 'APP-2026-BATU')) {
-    allInspections.push({
-      id: 'EVC-BATU-2026',
-      applicationId: 'APP-2026-BATU',
-      applicationNumber: '1-43657891230',
-      institutionName: batuApp?.institutionName || 'Dr. Babasaheb Ambedkar Technological University (BATU), Lonere',
-      region: 'Western',
-      scheduledDate: '2026-10-30',
-      scheduledTime: '11:00 AM IST',
-      committeeChairman: 'Dr. Anupama Sharma (IIT Bombay Nominee)',
-      committeeMembers: ['Prof. Ramesh Deshmukh (VNIT Nagpur)', 'Er. Sanjay Patil (PWD Chief Engineer)'],
-      status: batuApp?.currentStage === 'EVC Inspection Completed' || batuApp?.currentStage === 'Executive Committee Approval' ? 'Completed' : 'Scheduled',
-      isDelayed: false,
-      reportSubmitted: batuApp?.currentStage === 'EVC Inspection Completed' || batuApp?.currentStage === 'Executive Committee Approval',
-      recommendation: 'Recommended',
-      infrastructureScore: 94,
-      facultyScore: 91,
-      laboratoriesScore: 93,
-      visitLocation: 'Lonere Campus, Raigad, Maharashtra',
-      assignedOfficer: 'Dr. R. K. Soni (Regional Officer)'
-    });
-  }
+      if ((isEVCStage || (needsEVC && app.currentStage === 'Scrutiny Cleared')) && !list.some((e) => e.applicationId === app.id)) {
+        list.push({
+          id: `EVC-${app.id}`,
+          applicationId: app.id,
+          applicationNumber: app.applicationNumber,
+          institutionName: app.institutionName,
+          region: app.region,
+          scheduledDate: '2026-10-30',
+          scheduledTime: '10:00 AM IST',
+          committeeChairman: app.id.includes('BATU')
+            ? 'Dr. Anupama Sharma (IIT Bombay Nominee)'
+            : 'Prof. Sivasubramanian Velmurugan (NIT Calicut)',
+          committeeMembers: app.id.includes('BATU')
+            ? ['Prof. Ramesh Deshmukh (VNIT Nagpur)', 'Er. Sanjay Patil (PWD Chief Engineer)']
+            : ['Assoc. Prof. Hareesh K (Govt Engg)', 'Architect Md. Danish (NIT Patna / COA Reg)'],
+          status: app.currentStage === 'EVC Inspection Completed' ? 'Completed' : 'Scheduled',
+          isDelayed: false,
+          reportSubmitted: app.currentStage === 'EVC Inspection Completed',
+          recommendation: 'Recommended',
+          infrastructureScore: 92,
+          facultyScore: 90,
+          laboratoriesScore: 94,
+          visitLocation: `${app.city}, ${app.state}`,
+          assignedOfficer: app.assignedOfficer || 'Dr. R. K. Soni (Regional Officer)',
+        });
+      }
+    }
+    return list;
+  }, [applications, evcInspections]);
 
   const filteredInspections = allInspections.filter((evc) => {
+    if (!evc) return false;
+    const q = (searchQuery || '').toLowerCase().trim();
+    if (!q) {
+      return statusFilter === 'All' || evc.status === statusFilter;
+    }
     const matchesSearch =
-      evc.institutionName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      evc.applicationNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      evc.committeeChairman.toLowerCase().includes(searchQuery.toLowerCase());
+      (evc.institutionName?.toLowerCase().includes(q) ?? false) ||
+      (evc.applicationNumber?.toLowerCase().includes(q) ?? false) ||
+      (evc.committeeChairman?.toLowerCase().includes(q) ?? false);
     const matchesStatus = statusFilter === 'All' || evc.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -136,29 +137,81 @@ export const EVCView: React.FC<EVCViewProps> = ({ onSelectApplication }) => {
   );
 
   const handleCreateSchedule = async () => {
-    if (!selectedAppId || !visitDate || !chairman) return;
-    const members = membersInput.split(',').map((m) => m.trim()).filter(Boolean);
-    await scheduleEVC(selectedAppId, visitDate, visitTime, chairman, members);
-    setShowScheduleModal(false);
+    if (!selectedAppId) {
+      addToast({
+        type: 'warning',
+        title: 'Application Required',
+        message: 'Please select an eligible application before scheduling an EVC inspection.',
+      });
+      return;
+    }
+    if (!visitDate) {
+      addToast({
+        type: 'warning',
+        title: 'Inspection Date Required',
+        message: 'Please specify the scheduled date for the physical inspection visit.',
+      });
+      return;
+    }
+    if (!chairman) {
+      addToast({
+        type: 'warning',
+        title: 'Committee Chairman Required',
+        message: 'Please designate a qualified Committee Chairman from the peer pool.',
+      });
+      return;
+    }
+    try {
+      const members = membersInput.split(',').map((m) => m.trim()).filter(Boolean);
+      await scheduleEVC(selectedAppId, visitDate, visitTime, chairman, members);
+      addToast({
+        type: 'success',
+        title: 'EVC Inspection Scheduled',
+        message: `Expert Visit Committee successfully scheduled for ${visitDate}. Panel summon notices generated.`,
+      });
+      setShowScheduleModal(false);
+    } catch (err: any) {
+      addToast({
+        type: 'error',
+        title: 'Scheduling Failed',
+        message: err.message || 'Unable to schedule EVC inspection at this time.',
+      });
+    }
   };
 
   const handleReportSubmit = async () => {
-    if (!reportingEVC || !reportSummary) return;
-    await submitEVCReport(
-      reportingEVC.id,
-      reportSummary,
-      recommendation,
-      infraScore,
-      facultyScore,
-      labsScore
-    );
-    addToast({
-      type: 'success',
-      title: 'EVC Inspection Report Submitted',
-      message: `Committee report for ${reportingEVC.institutionName} signed and submitted. Application advanced to Executive Committee Approval.`,
-    });
-    setReportingEVC(null);
-    setReportSummary('');
+    if (!reportingEVC) return;
+    if (!reportSummary.trim()) {
+      addToast({
+        type: 'warning',
+        title: 'Executive Findings Required',
+        message: 'Please enter the committee findings and physical walkthrough observations before signing.',
+      });
+      return;
+    }
+    try {
+      await submitEVCReport(
+        reportingEVC.id,
+        reportSummary,
+        recommendation,
+        infraScore,
+        facultyScore,
+        labsScore
+      );
+      addToast({
+        type: 'success',
+        title: 'EVC Inspection Report Submitted',
+        message: `Committee report for ${reportingEVC.institutionName} signed and submitted. Application advanced to Executive Committee Approval.`,
+      });
+      setReportingEVC(null);
+      setReportSummary('');
+    } catch (err: any) {
+      addToast({
+        type: 'error',
+        title: 'Submission Failed',
+        message: err.message || 'Unable to submit EVC report. Please check server connection.',
+      });
+    }
   };
 
   return (
@@ -220,7 +273,7 @@ export const EVCView: React.FC<EVCViewProps> = ({ onSelectApplication }) => {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-sm text-white tracking-tight">
-                  Conditional EVC Gating Engine &bull; USP B07
+                  Conditional EVC Gating Engine &bull; APH 2024–27 Table 2.3
                 </h3>
                 <span className="font-mono text-[10px] bg-indigo-500/30 text-indigo-200 px-2 py-0.5 rounded border border-indigo-400/30 font-semibold">
                   Gate G2 Certified

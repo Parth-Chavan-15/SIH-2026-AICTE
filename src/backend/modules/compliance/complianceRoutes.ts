@@ -21,11 +21,13 @@ export function createComplianceRouter(): Router {
     res.json({ success: true, data: obligations });
   });
 
-  // GET /api/v1/compliance/obligations/:caseId - Obligations for case
-  router.get('/compliance/obligations/:caseId', (req: Request, res: Response) => {
-    const caseId = req.params.caseId;
-    const allMatching = Array.from(complianceDB.obligations.values())
-      .filter((o: any) => o.caseId === caseId || o.applicationId === caseId);
+  // GET /api/v1/compliance/obligations/:caseId or /compliance/obligations?applicationId=... - Obligations for case
+  router.get(['/compliance/obligations', '/compliance/obligations/:caseId'], (req: Request, res: Response) => {
+    const caseId = req.params.caseId || (req.query.applicationId as string) || (req.query.caseId as string);
+    let allMatching = Array.from(complianceDB.obligations.values());
+    if (caseId) {
+      allMatching = allMatching.filter((o: any) => o.caseId === caseId || o.applicationId === caseId);
+    }
 
     if (req.actor && req.actor.scope === 'scoped') {
       const isForbidden = allMatching.some(o => !req.actor.institutionIds.includes(o.institutionId));
@@ -205,17 +207,45 @@ export function createComplianceRouter(): Router {
           return false;
         });
       } else if (isReviewer) {
-        alerts = alerts.filter(a => (a as any).targetRole === 'reviewer' || a.category === 'Scrutiny');
+        alerts = alerts.filter(
+          a =>
+            (a as any).targetRole === 'reviewer' ||
+            a.category === 'Scrutiny' ||
+            a.category === 'Workflow' ||
+            a.category === 'Deadline' ||
+            a.category === 'Overdue'
+        );
       } else if (isEvc) {
-        alerts = alerts.filter(a => (a as any).targetRole === 'evc' || a.category === 'EVC');
+        alerts = alerts.filter(
+          a =>
+            (a as any).targetRole === 'evc' ||
+            a.category === 'EVC' ||
+            a.category === 'Deadline' ||
+            a.category === 'Overdue'
+        );
       } else if (isRegionalOfficer) {
-        alerts = alerts.filter(a => (a as any).targetRole === 'regional_officer' || a.category === 'Regional Intake' || a.category === 'Concurrence');
+        alerts = alerts.filter(
+          a =>
+            (a as any).targetRole === 'regional_officer' ||
+            a.category === 'Regional Intake' ||
+            a.category === 'Concurrence' ||
+            a.category === 'Compliance' ||
+            a.category === 'Document Expiry' ||
+            a.category === 'Deadline' ||
+            a.category === 'Overdue' ||
+            a.category === 'Workflow'
+        );
       } else if (isBureauOfficer) {
         // Bureau Officer / Council Authority: Global oversight across all institutional cases + bureau actions
         alerts = alerts.filter(a => (a as any).targetRole !== 'policy_admin');
       } else if (isPolicyAdmin) {
-        // Role 6: Overhauled to System Alerts & Logs exclusively
-        alerts = alerts.filter(a => (a as any).targetRole === 'policy_admin' || ['Rule Engine Conflict', 'WORM Audit Ledger', 'Ecosystem Adapters', 'SLA Escalation', 'Worker Health'].includes(a.category));
+        alerts = alerts.filter(
+          a =>
+            (a as any).targetRole === 'policy_admin' ||
+            ['Rule Engine Conflict', 'WORM Audit Ledger', 'Ecosystem Adapters', 'SLA Escalation', 'Worker Health'].includes(
+              a.category || ''
+            )
+        );
       }
     }
 

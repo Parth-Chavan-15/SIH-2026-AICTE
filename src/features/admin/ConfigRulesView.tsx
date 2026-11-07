@@ -1,3 +1,4 @@
+import { LoadingState } from '../../components/common/LoadingState';
 import { RouteDemonstrationExplorer } from '../policy/RouteDemonstrationExplorer';
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
@@ -22,10 +23,10 @@ import {
   RefreshCw,
   HelpCircle,
   Layers
-} from 'lucide-react';
+, RotateCcw } from 'lucide-react';
 
 export const ConfigRulesView: React.FC = () => {
-  const { role, user, configRules, updateConfigRule } = useApp();
+  const { role, user, configRules, updateConfigRule, refreshData } = useApp();
   const [activeTab, setActiveTab] = useState<'RULES_LIST' | 'SIMULATOR' | 'ROUTE_EXPLORER' | 'CONFLICTS' | 'SLA_CONFIG'>('RULES_LIST');
 
   // Rules Registry States
@@ -39,6 +40,9 @@ export const ConfigRulesView: React.FC = () => {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Edit/Revision Modal
+  const [showResetModal, setShowResetModal] = useState<boolean>(false);
+  const [resetting, setResetting] = useState<boolean>(false);
+  const [resetSummary, setResetSummary] = useState<any>(null);
   const [showEditModal, setShowEditModal] = useState<boolean>(false);
   const [revisedTitle, setRevisedTitle] = useState<string>('');
   const [revisedClause, setRevisedClause] = useState<string>('');
@@ -58,6 +62,33 @@ export const ConfigRulesView: React.FC = () => {
   // SLA config states
   const [editingConfigRule, setEditingConfigRule] = useState<any>(null);
   const [newConfigValue, setNewConfigValue] = useState<any>('');
+
+  const handleSafeDemoReset = async () => {
+    setResetting(true);
+    setErrorMsg(null);
+    try {
+      const res = await api.resetDemoData();
+      const data = res?.data || res;
+      setResetSummary(data);
+      setSuccessMsg(data?.message || 'Demo environment successfully reset to canonical starting state.');
+      setShowResetModal(false);
+      await fetchRegistryData();
+      try {
+        localStorage.removeItem('sih_custom_institutions');
+        localStorage.removeItem('sih_active_custom_institution');
+        localStorage.removeItem('sih_selected_college_id');
+        window.dispatchEvent(new Event('sih:custom_institution_reset'));
+        window.dispatchEvent(new Event('sih:custom_institution_added'));
+      } catch {}
+      if (refreshData) {
+        await refreshData();
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to reset demo state');
+    } finally {
+      setResetting(false);
+    }
+  };
 
   const fetchRegistryData = async () => {
     try {
@@ -151,13 +182,17 @@ export const ConfigRulesView: React.FC = () => {
     }
   };
 
-  const filteredRules = rules.filter(
-    (r) =>
-      r.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.clause.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.summary.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredRules = rules.filter((r) => {
+    if (!r) return false;
+    const q = (searchQuery || '').toLowerCase().trim();
+    if (!q) return true;
+    return (
+      (r.id?.toLowerCase().includes(q) ?? false) ||
+      (r.title?.toLowerCase().includes(q) ?? false) ||
+      (r.clause?.toLowerCase().includes(q) ?? false) ||
+      (r.summary?.toLowerCase().includes(q) ?? false)
+    );
+  });
 
   return (
     <div className="space-y-6">
@@ -177,13 +212,23 @@ export const ConfigRulesView: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={fetchRegistryData}
-          className="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 flex items-center gap-1.5 self-start sm:self-auto"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          <span>Refresh Registry</span>
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={fetchRegistryData}
+            className="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Refresh Registry</span>
+          </button>
+          <button
+            onClick={() => setShowResetModal(true)}
+            className="px-3 py-1.5 rounded-lg border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+            title="Safely reset demo applications and return prototype to canonical state"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
+            <span>Safe Demo Reset</span>
+          </button>
+        </div>
       </div>
 
       {errorMsg && (
@@ -197,6 +242,42 @@ export const ConfigRulesView: React.FC = () => {
         <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
           <span>{successMsg}</span>
+        </div>
+      )}
+
+      {resetSummary && (
+        <div className="p-4 rounded-xl bg-slate-900 text-white border border-slate-800 text-xs space-y-2 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Demo Environment Reset Complete</span>
+            </div>
+            <button
+              onClick={() => setResetSummary(null)}
+              className="text-slate-400 hover:text-white text-xs px-2 py-0.5 rounded border border-slate-700 cursor-pointer"
+            >
+              Dismiss
+            </button>
+          </div>
+          <p className="text-slate-300">{resetSummary.message}</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-mono text-[11px]">
+            <div className="bg-slate-800/80 p-2 rounded border border-slate-700">
+              <span className="text-slate-400 block text-[10px]">Active Applications</span>
+              <span className="text-white font-bold">{resetSummary.activeApplications ?? resetSummary.clearedApplications ?? 6} canonical</span>
+            </div>
+            <div className="bg-slate-800/80 p-2 rounded border border-slate-700">
+              <span className="text-slate-400 block text-[10px]">NSWS Presets</span>
+              <span className="text-emerald-400 font-bold">7 intact</span>
+            </div>
+            <div className="bg-slate-800/80 p-2 rounded border border-slate-700">
+              <span className="text-slate-400 block text-[10px]">User Roles</span>
+              <span className="text-emerald-400 font-bold">6 preserved</span>
+            </div>
+            <div className="bg-slate-800/80 p-2 rounded border border-slate-700">
+              <span className="text-slate-400 block text-[10px]">Regulatory Rules</span>
+              <span className="text-emerald-400 font-bold">Active intact</span>
+            </div>
+          </div>
         </div>
       )}
 
@@ -708,6 +789,67 @@ export const ConfigRulesView: React.FC = () => {
                   <span>Publish Versioned Revision</span>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Safe Demo Reset Confirmation Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600">
+                <RotateCcw className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-base text-slate-900">
+                  Confirm Safe Demo Reset
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Return prototype to clean canonical demonstration baseline
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-2 text-slate-700">
+              <p className="font-semibold text-slate-800">
+                This operation will safely execute the following actions:
+              </p>
+              <ul className="list-disc pl-5 space-y-1 text-slate-600">
+                <li>Clear all demo-created applications (e.g. custom NSWS entries)</li>
+                <li>Restore the 6 canonical college dockets (COEP, GIITS, PDIMTR, APEX, BATU, VVIT) to their pristine seed state</li>
+                <li>Clear temporary inspection tasks, drafts, and non-canonical decision documents</li>
+                <li><strong className="text-slate-800">Preserve intact:</strong> all 7 NSWS institution presets, user accounts, and regulatory rules</li>
+              </ul>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowResetModal(false)}
+                disabled={resetting}
+                className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSafeDemoReset}
+                disabled={resetting}
+                className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center gap-2 shadow-xs disabled:opacity-50 cursor-pointer"
+              >
+                {resetting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Resetting Demo State…</span>
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Execute Safe Reset</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

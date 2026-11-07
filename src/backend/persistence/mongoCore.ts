@@ -35,7 +35,7 @@ export function deriveRouteType(a: Application): string {
 }
 
 // Mutable compatibility fields only: updates must preserve registry/location metadata.
-const projection = (a: Application) => ({ caseData: a, applicationNumber: a.reference, institutionCode: a.institutionId, region: a.regionId, academicYear: a.session, applicationType: a.category, currentStage: a.state, currentStageStartedAt: new Date(a.stageEnteredAt), program: String(a.facts.program), proposedIntake: a.facts.proposedIntake, routeType: deriveRouteType(a) });
+const projection = (a: Application) => ({ caseData: a, applicationNumber: a.reference, institutionCode: a.institutionId, region: a.regionId, academicYear: a.session, applicationType: a.category, currentStage: a.state, currentStageStartedAt: new Date(a.stageEnteredAt), program: String(a.facts.program || 'Engineering and Technology'), proposedIntake: Number(a.facts.proposedIntake || 180), routeType: deriveRouteType(a) });
 class ReceiptCollision extends Error {}
 export const REQUIRED_INDEXES = [
   ['applications', 'caseData.id', true], ['applications', 'applicationNumber', false],
@@ -48,25 +48,41 @@ export function createMongoStorage(options: { connection?: Connection; models?: 
   const connection = options.connection ?? mongoose.connection;
   const models: Models = options.models ?? { application: ApplicationModel, audit: CoreAudit, outbox: CoreOutbox, receipt: CoreReceipt, decision: CoreDecision };
   let lastVerifiedAt = 0;
-  const INDEX_CHECK_TTL_MS = 15_000;
+  let lastHelloAt = 0;
+  const INDEX_CHECK_TTL_MS = 30 * 60 * 1000;
+  const HELLO_CHECK_TTL_MS = 60 * 1000;
+  let inFlightVerification: Promise<void> | null = null;
   const ready = async () => {
     try {
       if (!options.models && connection !== mongoose.connection) throw unavailable();
       if (Object.values(models).some(model => model.db && model.db !== connection)) throw unavailable();
       if (connection.readyState !== 1 || !connection.db) throw unavailable();
-      const hello = await connection.db.admin().command({ hello: 1 });
-      if ((!hello.setName && !hello.isWritablePrimary && hello.msg !== 'isdbgrid') || hello.logicalSessionTimeoutMinutes == null) throw unavailable();
       const now = Date.now();
+      if (now - lastHelloAt >= HELLO_CHECK_TTL_MS) {
+        const hello = await connection.db.admin().command({ hello: 1 });
+        if ((!hello.setName && !hello.isWritablePrimary && hello.msg !== "isdbgrid") || hello.logicalSessionTimeoutMinutes == null) throw unavailable();
+        lastHelloAt = now;
+      }
       if (now - lastVerifiedAt < INDEX_CHECK_TTL_MS) {
         return;
       }
-      for (const [collection, key, sparse] of REQUIRED_INDEXES) {
-        const indexes = await connection.db.collection(collection).listIndexes().toArray();
-        if (!indexes.some(index => index.unique === true && Object.keys(index.key).length === 1 && index.key[key] === 1 && !index.partialFilterExpression && (!index.collation || index.collation.locale === 'simple') && Boolean(index.sparse) === sparse)) throw unavailable();
+      if (!inFlightVerification) {
+        inFlightVerification = (async () => {
+          await Promise.all(
+            REQUIRED_INDEXES.map(async ([collection, key, sparse]) => {
+              const indexes = await connection.db!.collection(collection).listIndexes().toArray();
+              if (!indexes.some(index => index.unique === true && Object.keys(index.key).length === 1 && index.key[key] === 1 && !index.partialFilterExpression && (!index.collation || index.collation.locale === "simple") && Boolean(index.sparse) === sparse)) throw unavailable();
+            })
+          );
+          lastVerifiedAt = Date.now();
+        })().finally(() => {
+          inFlightVerification = null;
+        });
       }
-      lastVerifiedAt = now;
+      await inFlightVerification;
     } catch {
       lastVerifiedAt = 0;
+      lastHelloAt = 0;
       throw unavailable();
     }
   };

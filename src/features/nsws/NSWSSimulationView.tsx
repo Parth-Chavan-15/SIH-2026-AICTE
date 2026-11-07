@@ -1,5 +1,6 @@
 import { RouteDemonstrationExplorer } from '../policy/RouteDemonstrationExplorer';
-import React, { useState } from 'react';
+import { evaluateDynamicRoute } from '../../backend/policy/dynamicRouteEngine';
+import React, { useState, useMemo, useEffect } from 'react';
 
 import { api } from '../../services/api';
 
@@ -44,6 +45,8 @@ import {
   Building2,
   RefreshCw,
   GraduationCap,
+  AlertTriangle,
+  XCircle,
   X
 } from 'lucide-react';
 
@@ -54,7 +57,7 @@ export interface NSWSSimulationViewProps {
   isUnauthenticatedFlow?: boolean;
   onBackToGateway?: () => void;
   onOpenInstitutionModal?: () => void;
-  onContinueToInstitutionPortal?: (presetId: string, email: string) => Promise<void>;
+  onContinueToInstitutionPortal?: (presetId: string, email: string, institutionId?: string) => Promise<void>;
 }
 
 
@@ -417,6 +420,106 @@ const CANONICAL_PRESETS: CollegePreset[] = [
 
 ];
 
+export const CUSTOM_PRESET_DEF: CollegePreset = {
+  id: 'custom',
+  name: '',
+  shortName: '➕ Custom College',
+  badge: 'Manual Dynamic Intake',
+  badgeColor: 'bg-indigo-100 text-indigo-900 border-indigo-400 font-bold',
+  pan: 'AAATA9876C',
+  signatory: 'Dr. K. S. Raman',
+  mobile: '9876501234',
+  email: 'director@aitr.edu.in',
+  category: 'increase_intake',
+  program: 'Engineering and Technology',
+  level: 'Under Graduate',
+  existingIntake: 120,
+  proposedIntake: 180,
+  nbaAccredited: true,
+  nbaScore: 680,
+  builtUpAreaSqM: 14500,
+  region: 'Western',
+  expectedRoute: 'Evaluated Live per Clause / Rules',
+  regulatoryCite: 'Real-time deterministic route evaluation derived strictly from APH 2024–27 & Errata Page 42'
+};
+
+export const ALL_SIMULATION_OPTIONS: CollegePreset[] = [
+  ...CANONICAL_PRESETS,
+  CUSTOM_PRESET_DEF
+];
+
+export const CATEGORY_LABELS: Record<string, string> = {
+  increase_intake: 'Increase in Intake / Additional Course(s)',
+  new_institution: 'Setting up New Technical Institution',
+  extension_of_approval: 'Extension of Approval (EoA Self-Disclosure)',
+  nri_seats: 'Introduction / Continuation of NRI Seats',
+  conversion_diploma_degree: 'Conversion of Diploma to Degree Level',
+  name_change_institution: 'Change in Name of Institution / Board',
+  new_programme_level: 'Start New Programme / Level',
+  merger_institutions: 'Merger of Institutions in Same Campus',
+  break_restoration_hibernation: 'Break in EoA / Restoration / Hibernation',
+  supernumerary_fn_oci: 'Supernumerary Seats for FN / OCI / Gulf',
+  integrated_dual_degree: 'Introduction of Integrated / Dual Degree Course',
+  fellow_programme_fpm: 'Fellow Programme in Management (FPM)',
+  course_name_change: 'Change Name of Course / Reduction in Intake',
+  collaboration_twinning: 'Collaboration & Twinning Programme',
+  change_of_site: 'Change of Site / Location',
+  closure: 'Closure of Technical Institution',
+  conversion_coeducation: "Conversion of Women's Institution to Co-ed",
+  closure_course: 'Closure of Programme(s) / Course(s)',
+  bank_change: 'Change in Bank Details',
+  trust_change: 'Change in Name of Trust / Society',
+  conversion_deemed_university: 'Conversion to Deemed-to-be-University',
+  odl_courses: 'Open and Distance Learning (ODL) / Online Learning',
+  bba_bca_bms: 'BBA / BCA / BMS Programmes (As-Is-Where-Is Intake)'
+};
+
+export function formatStageDisplayName(stage: string): string {
+  const s = (stage || '').toLowerCase().trim();
+  switch (s) {
+    case 'submitted':
+      return 'Application Ingested / Submitted';
+    case 'scrutiny_pending':
+      return 'Desk Scrutiny Review';
+    case 'deficiency_communicated':
+      return 'Deficiency Communicated (LoD)';
+    case 'rescrutiny_pending':
+      return 'Protected Re-Scrutiny';
+    case 'evc_pending':
+      return 'Physical Inspection (EVC)';
+    case 'decision_pending':
+      return 'Council Determination';
+    case 'approved':
+      return 'Approval Granted (LoA / EoA)';
+    case 'rejected':
+      return 'Application Rejected';
+    case 'policy_review_required':
+      return 'Executive Policy Review';
+    case 'ineligible_rejected':
+      return 'Statutorily Ineligible (Rejected)';
+    default:
+      return stage ? stage.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : 'Unknown Stage';
+  }
+}
+
+export function formatRouteTypeName(routeType: string): string {
+  const r = (routeType || '').toUpperCase().trim();
+  switch (r) {
+    case 'SCRUTINY_ONLY':
+      return 'Desk Scrutiny Only';
+    case 'SCRUTINY_AND_EVC':
+      return 'Desk Scrutiny & Physical Inspection (EVC)';
+    case 'DIRECT_EVC':
+      return 'Direct Physical Inspection (EVC)';
+    case 'POLICY_REVIEW_REQUIRED':
+      return 'Executive Policy Review Required';
+    case 'BLOCKED (INELIGIBLE)':
+      return 'Statutorily Blocked (Ineligible)';
+    default:
+      return routeType ? routeType.replace(/_/g, ' ') : 'Standard Regulatory Route';
+  }
+}
+
 
 
 export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
@@ -430,7 +533,7 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
   const refreshData = appCtx?.refreshData || (async () => {});
   const [showInstPicker, setShowInstPicker] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
-  const [selectedPresetId, setSelectedPresetId] = useState<string>('coep');
+  const [selectedPresetId, setSelectedPresetId] = useState<string>('custom');
 
   const [currentStep, setCurrentStep] = useState<number>(1);
 
@@ -442,15 +545,15 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
 
 
 
-  // Form states initialized with COEP preset
+  // Form states initialized with Custom Technical Institution preset
 
-  const [pan, setPan] = useState('AAACB1234F');
+  const [pan, setPan] = useState('AAATA9876C');
 
-  const [signatoryName, setSignatoryName] = useState('Dr. Anand Deshpande');
+  const [signatoryName, setSignatoryName] = useState('Dr. K. S. Raman');
 
-  const [mobile, setMobile] = useState('9876543210');
+  const [mobile, setMobile] = useState('9876501234');
 
-  const [email, setEmail] = useState('principal@coep.ac.in');
+  const [email, setEmail] = useState('director@aitr.edu.in');
 
   const [otp, setOtp] = useState('123456');
 
@@ -467,28 +570,82 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
 
 
   // AICTE Form State
-
-  const [institutionName, setInstitutionName] = useState('College of Engineering Pune (COEP Tech Univ)');
-
+  const [institutionName, setInstitutionName] = useState('');
   const [category, setCategory] = useState<string>('increase_intake');
-
   const [program, setProgram] = useState('Engineering and Technology');
-
   const [level, setLevel] = useState('Under Graduate');
-
-  const [existingIntake, setExistingIntake] = useState(120);
-
-  const [proposedIntake, setProposedIntake] = useState(180);
-
+  const [existingIntake, setExistingIntake] = useState<number | string>(120);
+  const [proposedIntake, setProposedIntake] = useState<number | string>(180);
   const [nbaAccredited, setNbaAccredited] = useState(true);
-
-  const [nbaScore, setNbaScore] = useState(680);
-
+  const [nbaScore, setNbaScore] = useState<number | string>(680);
   const [region, setRegion] = useState('Western');
+  const [builtUpAreaSqM, setBuiltUpAreaSqM] = useState<number | string>(14500);
+  const [isCustomizingForm, setIsCustomizingForm] = useState(true);
 
-  const [builtUpAreaSqM, setBuiltUpAreaSqM] = useState(14500);
+  // Custom Intake & Route-Affecting Regulatory Parameters
+  const [nbaValidTill, setNbaValidTill] = useState<string>('2027-06-30');
+  const [accreditedCoursesCount, setAccreditedCoursesCount] = useState<number | string>(1);
+  const [siteVerificationRequired, setSiteVerificationRequired] = useState<boolean>(false);
+  const [isRegionalLanguageCourse, setIsRegionalLanguageCourse] = useState<boolean>(false);
+  const [landAreaAcre, setLandAreaAcre] = useState<number | string>(5.0);
+  const [terChargesPaidInr, setTerChargesPaidInr] = useState<number | string>(200000);
+  const [stateName, setStateName] = useState<string>('Maharashtra');
+  const [cityName, setCityName] = useState<string>('Pune');
+  const [address, setAddress] = useState<string>('Sector 4, Institutional Area');
+  const [societyName, setSocietyName] = useState<string>('Vanguard Educational Foundation');
+  const [entityType, setEntityType] = useState<string>('Trust');
+  const [coreBranchesCount, setCoreBranchesCount] = useState<number | string>(3);
+  const [nonCsCoreBranchesCount, setNonCsCoreBranchesCount] = useState<number | string>(2);
+  const [passOutBatchesCount, setPassOutBatchesCount] = useState<number | string>(1);
+  const [isPartialProgrammeApplication, setIsPartialProgrammeApplication] = useState<boolean>(false);
+  const [institutionNameError, setInstitutionNameError] = useState<string | null>(null);
+  const REQUIRED_INSTITUTION_NAME_MSG = 'Institution name is required. Please enter the legal name to continue.';
 
-  const [isCustomizingForm, setIsCustomizingForm] = useState(false);
+  const handleInstitutionNameChange = (val: string) => {
+    setInstitutionName(val);
+    if (val.trim().length > 0) {
+      setInstitutionNameError(null);
+      if (errorMsg === REQUIRED_INSTITUTION_NAME_MSG) {
+        setErrorMsg(null);
+      }
+    } else if (institutionNameError) {
+      setInstitutionNameError(REQUIRED_INSTITUTION_NAME_MSG);
+    }
+  };
+
+  // Helper for numeric inputs to eliminate sticky leading 0s and allow free backspacing
+  const handleNumericChange = (
+    setter: (val: number | string) => void,
+    isInteger: boolean = true,
+    max?: number
+  ) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    if (raw === '') {
+      setter('');
+      return;
+    }
+    if (raw === '-') {
+      setter('');
+      return;
+    }
+    let cleaned = raw;
+    if (/^0\d+/.test(cleaned)) {
+      cleaned = cleaned.replace(/^0+/, '');
+      if (cleaned === '') cleaned = '0';
+    }
+    const num = Number(cleaned);
+    if (!isNaN(num) && num < 0) {
+      setter(0);
+      return;
+    }
+    if (max !== undefined) {
+      if (!isNaN(num) && num > max) {
+        setter(max);
+        return;
+      }
+    }
+    setter(cleaned);
+  };
 
 
 
@@ -502,96 +659,145 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
 
 
 
-  // Apply canonical preset
-
+  // Apply canonical preset or custom interactive mode
   const applyPreset = (preset: CollegePreset) => {
-
     setSelectedPresetId(preset.id);
-
-    setIsCustomizingForm(false);
-
+    setInstitutionNameError(null);
+    setIsCustomizingForm(preset.id === 'custom');
     setPan(preset.pan);
-
     setSignatoryName(preset.signatory);
-
     setMobile(preset.mobile);
-
     setEmail(preset.email);
-
     setInstitutionName(preset.name);
-
     setCategory(preset.category);
-
     setProgram(preset.program);
-
     setLevel(preset.level);
-
     setExistingIntake(preset.existingIntake);
-
     setProposedIntake(preset.proposedIntake);
-
     setNbaAccredited(preset.nbaAccredited);
-
     setNbaScore(preset.nbaScore);
-
     setBuiltUpAreaSqM(preset.builtUpAreaSqM);
-
     setRegion(preset.region);
 
+    if (preset.id === 'custom') {
+      setInstitutionName('');
+      setSignatoryName('Dr. K. S. Raman');
+      setPan('AAATA9876C');
+      setEmail('director@aitr.edu.in');
+      setMobile('9876501234');
+      setSocietyName('Vanguard Educational Foundation');
+      setEntityType('Trust');
+      setStateName('Maharashtra');
+      setCityName('Pune');
+      setAddress('Sector 4, Institutional Area');
+      setNbaValidTill('2027-06-30');
+      setAccreditedCoursesCount(1);
+      setSiteVerificationRequired(false);
+      setIsRegionalLanguageCourse(false);
+      setLandAreaAcre(5.0);
+      setTerChargesPaidInr(200000);
+      setCoreBranchesCount(3);
+      setNonCsCoreBranchesCount(2);
+      setPassOutBatchesCount(1);
+      setIsPartialProgrammeApplication(false);
+    }
+
     setErrorMsg(null);
-
-    setSuccessMsg(`Preset applied: ${preset.shortName}. Configured for ${preset.expectedRoute}.`);
-
+    setSuccessMsg(
+      preset.id === 'custom'
+        ? 'Custom Application Mode activated: You can freely configure all statutory parameters and observe live routing in real time.'
+        : `Preset applied: ${preset.shortName}. Configured for ${preset.expectedRoute}.`
+    );
   };
 
+  const activePreset = ALL_SIMULATION_OPTIONS.find(p => p.id === selectedPresetId) || ALL_SIMULATION_OPTIONS[0];
 
+  // Real-time facts object reflecting every route-affecting input
+  const liveFacts = useMemo(() => ({
+    category,
+    session: '2026-27',
+    program,
+    level,
+    existingIntake: Number(existingIntake || 0),
+    proposedIntake: Number(proposedIntake || 0),
+    nbaAccredited,
+    nbaScore: nbaAccredited ? Number(nbaScore || 0) : 0,
+    nbaValidTill,
+    accreditedCoursesCount: nbaAccredited ? Number(accreditedCoursesCount || 0) : 0,
+    siteVerificationRequired,
+    isRegionalLanguageCourse,
+    coreBranchesCount: Number(coreBranchesCount || 0),
+    nonCsCoreBranchesCount: Number(nonCsCoreBranchesCount || 0),
+    passOutBatchesCount: Number(passOutBatchesCount || 0),
+    isPartialProgrammeApplication,
+    landAreaAcre: Number(landAreaAcre || 0),
+    builtUpAreaSqM: Number(builtUpAreaSqM || 0),
+    terChargesPaidInr: Number(terChargesPaidInr || 0),
+    region,
+    state: stateName,
+    city: cityName,
+    address,
+    institutionName,
+    institutionType: category === 'new_institution' ? 'new' : 'existing'
+  }), [
+    category, program, level, existingIntake, proposedIntake,
+    nbaAccredited, nbaScore, nbaValidTill, accreditedCoursesCount,
+    siteVerificationRequired, isRegionalLanguageCourse, coreBranchesCount,
+    nonCsCoreBranchesCount, passOutBatchesCount, isPartialProgrammeApplication,
+    landAreaAcre, builtUpAreaSqM, terChargesPaidInr, region, stateName, cityName,
+    address, institutionName
+  ]);
 
-  const activePreset = CANONICAL_PRESETS.find(p => p.id === selectedPresetId) || CANONICAL_PRESETS[0];
+  // Dynamic Route Engine evaluation in real-time
+  const liveRouteResult = useMemo(() => {
+    try {
+      return evaluateDynamicRoute(liveFacts);
+    } catch (e) {
+      return null;
+    }
+  }, [liveFacts]);
 
 
 
   // Step 1: Onboard
-
   const handleOnboard = async () => {
+    if (selectedPresetId === 'custom' && !institutionName.trim()) {
+      setInstitutionNameError(REQUIRED_INSTITUTION_NAME_MSG);
+      setErrorMsg(REQUIRED_INSTITUTION_NAME_MSG);
+      setSuccessMsg(null);
+      return;
+    }
 
+    setInstitutionNameError(null);
     setLoading(true);
-
     setErrorMsg(null);
-
     setSuccessMsg(null);
 
     try {
-
+      const trimmedName = institutionName.trim();
+      if (!address || address === 'Sector 4, Institutional Area') {
+        if (cityName && stateName) {
+          setAddress(`Sector 4, Institutional Area, ${cityName}, ${stateName}`);
+        }
+      }
       const res = await api.onboardNSWS({
-
+        entityName: trimmedName || 'Demo Technical Institute',
+        institutionName: trimmedName,
         pan,
-
         signatoryName,
-
         mobile,
-
         email,
-
         simulatedOtp: otp
-
       });
 
       const data = (res as any)?.data ?? res;
-
       setOnboardResult(data);
-
       setCurrentStep(2);
-
       setSuccessMsg('NSWS Onboarding & PAN KYC verified successfully (Simulated)');
-
     } catch (err: any) {
-
       setErrorMsg(err.message || 'Onboarding failed');
-
     } finally {
-
       setLoading(false);
-
     }
 
   };
@@ -611,15 +817,12 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
     try {
 
       const res = await api.verifyDSC(
-
-        `NSWS-DSC-${Date.now()}`,
-
+        'NSWS-DSC-' + Date.now(),
         tokenType !== 'UnsignedDocument',
-
         tokenType,
-
-        signatoryName
-
+        signatoryName,
+        onboardResult?.investorId || onboardResult?.nswsReference,
+        pan
       );
 
       const data = (res as any)?.data ?? res;
@@ -655,74 +858,77 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
 
 
   // Step 3 -> 4: Dynamic Route Pre-evaluation
-
   const handleEvaluateRoute = async () => {
-
-    setLoading(true);
-
-    setErrorMsg(null);
-
-    setSuccessMsg(null);
-
-    try {
-
-      const facts = {
-
-        category,
-
-        institutionType: 'existing',
-
-        program,
-
-        level,
-
-        proposedIntake,
-
-        existingIntake,
-
-        nbaAccredited,
-
-        nbaScore,
-
-        builtUpAreaSqM,
-
-        region
-
-      };
-
-      const res = await api.evaluateNSWSRoute(facts);
-
-      const data = (res as any)?.data ?? res;
-
-      setRouteDecision(data?.routeDecision ?? data);
-
-      setCurrentStep(4);
-
-    } catch (err: any) {
-
-      setErrorMsg(err.message || 'Route evaluation failed');
-
-    } finally {
-
-      setLoading(false);
-
+    if (selectedPresetId === 'custom' && !institutionName.trim()) {
+      setInstitutionNameError(REQUIRED_INSTITUTION_NAME_MSG);
+      setErrorMsg(REQUIRED_INSTITUTION_NAME_MSG);
+      setSuccessMsg(null);
+      return;
     }
-
+    setInstitutionNameError(null);
+    setLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    try {
+      const facts = {
+        ...liveFacts,
+        institutionType: category === 'new_institution' ? 'new' : 'existing'
+      };
+      const res = await api.evaluateNSWSRoute(facts);
+      const data = (res as any)?.data ?? res;
+      setRouteDecision(data?.routeDecision ?? data);
+      setCurrentStep(4);
+    } catch (err: any) {
+      if (liveRouteResult) {
+        setRouteDecision({
+          ...liveRouteResult,
+          routeType: liveRouteResult.policyRevisionId.includes('NBA') && !liveRouteResult.policyRevisionId.includes('NON-NBA')
+            ? 'SCRUTINY_ONLY'
+            : liveRouteResult.stages.includes('evc_pending')
+            ? 'SCRUTINY_AND_EVC'
+            : 'SCRUTINY_ONLY',
+          requiresEVC: liveRouteResult.stages.includes('evc_pending'),
+          fastTrackEligible: liveRouteResult.policyRevisionId.includes('NBA'),
+          policyVersion: liveRouteResult.ruleVersion
+        });
+        setCurrentStep(4);
+      } else {
+        setErrorMsg(err.message || 'Route evaluation failed');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-
-
   // Step 4 -> 5: Submit application
-
   const handleSubmitApplication = async () => {
-
+    if (routeDecision?.eligibilityStatus === 'INELIGIBLE') {
+      setErrorMsg('Submission Blocked: This application has unresolved statutory ineligibilities under AICTE norms and cannot be submitted.');
+      setSuccessMsg(null);
+      return;
+    }
+    if (selectedPresetId === 'custom' && !institutionName.trim()) {
+      setInstitutionNameError(REQUIRED_INSTITUTION_NAME_MSG);
+      setErrorMsg(REQUIRED_INSTITUTION_NAME_MSG);
+      setSuccessMsg(null);
+      return;
+    }
+    setInstitutionNameError(null);
     setLoading(true);
-
     setErrorMsg(null);
-
     setSuccessMsg(null);
-
     try {
+      const isCustom = selectedPresetId === 'custom';
+      const trimmedName = institutionName.trim();
+      const cleanInstSlug = trimmedName.replace(/[^A-Za-z0-9]/g, '').slice(0, 10).toUpperCase();
+      if (isCustom && !cleanInstSlug) {
+        setInstitutionNameError(REQUIRED_INSTITUTION_NAME_MSG);
+        setErrorMsg(REQUIRED_INSTITUTION_NAME_MSG);
+        setSuccessMsg(null);
+        setLoading(false);
+        return;
+      }
+      const uniqueSuffix = isCustom ? Math.floor(1000 + Math.random() * 9000).toString() : '';
 
       const mappedInstId = 
         selectedPresetId === 'coep' ? 'INST-SOUTH' :
@@ -731,107 +937,137 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
         selectedPresetId === 'apex' ? 'INST-APEX' :
         selectedPresetId === 'batu' || selectedPresetId === 'batu-shifting' ? 'INST-BATU' :
         selectedPresetId === 'boundary-x360' ? 'INST-VVIT' :
-        `INST-${selectedPresetId.toUpperCase()}-${region.substring(0, 3).toUpperCase()}`;
+        `INST-${cleanInstSlug}${uniqueSuffix ? `-${uniqueSuffix}` : ''}`;
 
       const presetSlug = selectedPresetId.toUpperCase().replace(/[^A-Z0-9]/g, '-');
+      const appId = isCustom 
+        ? `APP-2026-NSWS-${cleanInstSlug}-${uniqueSuffix}`
+        : `APP-2026-NSWS-${presetSlug}`;
+      const reference = isCustom
+        ? `1-NSWS-${cleanInstSlug}-${uniqueSuffix}`
+        : `1-NSWS-${presetSlug}-2026`;
+      const idempotencyKey = isCustom
+        ? `NSWS-2026-CUSTOM-${cleanInstSlug}-${uniqueSuffix}`
+        : `NSWS-2026-${selectedPresetId}`;
+
       const payload = {
-        id: `APP-2026-NSWS-${presetSlug}`,
-        reference: `1-NSWS-${presetSlug}-2026`,
-        idempotencyKey: `NSWS-2026-${selectedPresetId}`,
-        nswsReference: onboardResult?.nswsReference || `NSWS-INV-${presetSlug}`,
-        institutionName,
-
+        id: appId,
+        reference,
+        idempotencyKey,
+        nswsReference: onboardResult?.nswsReference || `NSWS-INV-${isCustom ? cleanInstSlug : presetSlug}`,
+        institutionName: isCustom ? trimmedName : institutionName,
         institutionId: mappedInstId,
-
         regionId: region,
-
         category,
-
         session: '2026-27',
-
         pan,
-
         signatoryName,
-
+        email,
+        mobile,
+        city: cityName,
+        state: stateName,
+        address,
         dscTokenSerial: 'EP2003-8841-A99B',
-
         facts: {
-
-          institutionName,
-
+          institutionName: isCustom ? trimmedName : institutionName,
+          entityName: societyName,
+          entityType,
           category,
-
           program,
-
           level,
-
-          existingIntake,
-
-          proposedIntake,
-
+          existingIntake: Number(existingIntake || 0),
+          proposedIntake: Number(proposedIntake || 0),
           nbaAccredited,
-
-          nbaScore,
-
-          builtUpAreaSqM,
-
-          region
-
+          nbaScore: nbaAccredited ? Number(nbaScore || 0) : 0,
+          nbaValidTill,
+          accreditedCoursesCount: nbaAccredited ? Number(accreditedCoursesCount || 0) : 0,
+          siteVerificationRequired,
+          isRegionalLanguageCourse,
+          coreBranchesCount: Number(coreBranchesCount || 0),
+          nonCsCoreBranchesCount: Number(nonCsCoreBranchesCount || 0),
+          passOutBatchesCount: Number(passOutBatchesCount || 0),
+          isPartialProgrammeApplication,
+          landAreaAcre: Number(landAreaAcre || 0),
+          builtUpAreaSqM: Number(builtUpAreaSqM || 0),
+          terChargesPaidInr: Number(terChargesPaidInr || 0),
+          region,
+          state: stateName,
+          city: cityName,
+          address,
+          signatoryName,
+          pan,
+          email,
+          mobile
         }
-
       };
 
       const res = await api.submitNSWSApplication(payload);
-
       const data = (res as any)?.data ?? res;
-
       const appRecord = data?.application ?? data;
       setSubmittedApp(appRecord);
       const isDupe = Boolean((res as any)?.duplicateDetected || data?.duplicateDetected || (res as any)?.alreadySubmitted);
       setIsDuplicateSubmission(isDupe);
 
+      if (isCustom) {
+        try {
+          const newEntry = {
+            id: appRecord.institutionId || mappedInstId,
+            name: trimmedName,
+            appId: appRecord.id || appId,
+            reference: appRecord.reference || reference,
+            email: email || 'principal@custom.ac.in',
+            routeType: appRecord.routeType || (routeDecision as any)?.routeType || 'Scrutiny Only'
+          };
+          const customInstList = JSON.parse(localStorage.getItem('sih_custom_institutions') || '[]');
+          const filtered = Array.isArray(customInstList)
+            ? customInstList.filter((c: any) => c && c.id !== newEntry.id && c.name?.toLowerCase() !== newEntry.name.toLowerCase() && c.name?.trim() && !/^custom\s+techn/i.test(c.name) && c.name !== 'Custom College' && c.id !== '1-CUSTOM')
+            : [];
+          const updated = [newEntry, ...filtered];
+          localStorage.setItem('sih_custom_institutions', JSON.stringify(updated));
+          localStorage.setItem('sih_active_custom_institution', JSON.stringify(newEntry));
+          try { localStorage.setItem('sih_selected_college_id', newEntry.id); } catch {}
+          window.dispatchEvent(new Event('sih:custom_institution_added'));
+        } catch {}
+      }
+
       try {
-
         await refreshData();
-
       } catch (e) {
-
         console.warn('refreshData after NSWS submission error:', e);
-
       }
 
       setCurrentStep(5);
-
       setSuccessMsg('Application submitted to AICTE Portal and persisted successfully with dynamic route snapshot!');
-
     } catch (err: any) {
-
       setErrorMsg(err.message || 'Application submission failed');
-
     } finally {
-
       setLoading(false);
-
     }
-
   };
 
 
 
+  useEffect(() => {
+    const onReset = () => {
+      applyPreset(CANONICAL_PRESETS[0]);
+      setCurrentStep(1);
+      setSubmittedApp(null);
+      setRouteDecision(null);
+      setErrorMsg(null);
+      setSuccessMsg(null);
+      setInstitutionNameError(null);
+    };
+    window.addEventListener('sih:custom_institution_reset', onReset);
+    return () => window.removeEventListener('sih:custom_institution_reset', onReset);
+  }, []);
   const handleReset = () => {
-
     setCurrentStep(1);
-
     setSubmittedApp(null);
-
     setRouteDecision(null);
-
     setDscVerified(false);
-
     setErrorMsg(null);
-
     setSuccessMsg(null);
-
+    setInstitutionNameError(null);
   };
 
 
@@ -961,32 +1197,29 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
 
 
 
-      {/* Mutual Exclusion Error / Success Feedback */}
-
-      {errorMsg && !successMsg && (
-
-        <div className="p-3.5 rounded-lg bg-rose-50 border border-rose-300 text-rose-800 text-xs flex items-center gap-2.5">
-
-          <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
-
-          <span className="font-medium">{errorMsg}</span>
-
+      {/* Validation Feedback & Notification Banners */}
+      {errorMsg && (
+        <div className="p-3.5 rounded-lg bg-rose-50 border border-rose-300 text-rose-800 text-xs flex items-center justify-between gap-2.5 animate-fadeIn shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+            <span className="font-semibold">{errorMsg}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setErrorMsg(null)}
+            className="text-rose-500 hover:text-rose-700 p-0.5 rounded cursor-pointer"
+            title="Dismiss error message"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
-
       )}
 
-
-
-      {successMsg && !errorMsg && (
-
-        <div className="p-3.5 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs flex items-center gap-2.5">
-
+      {!errorMsg && successMsg && (
+        <div className="p-3.5 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs flex items-center gap-2.5 animate-fadeIn shadow-xs">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-
           <span className="font-medium">{successMsg}</span>
-
         </div>
-
       )}
 
 
@@ -1015,91 +1248,219 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
 
 
 
-          {/* Quick Canonical Benchmark Presets */}
+          {/* PROMINENT CUSTOM INSTITUTION / INTERACTIVE DYNAMIC INTAKE (ABOVE PRESETS) */}
+          <div
+            onClick={() => applyPreset(CUSTOM_PRESET_DEF)}
+            className={`rounded-xl border transition-all p-4.5 space-y-3 cursor-pointer ${
+              selectedPresetId === 'custom'
+                ? 'bg-indigo-50/90 border-indigo-500 ring-2 ring-indigo-500/25 shadow-sm'
+                : 'bg-gradient-to-r from-indigo-50/60 via-white to-purple-50/60 border-indigo-200 hover:border-indigo-400 hover:shadow-xs'
+            }`}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-indigo-600 text-white shrink-0 mt-0.5">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-extrabold text-sm text-slate-900">
+                      Custom Technical Institution / Interactive Dynamic Intake
+                    </h4>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-900 border border-indigo-300 font-mono">
+                      ★ JUDGE SANDBOX: LIVE EVALUATION
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
+                    Create and evaluate any non-seeded institution from scratch. Configure custom programs, intake numbers, and infrastructure to test real-time deterministic statutory routing live.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  applyPreset(CUSTOM_PRESET_DEF);
+                }}
+                className={`px-4 py-2 rounded-lg font-bold text-xs shrink-0 transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs ${
+                  selectedPresetId === 'custom'
+                    ? 'bg-indigo-700 text-white ring-1 ring-indigo-800'
+                    : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                }`}
+              >
+                <span>{selectedPresetId === 'custom' ? '✓ Custom Mode Active' : 'Configure Custom Institution →'}</span>
+              </button>
+            </div>
 
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
+            {selectedPresetId === 'custom' && (
+              <div
+                className="pt-3.5 border-t border-indigo-200/80 space-y-3"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-indigo-950 block text-xs uppercase tracking-wide">
+                    Custom Institution Identity &amp; Sponsoring Body Information
+                  </span>
+                  <span className="text-[10px] text-indigo-700 font-medium bg-indigo-100 px-2 py-0.5 rounded">
+                    Editable Form Fields
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="sm:col-span-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block font-semibold text-slate-700">
+                        Institution Legal Name <span className="text-rose-500 font-bold">*</span>
+                      </label>
+                      {institutionNameError && (
+                        <span className="text-[11px] font-bold text-rose-600 flex items-center gap-1 animate-fadeIn">
+                          <AlertCircle className="w-3.5 h-3.5 text-rose-600 inline shrink-0" />
+                          <span>Required</span>
+                        </span>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      id="nsws-custom-inst-name-step1"
+                      className={`w-full px-3 py-2 border rounded-lg bg-white font-medium text-xs transition-colors ${
+                        institutionNameError
+                          ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/20 text-rose-900 focus:ring-rose-400 focus:border-rose-500'
+                          : 'border-slate-300 focus:ring-1 focus:ring-indigo-500'
+                      }`}
+                      value={institutionName}
+                      onChange={(e) => handleInstitutionNameChange(e.target.value)}
+                      onBlur={() => {
+                        if (selectedPresetId === 'custom' && !institutionName.trim()) {
+                          setInstitutionNameError(REQUIRED_INSTITUTION_NAME_MSG);
+                        }
+                      }}
+                      placeholder="e.g. Aryabhatta Institute of Technology & Research"
+                    />
+                    {institutionNameError && (
+                      <p className="mt-1.5 text-xs text-rose-600 font-semibold flex items-center gap-1.5 animate-fadeIn">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-600" />
+                        <span>{institutionNameError}</span>
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Sponsoring Trust / Society</label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2 border rounded-lg bg-white focus:ring-1 focus:ring-indigo-500"
+                      value={societyName}
+                      onChange={(e) => setSocietyName(e.target.value)}
+                      placeholder="e.g. Vanguard Educational Foundation"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Entity Legal Type</label>
+                    <select
+                      className="w-full px-3 py-2 border rounded-lg bg-white text-xs"
+                      value={entityType}
+                      onChange={(e) => setEntityType(e.target.value)}
+                    >
+                      <option value="Trust">Registered Trust</option>
+                      <option value="Society">Registered Society</option>
+                      <option value="Section 8 Company">Section 8 Company (Not-for-Profit)</option>
+                      <option value="Government">Government / Constituent</option>
+                      <option value="University Managed">University Managed</option>
+                      <option value="Private-Self Financing">Private-Self Financing</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">AICTE Regional Office Jurisdiction</label>
+                    <select
+                      className="w-full px-3 py-2 border rounded-lg bg-white text-xs"
+                      value={region}
+                      onChange={(e) => setRegion(e.target.value)}
+                    >
+                      <option value="Western">Western Regional Office (Mumbai)</option>
+                      <option value="South-Central">South-Central Regional Office (Hyderabad)</option>
+                      <option value="North-Western">North-Western Regional Office (Chandigarh)</option>
+                      <option value="Southern">Southern Regional Office (Chennai)</option>
+                      <option value="Northern">Northern Regional Office (Kanpur)</option>
+                      <option value="Eastern">Eastern Regional Office (Kolkata)</option>
+                      <option value="South-Western">South-Western Regional Office (Bengaluru)</option>
+                      <option value="Central">Central Regional Office (Bhopal)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">State &amp; City</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        className="w-full px-2.5 py-2 border rounded-lg bg-white text-xs"
+                        value={stateName}
+                        onChange={(e) => setStateName(e.target.value)}
+                        placeholder="State"
+                      />
+                      <input
+                        type="text"
+                        className="w-full px-2.5 py-2 border rounded-lg bg-white text-xs"
+                        value={cityName}
+                        onChange={(e) => setCityName(e.target.value)}
+                        placeholder="City"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
-            <div className="flex items-center justify-between">
-
-              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-
-                <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-
-                Quick-Select Canonical Benchmark College:
-
-              </span>
-
-              <span className="text-[10px] text-slate-500">Click to instantly populate realistic regulatory data</span>
-
+          {/* Canonical Benchmark Presets (7 Colleges across 6 Institutions) */}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <div>
+                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <BookmarkCheck className="w-3.5 h-3.5 text-blue-600" />
+                  Or Select a Canonical AICTE Benchmark Scenario:
+                </span>
+                <span className="text-[10px] text-slate-500 block mt-0.5">
+                  Seven statutory scenarios across six institutions &mdash; Dr. BATU models 2 distinct dockets: Progressive Closure / Rationalization (Desk Scrutiny Only) and Rural Campus Relocation (Physical Site EVC).
+                </span>
+              </div>
+              <span className="text-[10px] text-blue-700 font-semibold shrink-0">Click preset to load benchmark</span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-
               {CANONICAL_PRESETS.map((p) => {
-
                 const isSelected = selectedPresetId === p.id;
-
                 return (
-
                   <button
-
                     key={p.id}
-
                     type="button"
-
                     onClick={() => applyPreset(p)}
-
-                    className={`p-2.5 rounded-lg border text-left transition-all flex flex-col justify-between ${
-
+                    className={`p-2.5 rounded-lg border text-left transition-all flex flex-col justify-between cursor-pointer ${
                       isSelected
-
                         ? 'border-blue-600 bg-blue-50 ring-2 ring-blue-500/20 shadow-xs'
-
                         : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
-
                     }`}
-
                   >
-
                     <div>
-
-                      <span className="font-bold text-xs text-slate-900 block truncate">{p.shortName}</span>
-
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium inline-block mt-1 border ${p.badgeColor}`}>
-
-                        {p.badge}
-
+                      <span className="font-bold text-xs block truncate text-slate-900">
+                        {p.shortName}
                       </span>
-
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium inline-block mt-1 border ${p.badgeColor}`}>
+                        {p.badge}
+                      </span>
                     </div>
-
                   </button>
-
                 );
-
               })}
-
             </div>
 
             {/* Active Preset Regulatory Info */}
-
-            <div className="p-2.5 rounded-lg bg-blue-50/60 border border-blue-200/80 text-[11px] text-blue-950 flex items-start gap-2">
-
-              <BookmarkCheck className="w-3.5 h-3.5 text-blue-600 flex-shrink-0 mt-0.5" />
-
-              <div>
-
-                <strong>Active Benchmark:</strong> {activePreset.name} &mdash; <em>Expected: {activePreset.expectedRoute}</em>
-
-                <p className="text-[10px] text-blue-800/90 mt-0.5">{activePreset.regulatoryCite}</p>
-
+            {selectedPresetId !== 'custom' && (
+              <div className="p-2.5 rounded-lg border text-[11px] flex items-start gap-2 bg-blue-50/60 border-blue-200/80 text-blue-950">
+                <BookmarkCheck className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-blue-600" />
+                <div>
+                  <strong>Active Benchmark:</strong> {activePreset.name} &mdash; <em>Expected: {activePreset.expectedRoute}</em>
+                  <p className="text-[10px] mt-0.5 text-blue-800/90">{activePreset.regulatoryCite}</p>
+                </div>
               </div>
-
-            </div>
-
+            )}
           </div>
-
-
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
 
@@ -1206,6 +1567,13 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
           </div>
 
 
+
+          {institutionNameError && selectedPresetId === 'custom' && (
+            <div className="p-3 rounded-lg bg-rose-50 border border-rose-300 text-rose-800 text-xs flex items-center gap-2 animate-fadeIn">
+              <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+              <span className="font-semibold">{institutionNameError}</span>
+            </div>
+          )}
 
           <div className="flex justify-end pt-3 border-t border-slate-100">
 
@@ -1463,7 +1831,7 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
 
 
 
-          {!isCustomizingForm && selectedPresetId ? (
+          {!isCustomizingForm && selectedPresetId && selectedPresetId !== 'custom' ? (
 
             /* Read-Only Structured Benchmark Summary Cards */
 
@@ -1597,255 +1965,738 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
 
           ) : (
 
-            /* Editable Form when User Toggles Custom Mode */
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-
-              <div>
-
-                <label className="block font-semibold text-slate-700 mb-1">Institution Legal Name</label>
-
-                <input
-
-                  type="text"
-
-                  className="w-full px-3 py-2 border rounded-lg bg-slate-50 focus:bg-white"
-
-                  value={institutionName}
-
-                  onChange={(e) => setInstitutionName(e.target.value)}
-
-                />
-
-              </div>
-
-
-
-              <div>
-
-                <label className="block font-semibold text-slate-700 mb-1">Application Category</label>
-
-                <select
-
-                  className="w-full px-3 py-2 border rounded-lg bg-slate-50 focus:bg-white text-xs"
-
-                  value={category}
-
-                  onChange={(e: any) => setCategory(e.target.value)}
-
-                >
-
-                  <option value="increase_intake">Table 2.3 Row 9: Increase in Intake in Existing Program</option>
-
-                  <option value="new_institution">Chapter I: Setting up New Technical Institution</option>
-
-                  <option value="extension_of_approval">Table 2.3 Row 1: Extension of Approval (EoA Self-Disclosure)</option>
-
-                  <option value="nri_seats">Table 2.3 Row 2: Introduction / Continuation of NRI Seats</option>
-
-                  <option value="conversion_diploma_degree">Table 2.3 Row 3: Conversion of Diploma to Degree Level</option>
-
-                  <option value="name_change_institution">Table 2.3 Row 4: Change in Name of Institution / Board</option>
-
-                  <option value="new_programme_level">Table 2.3 Row 5: Start New Programme / Level in Existing Institution</option>
-
-                  <option value="merger_institutions">Table 2.3 Row 6: Merger of Institutions in Same Campus</option>
-
-                  <option value="break_restoration_hibernation">Table 2.3 Row 7: Break in EoA / Restoration / Hibernation</option>
-
-                  <option value="supernumerary_fn_oci">Table 2.3 Row 8: Supernumerary Seats for FN / OCI / Gulf Children</option>
-
-                  <option value="integrated_dual_degree">Table 2.3 Row 10: Introduction of Integrated / Dual Degree Course</option>
-
-                  <option value="fellow_programme_fpm">Table 2.3 Row 11: Fellow Programme in Management (FPM)</option>
-
-                  <option value="course_name_change">Table 2.3 Row 12: Change Name of Course / Reduction in Intake</option>
-
-                  <option value="collaboration_twinning">Table 2.3 Row 13: Collaboration & Twinning Programme</option>
-
-                  <option value="change_of_site">Table 2.3 Row 14: Change of Site / Location</option>
-
-                  <option value="closure">Table 2.3 Row 15: Closure of Technical Institution</option>
-
-                  <option value="conversion_coeducation">Table 2.3 Row 16: Conversion of Women's Institution to Co-ed</option>
-
-                  <option value="closure_course">Table 2.3 Row 17: Closure of Programme(s) / Course(s)</option>
-
-                  <option value="bank_change">Table 2.3 Row 18: Change in Bank Details</option>
-
-                  <option value="trust_change">Table 2.3 Row 19: Change in Name of Trust / Society</option>
-
-                  <option value="conversion_deemed_university">Table 2.3 Row 20: Conversion to Deemed-to-be-University</option>
-
-                  <option value="odl_courses">Table 2.3 Row 21: Open and Distance Learning (ODL) / Online Learning</option>
-
-                  <option value="bba_bca_bms">Errata Page 42: BBA / BCA / BMS Programmes (As Is Where Is)</option>
-
-                </select>
-
-              </div>
-
-
-
-              <div>
-
-                <label className="block font-semibold text-slate-700 mb-1">Academic Program</label>
-
-                <input
-
-                  type="text"
-
-                  className="w-full px-3 py-2 border rounded-lg bg-slate-50 focus:bg-white"
-
-                  value={program}
-
-                  onChange={(e) => setProgram(e.target.value)}
-
-                />
-
-              </div>
-
-
-
-              <div>
-
-                <label className="block font-semibold text-slate-700 mb-1">AICTE Region</label>
-
-                <select
-
-                  className="w-full px-3 py-2 border rounded-lg bg-slate-50 focus:bg-white text-xs"
-
-                  value={region}
-
-                  onChange={(e) => setRegion(e.target.value)}
-
-                >
-
-                  <option value="Western">Western Regional Office (Mumbai)</option>
-
-                  <option value="South-Central">South-Central Regional Office (Hyderabad)</option>
-
-                  <option value="North-Western">North-Western Regional Office (Chandigarh)</option>
-
-                  <option value="Southern">Southern Regional Office (Chennai)</option>
-
-                </select>
-
-              </div>
-
-
-
-              <div>
-
-                <label className="block font-semibold text-slate-700 mb-1">Existing Approved Intake (Seats)</label>
-
-                <input
-
-                  type="number"
-
-                  className="w-full px-3 py-2 border rounded-lg font-mono bg-slate-50 focus:bg-white"
-
-                  value={existingIntake}
-
-                  onChange={(e) => setExistingIntake(Number(e.target.value))}
-
-                />
-
-              </div>
-
-
-
-              <div>
-
-                <label className="block font-semibold text-slate-700 mb-1">Proposed Intake (Seats)</label>
-
-                <input
-
-                  type="number"
-
-                  className="w-full px-3 py-2 border rounded-lg font-mono bg-slate-50 focus:bg-white"
-
-                  value={proposedIntake}
-
-                  onChange={(e) => setProposedIntake(Number(e.target.value))}
-
-                />
-
-              </div>
-
-
-
-              <div className="flex items-center gap-3 pt-3">
-
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-
-                  <input
-
-                    type="checkbox"
-
-                    checked={nbaAccredited}
-
-                    onChange={(e) => setNbaAccredited(e.target.checked)}
-
-                    className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4"
-
-                  />
-
-                  <span className="font-semibold text-slate-700 text-xs">NBA Accredited Course (Score ≥ 650 for Fast-Track)</span>
-
-                </label>
-
-              </div>
-
-
-
-              {nbaAccredited && (
-
-                <div>
-
-                  <label className="block font-semibold text-slate-700 mb-1">NBA Score (Out of 1000 - APH Threshold ≥ 650)</label>
-
-                  <input
-
-                    type="number"
-
-                    className="w-full px-3 py-2 border rounded-lg font-mono bg-slate-50 focus:bg-white"
-
-                    value={nbaScore}
-
-                    onChange={(e) => setNbaScore(Number(e.target.value))}
-
-                  />
-
+            /* Interactive Form organized into 4 Clear Demarcated Regulatory Functional Sections */
+            <div className="space-y-5">
+              
+              {/* SECTION 1: STATUTORY ROUTE DETERMINANTS */}
+              <div className="p-4 bg-purple-50/50 rounded-xl border border-purple-200 space-y-3">
+                <div className="flex items-center justify-between border-b border-purple-200/80 pb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-purple-600 animate-pulse"></span>
+                    <h4 className="text-xs font-bold text-purple-950 uppercase tracking-wide">
+                      1. Statutory Route Determinants
+                    </h4>
+                  </div>
+                  <span className="text-[10px] font-semibold bg-purple-200 text-purple-900 px-2 py-0.5 rounded">
+                    Directly Dictates Route Spine &amp; Verification Stages
+                  </span>
                 </div>
 
-              )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <label className="block font-semibold text-slate-800 mb-1">
+                      Statutory Application Category
+                    </label>
+                    <select
+                      className="w-full px-3 py-2 border rounded-lg bg-white focus:ring-1 focus:ring-purple-500 font-medium text-xs"
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                    >
+                      <option value="increase_intake">Increase in Intake / Additional Course(s)</option>
+                      <option value="new_institution">Setting up New Technical Institution</option>
+                      <option value="extension_of_approval">Extension of Approval (EoA Self-Disclosure)</option>
+                      <option value="nri_seats">Introduction / Continuation of NRI Seats</option>
+                      <option value="conversion_diploma_degree">Conversion of Diploma to Degree Level</option>
+                      <option value="name_change_institution">Change in Name of Institution / Board</option>
+                      <option value="new_programme_level">Start New Programme / Level</option>
+                      <option value="merger_institutions">Merger of Institutions in Same Campus</option>
+                      <option value="break_restoration_hibernation">Break in EoA / Restoration / Hibernation</option>
+                      <option value="supernumerary_fn_oci">Supernumerary Seats for FN / OCI / Gulf</option>
+                      <option value="integrated_dual_degree">Introduction of Integrated / Dual Degree Course</option>
+                      <option value="fellow_programme_fpm">Fellow Programme in Management (FPM)</option>
+                      <option value="course_name_change">Change Name of Course / Reduction in Intake</option>
+                      <option value="collaboration_twinning">Collaboration & Twinning Programme</option>
+                      <option value="change_of_site">Change of Site / Location</option>
+                      <option value="closure">Closure of Technical Institution</option>
+                      <option value="conversion_coeducation">Conversion of Women's Institution to Co-ed</option>
+                      <option value="closure_course">Closure of Programme(s) / Course(s)</option>
+                      <option value="bank_change">Change in Bank Details</option>
+                      <option value="trust_change">Change in Name of Trust / Society</option>
+                      <option value="conversion_deemed_university">Conversion to Deemed-to-be-University</option>
+                      <option value="odl_courses">Open and Distance Learning (ODL) / Online Learning</option>
+                      <option value="bba_bca_bms">BBA / BCA / BMS Programmes (As-Is-Where-Is Intake)</option>
+                    </select>
+                  </div>
 
+                  <div>
+                    <label className="block font-semibold text-slate-800 mb-1">
+                      Academic Programme
+                    </label>
+                    <select
+                      className="w-full px-3 py-2 border rounded-lg bg-white focus:ring-1 focus:ring-purple-500 text-xs"
+                      value={program}
+                      onChange={(e) => setProgram(e.target.value)}
+                    >
+                      <option value="Engineering and Technology">Engineering and Technology</option>
+                      <option value="Management">Management</option>
+                      <option value="Computer Applications">Computer Applications (MCA)</option>
+                      <option value="Pharmacy">Pharmacy</option>
+                      <option value="Architecture and Planning">Architecture and Planning</option>
+                      <option value="Hotel Management and Catering Technology">Hotel Management and Catering Technology</option>
+                      <option value="Applied Arts and Crafts">Applied Arts and Crafts</option>
+                      <option value="Design">Design</option>
+                    </select>
+                    {program === 'Engineering and Technology' && (
+                      <span className="text-[10px] text-purple-700 block mt-1">
+                        &bull; Engineering programmes require Core Branches check (Clause 2.6(c)(i)).
+                      </span>
+                    )}
+                  </div>
 
+                  <div>
+                    <label className="block font-semibold text-slate-800 mb-1">
+                      Academic Level
+                    </label>
+                    <select
+                      className="w-full px-3 py-2 border rounded-lg bg-white focus:ring-1 focus:ring-purple-500 text-xs"
+                      value={level}
+                      onChange={(e) => setLevel(e.target.value)}
+                    >
+                      <option value="Under Graduate">Under Graduate (UG)</option>
+                      <option value="Post Graduate">Post Graduate (PG)</option>
+                      <option value="Diploma">Diploma Level</option>
+                      <option value="Post Diploma">Post Diploma</option>
+                    </select>
+                  </div>
 
-              <div>
+                  <div>
+                    <label className="block font-semibold text-slate-800 mb-1">
+                      Existing Approved Intake (X)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      className="w-full px-3 py-2 border rounded-lg font-mono bg-white focus:ring-1 focus:ring-purple-500"
+                      value={existingIntake}
+                      onChange={handleNumericChange(setExistingIntake, true)}
+                    />
+                    {existingIntake === 360 && (
+                      <div className="mt-1 p-1.5 bg-amber-50 border border-amber-300 rounded text-[10px] text-amber-900 font-semibold flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3 text-amber-600 flex-shrink-0" />
+                        <span>Statutory Ambiguity: X = 360 boundary condition is omitted from APH Errata p. 42 table.</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-                <label className="block font-semibold text-slate-700 mb-1">Total Built-up Area (Sq. Meters)</label>
+                {/* NBA Accreditation & Quality Score */}
+                <div className="p-3 bg-white rounded-lg border border-purple-100 space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={nbaAccredited}
+                        onChange={(e) => setNbaAccredited(e.target.checked)}
+                        className="rounded text-purple-600 focus:ring-purple-500 w-4 h-4"
+                      />
+                      <span className="font-bold text-slate-900 text-xs">
+                        NBA Accreditation (National Board of Accreditation)
+                      </span>
+                    </label>
+                    {(() => {
+                      const isEvcWaived = liveRouteResult?.skippedStages?.some((s: any) => (typeof s === 'object' ? s.stage : s) === 'evc_pending');
+                      const isEvcMandatory = liveRouteResult?.stages?.includes('evc_pending');
+                      if (isEvcWaived) {
+                        return (
+                          <span className="text-[10px] font-bold px-2.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            Fast-Track Eligible: Physical EVC Waived (§2.6(c)(i))
+                          </span>
+                        );
+                      }
+                      if (isEvcMandatory) {
+                        return (
+                          <span className="text-[10px] font-bold px-2.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300">
+                            Physical EVC Inspection Mandated (§2.4 / Errata p. 42)
+                          </span>
+                        );
+                      }
+                      return (
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-300">
+                          Desk Scrutiny Only (§2.3 / Table 2.3)
+                        </span>
+                      );
+                    })()}
+                  </div>
 
-                <input
+                  {nbaAccredited && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-purple-50 text-xs">
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">
+                          NBA Quality Score (0–1000 | Statutory Threshold ≥ 650)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="1000"
+                          className="w-full px-3 py-2 border rounded-lg font-mono bg-slate-50 focus:bg-white"
+                          value={nbaScore}
+                          onChange={handleNumericChange(setNbaScore, true, 1000)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">
+                          Accreditation Valid Till
+                        </label>
+                        <input
+                          type="date"
+                          className="w-full px-3 py-2 border rounded-lg font-mono bg-slate-50 focus:bg-white text-xs"
+                          value={nbaValidTill}
+                          onChange={(e) => setNbaValidTill(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
 
-                  type="number"
+                {/* Conditional Route Determinants */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 text-xs">
+                  {/* Engineering Core Branches */}
+                  {program === 'Engineering and Technology' && category === 'increase_intake' && (
+                    <div className="p-3 bg-white rounded-lg border border-purple-100 space-y-2 col-span-1 sm:col-span-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-900 text-xs">
+                          Core Engineering Branches (Errata Page 42 Clause 2.6(c)(i))
+                        </span>
+                        <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-purple-700 font-medium">
+                          <input
+                            type="checkbox"
+                            checked={isRegionalLanguageCourse}
+                            onChange={(e) => setIsRegionalLanguageCourse(e.target.checked)}
+                            className="rounded text-purple-600 focus:ring-purple-500 w-3.5 h-3.5"
+                          />
+                          <span>Regional Language Medium (Exempts Core Rule)</span>
+                        </label>
+                      </div>
 
-                  className="w-full px-3 py-2 border rounded-lg font-mono bg-slate-50 focus:bg-white"
+                      {!isRegionalLanguageCourse && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                          <div>
+                            <label className="block text-[11px] text-slate-600 mb-1">
+                              Total Core Branches (Min 3 required)
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              className="w-full px-2.5 py-1.5 border rounded-lg font-mono text-xs bg-slate-50 focus:bg-white"
+                              value={coreBranchesCount}
+                              onChange={handleNumericChange(setCoreBranchesCount, true)}
+                            />
+                            {coreBranchesCount < 3 && (
+                              <span className="text-[10px] text-rose-600 font-semibold block mt-0.5">
+                                Deficit: At least 3 core branches required for intake expansion.
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <label className="block text-[11px] text-slate-600 mb-1">
+                              Non-CS Core Branches (Min 2 required)
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              className="w-full px-2.5 py-1.5 border rounded-lg font-mono text-xs bg-slate-50 focus:bg-white"
+                              value={nonCsCoreBranchesCount}
+                              onChange={handleNumericChange(setNonCsCoreBranchesCount, true)}
+                            />
+                            {nonCsCoreBranchesCount < 2 && (
+                              <span className="text-[10px] text-rose-600 font-semibold block mt-0.5">
+                                Deficit: At least 2 non-CS core branches required.
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-                  value={builtUpAreaSqM}
+                  {/* ODL Batches */}
+                  {(category === 'odl_courses' || category === 'online_learning') && (
+                    <div className="p-3 bg-white rounded-lg border border-purple-100 space-y-1 col-span-1 sm:col-span-2">
+                      <label className="block font-bold text-slate-900 text-xs mb-1">
+                        Graduated Pass-Out Batches (Clause 5.3.8 &amp; Addendum Item 32)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        className="w-full px-2.5 py-1.5 border rounded-lg font-mono text-xs bg-slate-50 focus:bg-white"
+                        value={passOutBatchesCount}
+                        onChange={handleNumericChange(setPassOutBatchesCount, true)}
+                      />
+                      {passOutBatchesCount < 1 && (
+                        <span className="text-[10px] text-rose-600 font-semibold block mt-0.5">
+                          Ineligible: Minimum 1 batch must have graduated to apply for ODL/OL.
+                        </span>
+                      )}
+                    </div>
+                  )}
 
-                  onChange={(e) => setBuiltUpAreaSqM(Number(e.target.value))}
+                  {/* University Partial App */}
+                  {(category === 'conversion_deemed_university' || (institutionName || '').toLowerCase().includes('univ')) && (
+                    <div className="p-3 bg-white rounded-lg border border-purple-100 col-span-1 sm:col-span-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isPartialProgrammeApplication}
+                          onChange={(e) => setIsPartialProgrammeApplication(e.target.checked)}
+                          className="rounded text-rose-600 focus:ring-rose-500 w-4 h-4"
+                        />
+                        <div>
+                          <span className="font-bold text-slate-900 text-xs block">
+                            Partial Programme Application (Prohibited under Public Notice 26.11.2025)
+                          </span>
+                          <span className="text-[10px] text-slate-500">
+                            Universities must apply for all technical programmes together. Partial applications trigger regulatory rejection.
+                          </span>
+                        </div>
+                      </label>
+                    </div>
+                  )}
 
-                />
-
+                  {/* Site Verification Trigger */}
+                  <div className="p-2.5 bg-white rounded-lg border border-purple-100 col-span-1 sm:col-span-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={siteVerificationRequired}
+                        onChange={(e) => setSiteVerificationRequired(e.target.checked)}
+                        className="rounded text-amber-600 focus:ring-amber-500 w-4 h-4"
+                      />
+                      <span className="font-semibold text-slate-800 text-xs">
+                        Physical Site Relocation / Shifting / Restoration (Mandates On-Site EVC)
+                      </span>
+                    </label>
+                  </div>
+                </div>
               </div>
 
+              {/* SECTION 2: STATUTORY CAPACITY CALCULATIONS */}
+              <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-200 space-y-3">
+                <div className="flex items-center justify-between border-b border-blue-200/80 pb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                    <h4 className="text-xs font-bold text-blue-950 uppercase tracking-wide">
+                      2. Statutory Capacity Calculations (Intake Formulas)
+                    </h4>
+                  </div>
+                  <span className="text-[10px] font-semibold bg-blue-200 text-blue-900 px-2 py-0.5 rounded">
+                    Computes Permissible Ceiling Without Altering Route
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <label className="block font-semibold text-slate-800 mb-1">
+                      Proposed Sanctioned Intake (Seats)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      className="w-full px-3 py-2 border rounded-lg font-mono bg-white focus:ring-1 focus:ring-blue-500"
+                      value={proposedIntake}
+                      onChange={handleNumericChange(setProposedIntake, true)}
+                    />
+                    {category === 'increase_intake' && proposedIntake < existingIntake && (
+                      <span className="text-[10px] text-rose-600 font-semibold block mt-1">
+                        Inconsistency: Proposed intake cannot be less than existing sanctioned intake in an intake increase application.
+                      </span>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-800 mb-1">
+                      Accredited Courses Count (Divisions Allowed: 60 seats/course)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="15"
+                      className="w-full px-3 py-2 border rounded-lg font-mono bg-white focus:ring-1 focus:ring-blue-500"
+                      value={accreditedCoursesCount}
+                      onChange={handleNumericChange(setAccreditedCoursesCount, true, 15)}
+                    />
+                    <span className="text-[10px] text-slate-500 block mt-1">
+                      Each accredited course contributes +60 seats to the allowable ceiling under Errata p. 42.
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 3: STATUTORY COMPLIANCE & INFRASTRUCTURE NORMS */}
+              <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-200 space-y-3">
+                <div className="flex items-center justify-between border-b border-emerald-200/80 pb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                    <h4 className="text-xs font-bold text-emerald-950 uppercase tracking-wide">
+                      3. Statutory Compliance &amp; Infrastructure Norms
+                    </h4>
+                  </div>
+                  <span className="text-[10px] font-semibold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded">
+                    Norm Compliance &amp; Processing Fees
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div>
+                    <label className="block font-semibold text-slate-800 mb-1">
+                      Total Built-up Area (Sq. Meters)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      className="w-full px-3 py-2 border rounded-lg font-mono bg-white focus:ring-1 focus:ring-emerald-500"
+                      value={builtUpAreaSqM}
+                      onChange={handleNumericChange(setBuiltUpAreaSqM, false)}
+                    />
+                    {builtUpAreaSqM < 0 && (
+                      <span className="text-[10px] text-rose-600 font-semibold block mt-1">
+                        Violation: Negative built-up area violates Annexure 4 norms.
+                      </span>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-800 mb-1">
+                      Land Area (Acres)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      className="w-full px-3 py-2 border rounded-lg font-mono bg-white focus:ring-1 focus:ring-emerald-500"
+                      value={landAreaAcre}
+                      onChange={handleNumericChange(setLandAreaAcre, false)}
+                    />
+                    {Number(landAreaAcre) < 0 && (
+                      <span className="text-[10px] text-rose-600 font-semibold block mt-1">
+                        Violation: Negative land area violates Chapter I/II norms.
+                      </span>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-800 mb-1">
+                      TER / Processing Fee Paid (INR)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      className="w-full px-3 py-2 border rounded-lg font-mono bg-white focus:ring-1 focus:ring-emerald-500"
+                      value={terChargesPaidInr}
+                      onChange={handleNumericChange(setTerChargesPaidInr, false)}
+                    />
+                    {Number(terChargesPaidInr) < 0 && (
+                      <span className="text-[10px] text-rose-600 font-semibold block mt-1">
+                        Violation: TER fee cannot be negative.
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 4: INSTITUTIONAL IDENTITY & REGIONAL JURISDICTION */}
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+                    <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                      4. Institutional Identity &amp; Regional Jurisdiction
+                    </h4>
+                  </div>
+                  <span className="text-[10px] font-semibold bg-slate-200 text-slate-700 px-2 py-0.5 rounded">
+                    Registry Identification &amp; Office Allocation
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block font-semibold text-slate-700">
+                        Institution Legal Name {selectedPresetId === 'custom' && <span className="text-rose-500 font-bold">*</span>}
+                      </label>
+                      {institutionNameError && selectedPresetId === 'custom' && (
+                        <span className="text-[11px] font-bold text-rose-600 flex items-center gap-1 animate-fadeIn">
+                          <AlertCircle className="w-3.5 h-3.5 text-rose-600 inline shrink-0" />
+                          <span>Required</span>
+                        </span>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      id="nsws-custom-inst-name-step3"
+                      className={`w-full px-3 py-2 border rounded-lg bg-white font-medium text-xs transition-colors ${
+                        institutionNameError && selectedPresetId === 'custom'
+                          ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/20 text-rose-900 focus:ring-rose-400 focus:border-rose-500'
+                          : 'border-slate-300 focus:ring-1 focus:ring-indigo-500'
+                      }`}
+                      value={institutionName}
+                      onChange={(e) => handleInstitutionNameChange(e.target.value)}
+                      onBlur={() => {
+                        if (selectedPresetId === 'custom' && !institutionName.trim()) {
+                          setInstitutionNameError(REQUIRED_INSTITUTION_NAME_MSG);
+                        }
+                      }}
+                      placeholder="e.g. Aryabhatta Institute of Technology & Research"
+                    />
+                    {institutionNameError && selectedPresetId === 'custom' && (
+                      <p className="mt-1.5 text-xs text-rose-600 font-semibold flex items-center gap-1.5 animate-fadeIn">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-600" />
+                        <span>{institutionNameError}</span>
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Sponsoring Society / Trust</label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2 border rounded-lg bg-white text-xs"
+                      value={societyName}
+                      onChange={(e) => setSocietyName(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Entity Legal Type</label>
+                    <select
+                      className="w-full px-3 py-2 border rounded-lg bg-white text-xs"
+                      value={entityType}
+                      onChange={(e) => setEntityType(e.target.value)}
+                    >
+                      <option value="Trust">Registered Charitable Trust</option>
+                      <option value="Society">Registered Educational Society</option>
+                      <option value="Section 8 Company">Section 8 Company (Not-for-Profit)</option>
+                      <option value="Government">Government / Constituent Institution</option>
+                      <option value="University Managed">University Managed Institution</option>
+                      <option value="Private-Self Financing">Private-Self Financing Institution</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">AICTE Regional Office Jurisdiction</label>
+                    <select
+                      className="w-full px-3 py-2 border rounded-lg bg-white text-xs"
+                      value={region}
+                      onChange={(e) => setRegion(e.target.value)}
+                    >
+                      <option value="Western">Western Regional Office (Mumbai)</option>
+                      <option value="South-Central">South-Central Regional Office (Hyderabad)</option>
+                      <option value="North-Western">North-Western Regional Office (Chandigarh)</option>
+                      <option value="Southern">Southern Regional Office (Chennai)</option>
+                      <option value="Northern">Northern Regional Office (Kanpur)</option>
+                      <option value="Eastern">Eastern Regional Office (Kolkata)</option>
+                      <option value="South-Western">South-Western Regional Office (Bengaluru)</option>
+                      <option value="Central">Central Regional Office (Bhopal)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">State &amp; City</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        placeholder="State"
+                        className="w-full px-2.5 py-2 border rounded-lg bg-white text-xs"
+                        value={stateName}
+                        onChange={(e) => setStateName(e.target.value)}
+                      />
+                      <input
+                        type="text"
+                        placeholder="City"
+                        className="w-full px-2.5 py-2 border rounded-lg bg-white text-xs"
+                        value={cityName}
+                        onChange={(e) => setCityName(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Campus Postal Address</label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2 border rounded-lg bg-white text-xs"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Autofilled & Synchronized Details from Step 1 */}
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Entity / Trust PAN (Autofilled from Step 1)</label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2 border rounded-lg font-mono uppercase bg-slate-50 focus:bg-white text-xs"
+                      value={pan}
+                      onChange={(e) => setPan(e.target.value.toUpperCase())}
+                      placeholder="AAATA9876C"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Authorized Signatory Name (Autofilled from Step 1)</label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2 border rounded-lg bg-slate-50 focus:bg-white text-xs"
+                      value={signatoryName}
+                      onChange={(e) => setSignatoryName(e.target.value)}
+                      placeholder="Dr. K. S. Raman"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Official Institutional Email (Autofilled from Step 1)</label>
+                    <input
+                      type="email"
+                      className="w-full px-3 py-2 border rounded-lg bg-slate-50 focus:bg-white text-xs"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="director@aitr.edu.in"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Authorized Mobile Number (Autofilled from Step 1)</label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2 border rounded-lg bg-slate-50 focus:bg-white text-xs"
+                      value={mobile}
+                      onChange={(e) => setMobile(e.target.value)}
+                      placeholder="9876501234"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Real-Time Live Route Preview Box */}
+              {liveRouteResult && (
+                <div className={`p-4 rounded-xl border space-y-3 text-xs ${
+                  liveRouteResult.eligibilityStatus === 'INELIGIBLE'
+                    ? 'border-rose-300 bg-rose-50/70'
+                    : liveRouteResult.eligibilityStatus === 'POLICY_REVIEW_REQUIRED' || liveRouteResult.result === 'review_required'
+                    ? 'border-amber-300 bg-amber-50/70'
+                    : 'border-purple-200 bg-purple-50/70'
+                }`}>
+                  {liveRouteResult.eligibilityStatus === 'INELIGIBLE' ? (
+                    <div className="p-3 bg-white rounded-lg border-2 border-rose-400 text-rose-950 space-y-1.5 shadow-xs">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 font-bold text-rose-900">
+                          <XCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                          <span className="uppercase tracking-wide text-xs">🛑 Statutory Ineligibility Detected — Application Cannot Proceed</span>
+                        </div>
+                        <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-rose-200 text-rose-900">
+                          INELIGIBLE
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-rose-800 leading-tight">
+                        Application parameters fail statutory minimum criteria under AICTE norms. These deficits must be cured before submission.
+                      </p>
+                      {liveRouteResult.unresolvedFlags && liveRouteResult.unresolvedFlags.length > 0 && (
+                        <ul className="list-disc pl-5 text-[11px] space-y-0.5 pt-1 border-t border-rose-100 font-mono text-rose-800">
+                          {liveRouteResult.unresolvedFlags.map((flag, fIdx) => (
+                            <li key={fIdx}>{flag}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  ) : liveRouteResult.unresolvedFlags && liveRouteResult.unresolvedFlags.length > 0 ? (
+                    <div className="p-3 bg-white rounded-lg border-2 border-amber-400 text-amber-950 space-y-1.5 shadow-xs">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                          <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                          <span className="uppercase tracking-wide text-xs">⚠️ Statutory Policy Review Required — Case Held</span>
+                        </div>
+                        <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-amber-200 text-amber-900">
+                          REVIEW REQUIRED
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-amber-800 leading-tight">
+                        Boundary condition or parameter conflict detected. Case requires authoritative Council policy determination.
+                      </p>
+                      <ul className="list-disc pl-5 text-[11px] space-y-0.5 pt-1 border-t border-amber-100 font-mono text-amber-800">
+                        {liveRouteResult.unresolvedFlags.map((flag, fIdx) => (
+                          <li key={fIdx}>{flag}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Cpu className="w-4 h-4 text-purple-700" />
+                      <span className="font-extrabold text-purple-950 tracking-wide uppercase text-xs">
+                        ⚡ Real-Time Statutory Route Calculation Engine (APH Table 2.3)
+                      </span>
+                    </div>
+                    <span className={`text-[10px] font-bold font-mono px-2.5 py-0.5 rounded-full border ${
+                      liveRouteResult.eligibilityStatus === 'INELIGIBLE'
+                        ? 'bg-rose-100 text-rose-900 border-rose-300'
+                        : liveRouteResult.eligibilityStatus === 'POLICY_REVIEW_REQUIRED' || liveRouteResult.result === 'review_required'
+                        ? 'bg-amber-100 text-amber-900 border-amber-300'
+                        : liveRouteResult.stages.includes('evc_pending')
+                        ? 'bg-amber-100 text-amber-900 border-amber-300'
+                        : 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                    }`}>
+                      {liveRouteResult.eligibilityStatus === 'INELIGIBLE'
+                        ? 'BLOCKED (INELIGIBLE)'
+                        : liveRouteResult.eligibilityStatus === 'POLICY_REVIEW_REQUIRED' || liveRouteResult.result === 'review_required'
+                        ? 'POLICY REVIEW REQUIRED'
+                        : liveRouteResult.stages.includes('evc_pending')
+                        ? 'SCRUTINY + MANDATORY PHYSICAL EVC'
+                        : 'SCRUTINY ONLY (FAST-TRACK)'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="p-2.5 bg-white/90 rounded-lg border border-purple-100 space-y-1.5">
+                      <div className="text-[11px] text-slate-500 font-medium">Mandatory Stages Spine:</div>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {liveRouteResult.stages.map((st: string, idx: number) => (
+                          <span key={idx} className="px-2 py-0.5 rounded bg-purple-100 text-purple-900 font-mono text-[10px] font-bold">
+                            {idx + 1}. {formatStageDisplayName(st)}
+                          </span>
+                        ))}
+                      </div>
+                      {liveRouteResult.skippedStages?.length > 0 && (
+                        <div className="text-[10px] text-emerald-800 font-medium pt-1 border-t border-purple-100">
+                          <strong>Waived Stages:</strong> {liveRouteResult.skippedStages.map((s: any) => formatStageDisplayName(typeof s === 'string' ? s : s.stage)).join(', ')}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-2.5 bg-white/90 rounded-lg border border-purple-100 space-y-1">
+                      <div className="text-[11px] text-slate-500 font-medium">Statutory Clause &amp; Justification:</div>
+                      <div className="font-semibold text-purple-950 text-xs">
+                        {liveRouteResult.matchedRules?.[0]?.clause || 'APH 2024–27 Table 2.3'} &mdash; {liveRouteResult.matchedRules?.[0]?.title || 'Approval Norms'}
+                      </div>
+                      <p className="text-[10px] text-purple-800/90 leading-tight">
+                        {liveRouteResult.reasons?.[0] || 'Application evaluated deterministically against version-pinned AICTE rulebook.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {liveRouteResult.allowedIntakeCalculation && (
+                    <div className="p-2.5 bg-blue-50 rounded-lg border border-blue-200 text-xs flex items-center justify-between">
+                      <span className="text-blue-900 font-medium text-[11px]">
+                        Intake Formula: <strong>{liveRouteResult.allowedIntakeCalculation.formulaApplied}</strong>
+                      </span>
+                      <span className="font-mono font-bold text-blue-950 text-[11px]">
+                        Allowed Ceiling: {liveRouteResult.allowedIntakeCalculation.allowedIntakeCeiling} Seats {liveRouteResult.allowedIntakeCalculation.isCapped ? '(CAPPED)' : ''}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
           )}
 
 
+
+          {institutionNameError && selectedPresetId === 'custom' && (
+            <div className="p-3 rounded-lg bg-rose-50 border border-rose-300 text-rose-800 text-xs flex items-center gap-2 animate-fadeIn">
+              <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+              <span className="font-semibold">{institutionNameError}</span>
+            </div>
+          )}
 
           <div className="flex justify-between pt-3 border-t border-slate-100">
 
@@ -1915,7 +2766,75 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
 
           </div>
 
-
+          {/* Prominent Statutory Eligibility Status Banner */}
+          {routeDecision.eligibilityStatus === 'INELIGIBLE' ? (
+            <div className="p-4 rounded-xl border-2 border-rose-500 bg-rose-50 text-rose-950 space-y-2 shadow-xs">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <XCircle className="w-5 h-5 text-rose-600 shrink-0" />
+                  <span className="font-extrabold text-sm uppercase tracking-wide text-rose-900">
+                    🛑 Statutory Ineligibility Detected &mdash; Application Registration Blocked
+                  </span>
+                </div>
+                <span className="text-[10px] font-bold font-mono px-2.5 py-0.5 rounded-full bg-rose-200 text-rose-950 border border-rose-300">
+                  REGISTRATION BLOCKED
+                </span>
+              </div>
+              <p className="text-xs text-rose-800 leading-relaxed font-medium">
+                This application fails mandatory statutory eligibility criteria specified under AICTE Approval Process Handbook (APH) 2024–27 and Addendum/Errata norms. Under statutory regulations, this application cannot proceed to regional scrutiny or council determination until all deficiencies are cured.
+              </p>
+              <div className="pt-2 border-t border-rose-200 space-y-1">
+                <span className="font-bold text-xs text-rose-900 block">Identified Ineligibility Reasons &amp; Norm Violations:</span>
+                <ul className="list-disc list-inside text-xs space-y-0.5 text-rose-800 font-medium">
+                  {routeDecision.reasons?.filter((r: string) => {
+                    const rl = (r || '').toLowerCase();
+                    return rl.includes('ineligible') || rl.includes('deficit') || rl.includes('exceed') || rl.includes('violation');
+                  }).map((r: string, i: number) => (
+                    <li key={i}>{r}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          ) : (routeDecision.eligibilityStatus === 'POLICY_REVIEW_REQUIRED' || routeDecision.result === 'review_required') ? (
+            <div className="p-4 rounded-xl border-2 border-amber-500 bg-amber-50 text-amber-950 space-y-2 shadow-xs">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+                  <span className="font-extrabold text-sm uppercase tracking-wide text-amber-900">
+                    ⚠️ Case Held for Regulatory Policy Review
+                  </span>
+                </div>
+                <span className="text-[10px] font-bold font-mono px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-950 border border-amber-300">
+                  POLICY REVIEW REQUIRED
+                </span>
+              </div>
+              <p className="text-xs text-amber-800 leading-relaxed font-medium">
+                This application triggers regulatory boundary conditions, missing baseline parameters, or policy ambiguities that cannot be resolved deterministically without Council / Executive Committee interpretation. Automatic progression is suspended.
+              </p>
+              {routeDecision.unresolvedFlags && routeDecision.unresolvedFlags.length > 0 && (
+                <div className="pt-2 border-t border-amber-200 space-y-1">
+                  <span className="font-bold text-xs text-amber-900 block">Unresolved Boundary Conditions:</span>
+                  <ul className="list-disc list-inside text-xs space-y-0.5 text-amber-800 font-mono text-[11px]">
+                    {routeDecision.unresolvedFlags.map((f: string, i: number) => (
+                      <li key={i}>{f}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="p-3.5 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-950 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                <span className="text-xs font-bold text-emerald-900">
+                  Statutory Eligibility Verified &mdash; Deterministic Route Calculated &amp; Ready for Autonomous Ingestion
+                </span>
+              </div>
+              <span className="text-[10px] font-mono font-bold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded">
+                STATUTORILY COMPLIANT
+              </span>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
 
@@ -1927,7 +2846,19 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
 
                 <span className="text-slate-500">Route Type:</span>
 
-                <span className="font-bold text-blue-700 text-xs">{routeDecision.routeType}</span>
+                <span className={`font-bold text-xs ${
+                  routeDecision.eligibilityStatus === 'INELIGIBLE'
+                    ? 'text-rose-700 font-extrabold'
+                    : routeDecision.eligibilityStatus === 'POLICY_REVIEW_REQUIRED' || routeDecision.result === 'review_required'
+                    ? 'text-amber-800 font-extrabold'
+                    : 'text-blue-700'
+                }`}>
+                  {routeDecision.eligibilityStatus === 'INELIGIBLE'
+                    ? 'BLOCKED (INELIGIBLE UNDER STATUTORY NORMS)'
+                    : routeDecision.eligibilityStatus === 'POLICY_REVIEW_REQUIRED' || routeDecision.result === 'review_required'
+                    ? 'POLICY REVIEW REQUIRED (COUNCIL DETERMINATION)'
+                    : formatRouteTypeName(routeDecision.routeType)}
+                </span>
 
               </div>
 
@@ -1936,17 +2867,19 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
                 <span className="text-slate-500">Physical EVC Inspection:</span>
 
                 <span className={`font-bold px-2 py-0.5 rounded text-[11px] ${
-
-                  routeDecision.requiresEVC
-
+                  routeDecision.eligibilityStatus === 'INELIGIBLE'
+                    ? 'bg-rose-100 text-rose-900'
+                    : routeDecision.eligibilityStatus === 'POLICY_REVIEW_REQUIRED' || routeDecision.result === 'review_required'
                     ? 'bg-amber-100 text-amber-900'
-
+                    : routeDecision.requiresEVC
+                    ? 'bg-amber-100 text-amber-900'
                     : 'bg-emerald-100 text-emerald-900'
-
                 }`}>
-
-                  {routeDecision.requiresEVC ? 'MANDATORY (§2.4)' : 'WAIVED (§2.6(c)(1))'}
-
+                  {routeDecision.eligibilityStatus === 'INELIGIBLE'
+                    ? 'NOT APPLICABLE (REGISTRATION BLOCKED)'
+                    : routeDecision.eligibilityStatus === 'POLICY_REVIEW_REQUIRED' || routeDecision.result === 'review_required'
+                    ? 'PENDING POLICY DETERMINATION'
+                    : routeDecision.requiresEVC ? 'MANDATORY (§2.4)' : 'WAIVED (§2.6(c)(1))'}
                 </span>
 
               </div>
@@ -1955,10 +2888,18 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
 
                 <span className="text-slate-500">Fast-Track Eligibility:</span>
 
-                <span className={`font-bold ${routeDecision.fastTrackEligible ? 'text-emerald-700' : 'text-slate-700'}`}>
-
-                  {routeDecision.fastTrackEligible ? 'YES (ACCELERATED)' : 'STANDARD ROUTE'}
-
+                <span className={`font-bold ${
+                  routeDecision.eligibilityStatus === 'INELIGIBLE'
+                    ? 'text-rose-700'
+                    : routeDecision.eligibilityStatus === 'POLICY_REVIEW_REQUIRED' || routeDecision.result === 'review_required'
+                    ? 'text-amber-700'
+                    : routeDecision.fastTrackEligible ? 'text-emerald-700' : 'text-slate-700'
+                }`}>
+                  {routeDecision.eligibilityStatus === 'INELIGIBLE'
+                    ? 'INELIGIBLE'
+                    : routeDecision.eligibilityStatus === 'POLICY_REVIEW_REQUIRED' || routeDecision.result === 'review_required'
+                    ? 'SUSPENDED (HELD FOR REVIEW)'
+                    : routeDecision.fastTrackEligible ? 'YES (ACCELERATED)' : 'STANDARD ROUTE'}
                 </span>
 
               </div>
@@ -1973,19 +2914,28 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
 
               <div className="flex flex-wrap gap-1.5 pt-1">
 
-                {routeDecision.stages?.map((stage: string, idx: number) => (
-
-                  <span key={idx} className="px-2.5 py-1 rounded bg-blue-100 text-blue-900 font-semibold text-[11px]">
-
-                    {idx + 1}. {stage.replace(/_/g, ' ')}
-
-                  </span>
-
-                ))}
+                {routeDecision.stages?.map((stage: string, idx: number) => {
+                  const isRejectStage = stage.includes('rejected') || stage.includes('ineligible');
+                  const isReviewStage = stage.includes('review');
+                  return (
+                    <span
+                      key={idx}
+                      className={`px-2.5 py-1 rounded font-semibold text-[11px] ${
+                        isRejectStage
+                          ? 'bg-rose-100 text-rose-900 border border-rose-300 font-bold'
+                          : isReviewStage
+                          ? 'bg-amber-100 text-amber-900 border border-amber-300 font-bold'
+                          : 'bg-blue-100 text-blue-900'
+                      }`}
+                    >
+                      {idx + 1}. {formatStageDisplayName(stage)}
+                    </span>
+                  );
+                })}
 
               </div>
 
-              {routeDecision.skippedStages?.length > 0 && (
+              {routeDecision.skippedStages?.length > 0 && routeDecision.eligibilityStatus !== 'INELIGIBLE' && (
 
                 <div className="pt-2 border-t border-slate-200">
 
@@ -2019,7 +2969,7 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
 
                           <span className="line-through text-slate-400 font-mono font-bold text-[11px]">
 
-                            {String(stageName).replace(/_/g, ' ')}
+                            {formatStageDisplayName(String(stageName))}
 
                           </span>
 
@@ -2107,7 +3057,27 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
 
 
 
-          <div className="flex justify-between pt-3 border-t border-slate-100">
+          {/* Institution Legal Name Validation Alert in Step 4 */}
+          {institutionNameError && selectedPresetId === 'custom' && (
+            <div className="p-3 rounded-lg bg-rose-50 border border-rose-300 text-rose-800 text-xs flex items-center justify-between gap-2.5 animate-fadeIn">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                <span className="font-semibold">{institutionNameError}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setCurrentStep(3);
+                  setErrorMsg(institutionNameError);
+                }}
+                className="text-xs font-bold text-rose-700 underline hover:text-rose-900 shrink-0 cursor-pointer"
+              >
+                ← Return to Step 3 to Enter Legal Name
+              </button>
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-3 border-t border-slate-100">
 
             <button
 
@@ -2121,31 +3091,65 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
 
               }}
 
-              className="px-3 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50"
+              className={`px-4 py-2.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs ${
+                routeDecision.eligibilityStatus === 'INELIGIBLE'
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                  : 'border border-slate-300 text-slate-700 hover:bg-slate-50'
+              }`}
 
             >
 
-              Edit Application Facts
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>{routeDecision.eligibilityStatus === 'INELIGIBLE' ? '← Edit Application Facts to Cure Deficiencies' : 'Edit Application Facts'}</span>
 
             </button>
 
-            <button
-              onClick={handleSubmitApplication}
-              disabled={loading}
-              className="px-5 py-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs flex items-center gap-2 shadow-xs transition-colors disabled:opacity-50"
-            >
-              {loading ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Submitting to AICTE Portal…</span>
-                </>
-              ) : (
-                <>
-                  <Send className="w-4 h-4" />
-                  <span>Submit Application to AICTE (Autonomous Regional Hand-Off)</span>
-                </>
-              )}
-            </button>
+            {routeDecision.eligibilityStatus === 'INELIGIBLE' ? (
+              <button
+                type="button"
+                disabled
+                className="px-5 py-2.5 rounded-lg bg-rose-100 text-rose-800 font-bold text-xs flex items-center gap-2 border border-rose-300 cursor-not-allowed opacity-90 shadow-xs"
+              >
+                <XCircle className="w-4 h-4 text-rose-600" />
+                <span>Submission Blocked: Ineligible under AICTE Norms</span>
+              </button>
+            ) : (routeDecision.eligibilityStatus === 'POLICY_REVIEW_REQUIRED' || routeDecision.result === 'review_required') ? (
+              <button
+                onClick={handleSubmitApplication}
+                disabled={loading}
+                className="px-5 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs flex items-center gap-2 shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Submitting for Policy Review…</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    <span>Submit for Policy Review / Council Determination</span>
+                  </>
+                )}
+              </button>
+            ) : (
+              <button
+                onClick={handleSubmitApplication}
+                disabled={loading}
+                className="px-5 py-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs flex items-center gap-2 shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Submitting to AICTE Portal…</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    <span>Submit Application to AICTE (Autonomous Regional Hand-Off)</span>
+                  </>
+                )}
+              </button>
+            )}
 
           </div>
 
@@ -2201,7 +3205,7 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-emerald-800 font-semibold">Application Category:</span>
-                <span className="font-mono text-slate-700 capitalize font-medium">{category.replace(/_/g, ' ')}</span>
+                <span className="font-mono text-slate-700 capitalize font-medium">{CATEGORY_LABELS[category] || category.replace(/_/g, ' ')}</span>
               </div>
             </div>
 
@@ -2215,7 +3219,7 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
               <div className="flex justify-between items-center">
                 <span className="text-emerald-800 font-semibold">Calculated Route &amp; Stages:</span>
                 <span className="font-bold text-blue-900 text-right max-w-[220px] truncate">
-                  {routeDecision?.route || activePreset.expectedRoute}
+                  {formatRouteTypeName(routeDecision?.route || '') || activePreset.expectedRoute}
                 </span>
               </div>
               <div className="flex justify-between items-center">
@@ -2246,7 +3250,7 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
                     setSigningIn(true);
                     try {
                       if (onContinueToInstitutionPortal) {
-                        await onContinueToInstitutionPortal(selectedPresetId, email);
+                        await onContinueToInstitutionPortal(selectedPresetId, email, submittedApp?.institutionId);
                       }
                     } finally {
                       setSigningIn(false);
@@ -2343,7 +3347,7 @@ export const NSWSSimulationView: React.FC<NSWSSimulationViewProps> = ({
                     setSigningIn(true);
                     try {
                       if (onContinueToInstitutionPortal) {
-                        await onContinueToInstitutionPortal(p.id, p.email);
+                        await onContinueToInstitutionPortal(p.id, p.email, p.code);
                       }
                     } finally {
                       setSigningIn(false);
