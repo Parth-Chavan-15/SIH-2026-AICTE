@@ -220,20 +220,12 @@ export const ROAllocationView: React.FC = () => {
         </button>
       </div>
 
-      {/* Unified Evaluator Console Scope Note */}
+      {/* Committee Allocation Scope Note */}
       <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200 text-xs text-slate-700 flex items-start gap-3">
         <Layers className="w-4 h-4 text-blue-700 shrink-0 mt-0.5" />
-        <div className="space-y-0.5">
-          <div className="font-bold text-blue-950 flex items-center gap-2">
-            <span>Unified Evaluator Console &amp; Regional Workload Governance</span>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-300">
-              APH §1.8 &amp; §1.9 Roster Model
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-600 leading-relaxed">
-            Panel allocation manages regional workload balancing, panel capacity limits, and auditable roster assignment, while Role #2 (Scrutiny Cell) and Role #3 (EVC Committee) operate as a unified evaluation console across all standing panels so judges can review cases without switching panel logins.
-          </p>
-        </div>
+        <p className="text-[11px] text-slate-600 leading-relaxed">
+          Committee allocation follows the prescribed AICTE selection process, with regional workload distribution and allocation records maintained for operational traceability. Role #2 (Scrutiny Cell) and Role #3 (EVC Committee) operate as a unified evaluation console across all standing panels so judges can review cases without switching panel logins.
+        </p>
       </div>
 
       {errorMsg && !successMsg && (
@@ -562,11 +554,11 @@ export const ROAllocationView: React.FC = () => {
                 />
               </div>
 
-              {/* Unified Console Scope Notice */}
+              {/* Committee Allocation Scope Note */}
               <div className="p-2.5 rounded-lg bg-blue-50/60 border border-blue-200 text-[11px] text-slate-600 flex items-start gap-2">
                 <Layers className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
                 <p className="leading-snug">
-                  <strong>Unified Console Scope:</strong> Selecting a standing panel balances regional workload capacity and records auditable roster allocation per APH §1.8/§1.9. Roles #2 and #3 workspaces operate under a unified evaluation console across all panels.
+                  Committee allocation follows the prescribed AICTE selection process, with regional workload distribution and allocation records maintained for operational traceability. Role #2 (Scrutiny Cell) and Role #3 (EVC Committee) operate as a unified evaluation console across all standing panels so judges can review cases without switching panel logins.
                 </p>
               </div>
 

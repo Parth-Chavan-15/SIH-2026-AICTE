@@ -17,8 +17,7 @@ describe('ROAllocationView — Static & Logic Verification', () => {
     );
 
     expect(html).toContain('Regional Office Operations Desk: Committee Allocation');
-    expect(html).toContain('Unified Evaluator Console &amp; Regional Workload Governance');
-    expect(html).toContain('APH §1.8 &amp; §1.9 Roster Model');
+    expect(html).toContain('Committee allocation follows the prescribed AICTE selection process');
     expect(html).toContain('Select Regional Queue Case');
     expect(html).toContain('Active Standing Committee Panels');
     expect(html).toContain('Refresh Workloads');
