@@ -883,6 +883,7 @@ Visitors can explore the live prototype across its six dedicated workspaces:
 NIYAMSETU/
 ├── dist/                               # Production compiled client bundle
 ├── docs/
+│   ├── archive/                        # Historical engineering blueprints and walkthrough guides
 │   ├── assets/                         # Visual assets, logos, and workflow animations
 │   ├── final_acceptance/               # System specifications and verification dossiers
 │   ├── regulatory/                     # Regulatory source registers, APH handbooks, and citations
@@ -907,7 +908,7 @@ NIYAMSETU/
 │   ├── services/                       # API client, HTTP communication, and session management
 │   ├── types/                          # Domain TypeScript types and regulatory interfaces
 │   └── utils/                          # Common utility functions, formatters, and helpers
-├── tests/                              # 40 automated Vitest test suites (485 verified tests)
+├── tests/                              # 47 automated Vitest test suites (518 verified tests)
 ├── index.html                          # Single-page client application entrypoint
 ├── package.json                        # Project manifest, dependencies, and build scripts
 ├── render.yaml                         # Production cloud deployment configuration
@@ -932,7 +933,7 @@ cd SIH-2026-AICTE
 # Install dependencies
 npm install
 
-# Run the full automated test suite (40 suites, 485 tests)
+# Run the full automated test suite (47 suites, 518 tests)
 npm test
 
 # Build the client production bundle
@@ -956,7 +957,7 @@ The production application is hosted on **Render** backed by **MongoDB Atlas**:
 
 ## 🧪 Testing & Engineering Verification
 
-### Automated Vitest Results: 40/40 Suites Passed, 485/485 Tests Passed (100%)
+### Automated Vitest Results: 47/47 Suites Passed, 518/518 Tests Passed (100%)
 
 The codebase includes comprehensive test coverage verifying all functional areas:
 - **Regulatory Rules & Routing Decisions:** Automated test suites verify classification across all 22 application categories, accreditation-based inspection waivers, and boundary conditions.

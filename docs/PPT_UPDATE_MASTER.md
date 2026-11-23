@@ -331,7 +331,7 @@
 - **GitHub Repository (Mirror):** `https://github.com/Parth-Chavan-15/SIH-2026-AICTE`  
 - **Comprehensive Interaction Audit:** `docs/INTERACTION_AUDIT.md` *(74 UI interactions audited & verified)*
 - **Regulatory Compliance Matrix:** `docs/PS_COMPLIANCE_MATRIX.md` *(100% PS 26262 mapping)*
-- **As-Built Technical Blueprint:** `AS_BUILT_BLUEPRINT.md` *(Full architectural specifications)*
+- **As-Built Technical Blueprint:** `docs/archive/AS_BUILT_BLUEPRINT.md` *(Full architectural specifications)*
 - **Team Identity:** **Team Defensor** | Smart India Hackathon 2026
 
 ---
